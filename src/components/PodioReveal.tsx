@@ -10,6 +10,8 @@ export type ResultadoJugador = {
   posicion: number;
   bebidas: number;
   puntos: number;
+  desglose: { nombre: string; icono: string; cantidad: number }[];
+  logros: { icono: string; nombre: string }[];
 };
 
 const ALTURAS: Record<number, string> = {
@@ -166,6 +168,72 @@ export default function PodioReveal({
             </li>
           ))}
         </ul>
+      )}
+
+      {terminado && (
+        <section className="subir-podio mb-8">
+          <h2 className="mb-3 font-titulo text-lg text-texto">
+            🍹 Quién bebió qué
+          </h2>
+          <ul className="space-y-2">
+            {ordenados.map((j) => (
+              <li
+                key={j.id}
+                className="rounded-2xl border border-borde bg-tarjeta p-4"
+              >
+                <p className="mb-2 font-titulo text-texto">
+                  {j.posicion}. {j.nombre}
+                </p>
+                {j.desglose.length === 0 ? (
+                  <p className="text-xs text-texto2">Sin registros esta noche</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {j.desglose.map((d) => (
+                      <span
+                        key={d.nombre}
+                        className="rounded-full bg-fondo px-3 py-1 text-sm text-texto2"
+                      >
+                        {d.icono} {d.nombre} × {d.cantidad}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {terminado && ordenados.some((j) => j.logros.length > 0) && (
+        <section className="subir-podio mb-8">
+          <h2 className="mb-3 font-titulo text-lg text-texto">
+            🏅 Logros de la noche
+          </h2>
+          <ul className="space-y-2">
+            {ordenados
+              .filter((j) => j.logros.length > 0)
+              .map((j) => (
+                <li
+                  key={j.id}
+                  className="rounded-2xl border border-ambar/40 bg-tarjeta p-4 glow-ambar"
+                >
+                  <p className="mb-2 font-titulo text-texto">{j.nombre}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {j.logros.map((l) => (
+                      <span
+                        key={l.nombre}
+                        className="flex items-center gap-1 rounded-full border border-ambar/50 bg-fondo px-3 py-1.5 text-sm text-ambar"
+                        title={l.nombre}
+                      >
+                        <span className="text-lg">{l.icono}</span>
+                        {l.nombre}
+                      </span>
+                    ))}
+                  </div>
+                </li>
+              ))}
+          </ul>
+        </section>
       )}
 
       {terminado && (

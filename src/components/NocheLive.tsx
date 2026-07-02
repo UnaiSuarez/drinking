@@ -34,6 +34,13 @@ function formatearRestante(ms: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+function formatearMMSS(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export default function NocheLive({
   noche,
   salaNombre,
@@ -55,6 +62,7 @@ export default function NocheLive({
   const supabase = useMemo(() => createClient(), []);
   const [jugadores, setJugadores] = useState<Jugador[]>(jugadoresIniciales);
   const [registros, setRegistros] = useState<Registro[]>(registrosIniciales);
+  const [bloqueada, setBloqueada] = useState(false);
   const [ahora, setAhora] = useState(() => Date.now());
   const [masUnos, setMasUnos] = useState<{ id: number; icono: string }[]>([]);
   const [cerrando, setCerrando] = useState(false);
@@ -74,11 +82,14 @@ export default function NocheLive({
     [jugadores]
   );
 
-  // Reloj
+  // Reloj: se acelera a cada segundo en los últimos 5 minutos para la cuenta atrás
   useEffect(() => {
-    const t = setInterval(() => setAhora(Date.now()), 30000);
+    const restante = finMs - ahora;
+    const intervalo = restante <= 5 * 60 * 1000 ? 1000 : 15000;
+    const t = setInterval(() => setAhora(Date.now()), intervalo);
     return () => clearInterval(t);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ahora >= finMs, finMs - ahora <= 5 * 60 * 1000]);
 
   const cargarJugador = useCallback(
     async (usuarioId: string) => {
@@ -180,7 +191,20 @@ export default function NocheLive({
   }
 
   async function registrarBebida(bebida: Bebida) {
-    if (!unido || terminada) return;
+    if (!unido || terminada || bloqueada) return;
+    const { error } = await supabase.from("registros").insert({
+      noche_id: noche.id,
+      usuario_id: userId,
+      bebida_tipo_id: bebida.id,
+    });
+    if (error) {
+      // La noche se cerró (o el tiempo venció) antes de que llegara este registro:
+      // la política de la base de datos lo ha rechazado. Bloqueamos y refrescamos
+      // para que el servidor nos redirija al podio si corresponde.
+      setBloqueada(true);
+      router.refresh();
+      return;
+    }
     if (navigator.vibrate) navigator.vibrate(40);
     const idAnim = contadorMasUno.current++;
     setMasUnos((prev) => [...prev, { id: idAnim, icono: bebida.icono }]);
@@ -188,11 +212,6 @@ export default function NocheLive({
       () => setMasUnos((prev) => prev.filter((m) => m.id !== idAnim)),
       900
     );
-    await supabase.from("registros").insert({
-      noche_id: noche.id,
-      usuario_id: userId,
-      bebida_tipo_id: bebida.id,
-    });
   }
 
   async function deshacerUltima() {
@@ -264,6 +283,21 @@ export default function NocheLive({
         </div>
       </header>
 
+      {!terminada && finMs - ahora <= 5 * 60 * 1000 && (
+        <div className="pulso-neon mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-4 text-center">
+          <p className="font-titulo text-lg text-rosa">
+            ⏳ ¡Últimos minutos!
+          </p>
+          <p className="font-titulo text-4xl text-rosa">
+            {formatearMMSS(finMs - ahora)}
+          </p>
+          <p className="text-xs text-texto2">
+            Al llegar a 0 se bloquean los registros y cualquiera podrá
+            revelar el podio
+          </p>
+        </div>
+      )}
+
       {!unido ? (
         <button
           onClick={unirme}
@@ -306,7 +340,7 @@ export default function NocheLive({
               <button
                 key={b.id}
                 onClick={() => registrarBebida(b)}
-                disabled={terminada}
+                disabled={terminada || bloqueada}
                 className="flex min-h-28 flex-col items-center justify-center rounded-3xl border border-borde bg-tarjeta py-4 transition active:scale-90 active:border-ambar disabled:opacity-40"
               >
                 <span className="text-5xl">{b.icono}</span>
@@ -324,6 +358,15 @@ export default function NocheLive({
           <p className="font-titulo text-xl text-rosa">⏰ ¡Se acabó el tiempo!</p>
           <p className="text-sm text-texto2">
             Cualquiera puede cerrar la noche y revelar el podio.
+          </p>
+        </div>
+      )}
+
+      {bloqueada && !terminada && (
+        <div className="mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-5 text-center glow-rosa">
+          <p className="font-titulo text-xl text-rosa">🔒 Noche cerrada</p>
+          <p className="text-sm text-texto2">
+            Un admin ha cerrado la noche. Cargando el podio…
           </p>
         </div>
       )}
