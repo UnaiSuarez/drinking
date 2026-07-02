@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { calcularLogrosNoche, LOGROS_EN_VIVO, type LogroNoche } from "@/lib/logros";
 
 export type Bebida = {
   id: number;
@@ -19,13 +20,18 @@ export type Registro = {
   ts: string;
 };
 
+type EstadoNoche = "activa" | "cerrando" | "cerrada";
+
 type Noche = {
   id: string;
   sala_id: string;
-  estado: string;
+  estado: EstadoNoche;
   inicio: string;
   fin_programado: string;
+  fin_gracia: string | null;
 };
+
+const DURACION_GRACIA_MS = 5 * 60 * 1000;
 
 function formatearRestante(ms: number): string {
   if (ms <= 0) return "¡Tiempo!";
@@ -63,15 +69,32 @@ export default function NocheLive({
   const [jugadores, setJugadores] = useState<Jugador[]>(jugadoresIniciales);
   const [registros, setRegistros] = useState<Registro[]>(registrosIniciales);
   const [bloqueada, setBloqueada] = useState(false);
+  const [estadoNoche, setEstadoNoche] = useState<EstadoNoche>(noche.estado);
+  const [finGracia, setFinGracia] = useState<string | null>(noche.fin_gracia);
   const [ahora, setAhora] = useState(() => Date.now());
   const [masUnos, setMasUnos] = useState<{ id: number; icono: string }[]>([]);
   const [cerrando, setCerrando] = useState(false);
+  const [errorCierre, setErrorCierre] = useState<string | null>(null);
   const [confirmandoCierre, setConfirmandoCierre] = useState(false);
   const contadorMasUno = useRef(0);
+
+  // Logros en directo: cola de popups + set de los ya mostrados esta sesión
+  const [colaLogros, setColaLogros] = useState<LogroNoche[]>([]);
+  const [logroActual, setLogroActual] = useState<LogroNoche | null>(null);
+  const logrosVistosRef = useRef<Set<string>>(new Set());
 
   const unido = jugadores.some((j) => j.id === userId);
   const finMs = new Date(noche.fin_programado).getTime();
   const terminada = ahora >= finMs;
+  const graciaMs = finGracia ? new Date(finGracia).getTime() : null;
+  const enGracia = estadoNoche === "cerrando";
+  const graciaActiva = enGracia && graciaMs !== null && ahora < graciaMs;
+  const graciaExpirada = enGracia && graciaMs !== null && ahora >= graciaMs;
+  const puedeRegistrar =
+    unido &&
+    !bloqueada &&
+    ((estadoNoche === "activa" && !terminada) ||
+      (estadoNoche === "cerrando" && graciaActiva));
 
   const bebidasMap = useMemo(
     () => new Map(bebidas.map((b) => [b.id, b])),
@@ -82,14 +105,19 @@ export default function NocheLive({
     [jugadores]
   );
 
-  // Reloj: se acelera a cada segundo en los últimos 5 minutos para la cuenta atrás
+  // Reloj: se acelera a cada segundo cuando se acerca algún límite relevante
   useEffect(() => {
-    const restante = finMs - ahora;
-    const intervalo = restante <= 5 * 60 * 1000 ? 1000 : 15000;
-    const t = setInterval(() => setAhora(Date.now()), intervalo);
+    const restanteFin = finMs - ahora;
+    const restanteGracia = graciaMs !== null ? graciaMs - ahora : Infinity;
+    const cerca =
+      restanteFin <= 5 * 60 * 1000 || Math.abs(restanteGracia) <= 5 * 60 * 1000;
+    const t = setInterval(() => setAhora(Date.now()), cerca ? 1000 : 15000);
     return () => clearInterval(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ahora >= finMs, finMs - ahora <= 5 * 60 * 1000]);
+  }, [
+    finMs - ahora <= 5 * 60 * 1000,
+    graciaMs !== null && Math.abs(graciaMs - ahora) <= 5 * 60 * 1000,
+  ]);
 
   const cargarJugador = useCallback(
     async (usuarioId: string) => {
@@ -163,9 +191,15 @@ export default function NocheLive({
           filter: `id=eq.${noche.id}`,
         },
         (payload) => {
-          const actualizada = payload.new as { estado: string };
+          const actualizada = payload.new as {
+            estado: EstadoNoche;
+            fin_gracia: string | null;
+          };
           if (actualizada.estado === "cerrada") {
             router.push(`/noche/${noche.id}/podio`);
+          } else if (actualizada.estado === "cerrando") {
+            setEstadoNoche("cerrando");
+            setFinGracia(actualizada.fin_gracia);
           }
         }
       )
@@ -175,6 +209,58 @@ export default function NocheLive({
       supabase.removeChannel(canal);
     };
   }, [supabase, noche.id, router, cargarJugador]);
+
+  // Detecta logros "estables" según van llegando registros y encola el popup
+  useEffect(() => {
+    if (!unido) return;
+    const misRegs = registros.filter((r) => r.usuario_id === userId);
+    const puntos = misRegs.reduce(
+      (acc, r) => acc + (bebidasMap.get(r.bebida_tipo_id)?.puntos ?? 0),
+      0
+    );
+    const tiposDistintos = new Set(misRegs.map((r) => r.bebida_tipo_id)).size;
+    const timestamps = misRegs.map((r) => new Date(r.ts).getTime());
+    const ordenTotal = [...registros].sort(
+      (a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime()
+    );
+    const primero = ordenTotal[0];
+    const esPrimero20 =
+      !!primero &&
+      primero.usuario_id === userId &&
+      new Date(primero.ts).getHours() < 20;
+
+    const detectados = calcularLogrosNoche({
+      esGanador: false,
+      bebidas: misRegs.length,
+      puntos,
+      tiposDistintos,
+      timestamps,
+      esPrimerRegistroDeLaNocheAntesDe20h: esPrimero20,
+    }).filter((l) => LOGROS_EN_VIVO.includes(l.nombre));
+
+    const nuevos = detectados.filter(
+      (l) => !logrosVistosRef.current.has(l.nombre)
+    );
+    if (nuevos.length > 0) {
+      nuevos.forEach((l) => logrosVistosRef.current.add(l.nombre));
+      setColaLogros((prev) => [...prev, ...nuevos]);
+    }
+  }, [registros, userId, unido, bebidasMap]);
+
+  // Saca el siguiente logro de la cola cuando no hay ninguno mostrándose
+  useEffect(() => {
+    if (logroActual || colaLogros.length === 0) return;
+    const [siguiente, ...resto] = colaLogros;
+    setLogroActual(siguiente);
+    setColaLogros(resto);
+  }, [colaLogros, logroActual]);
+
+  useEffect(() => {
+    if (!logroActual) return;
+    if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+    const t = setTimeout(() => setLogroActual(null), 3200);
+    return () => clearTimeout(t);
+  }, [logroActual]);
 
   async function unirme() {
     const { error } = await supabase
@@ -191,16 +277,15 @@ export default function NocheLive({
   }
 
   async function registrarBebida(bebida: Bebida) {
-    if (!unido || terminada || bloqueada) return;
+    if (!puedeRegistrar) return;
     const { error } = await supabase.from("registros").insert({
       noche_id: noche.id,
       usuario_id: userId,
       bebida_tipo_id: bebida.id,
     });
     if (error) {
-      // La noche se cerró (o el tiempo venció) antes de que llegara este registro:
-      // la política de la base de datos lo ha rechazado. Bloqueamos y refrescamos
-      // para que el servidor nos redirija al podio si corresponde.
+      // La noche se cerró (o el periodo de gracia venció) antes de que llegara
+      // este registro: la política de la base de datos lo ha rechazado.
       setBloqueada(true);
       router.refresh();
       return;
@@ -223,16 +308,36 @@ export default function NocheLive({
     setRegistros((prev) => prev.filter((r) => r.id !== miUltimo.id));
   }
 
-  async function cerrarNoche() {
+  /** Inicia el periodo de gracia de 5 minutos (todavía no calcula el podio). */
+  async function iniciarCierre() {
     setCerrando(true);
+    setErrorCierre(null);
     const { error } = await supabase.rpc("cerrar_noche", {
+      p_noche: noche.id,
+    });
+    setCerrando(false);
+    if (error) {
+      setErrorCierre(error.message);
+      return;
+    }
+    setConfirmandoCierre(false);
+    setEstadoNoche("cerrando");
+    // Optimista: el valor real llega enseguida por realtime y lo sobreescribe.
+    setFinGracia(new Date(Date.now() + DURACION_GRACIA_MS).toISOString());
+  }
+
+  /** Cierra de verdad tras el periodo de gracia y calcula el podio. */
+  async function finalizarNoche() {
+    setCerrando(true);
+    setErrorCierre(null);
+    const { error } = await supabase.rpc("finalizar_noche", {
       p_noche: noche.id,
     });
     if (!error) {
       router.push(`/noche/${noche.id}/podio`);
     } else {
       setCerrando(false);
-      setConfirmandoCierre(false);
+      setErrorCierre(error.message);
     }
   }
 
@@ -268,22 +373,42 @@ export default function NocheLive({
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-32 pt-6">
+      {logroActual && (
+        <div className="fixed inset-x-0 top-6 z-50 mx-auto flex max-w-md justify-center px-5">
+          <div className="subir-podio flex items-center gap-3 rounded-2xl border-2 border-ambar bg-tarjeta px-5 py-4 glow-ambar">
+            <span className="text-4xl">{logroActual.icono}</span>
+            <div>
+              <p className="font-titulo text-xs text-texto2">
+                ¡Logro desbloqueado!
+              </p>
+              <p className="font-titulo text-lg text-ambar">
+                {logroActual.nombre}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="mb-4 flex items-center justify-between">
         <div>
           <Link href={`/sala/${noche.sala_id}`} className="text-sm text-texto2">
             ← {salaNombre}
           </Link>
-          <h1 className="font-titulo text-2xl text-ambar">🌙 Noche en curso</h1>
+          <h1 className="font-titulo text-2xl text-ambar">
+            {enGracia ? "⏳ Cerrando la noche…" : "🌙 Noche en curso"}
+          </h1>
         </div>
-        <div className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-center">
-          <p className="text-[10px] uppercase text-texto2">Queda</p>
-          <p className="font-titulo text-cian">
-            {formatearRestante(finMs - ahora)}
-          </p>
-        </div>
+        {!enGracia && (
+          <div className="rounded-xl border border-borde bg-tarjeta px-3 py-2 text-center">
+            <p className="text-[10px] uppercase text-texto2">Queda</p>
+            <p className="font-titulo text-cian">
+              {formatearRestante(finMs - ahora)}
+            </p>
+          </div>
+        )}
       </header>
 
-      {!terminada && finMs - ahora <= 5 * 60 * 1000 && (
+      {!enGracia && !terminada && finMs - ahora <= 5 * 60 * 1000 && (
         <div className="pulso-neon mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-4 text-center">
           <p className="font-titulo text-lg text-rosa">
             ⏳ ¡Últimos minutos!
@@ -294,6 +419,32 @@ export default function NocheLive({
           <p className="text-xs text-texto2">
             Al llegar a 0 se bloquean los registros y cualquiera podrá
             revelar el podio
+          </p>
+        </div>
+      )}
+
+      {graciaActiva && (
+        <div className="pulso-neon mb-6 rounded-3xl border-2 border-ambar bg-tarjeta p-4 text-center">
+          <p className="font-titulo text-lg text-ambar">
+            🕐 ¡Añade lo que se te olvidó!
+          </p>
+          <p className="font-titulo text-4xl text-ambar">
+            {formatearMMSS((graciaMs ?? ahora) - ahora)}
+          </p>
+          <p className="text-xs text-texto2">
+            Un admin ha cerrado la noche, pero todavía hay tiempo extra para
+            registrar bebidas antes de que salga el podio.
+          </p>
+        </div>
+      )}
+
+      {graciaExpirada && (
+        <div className="mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-5 text-center glow-rosa">
+          <p className="font-titulo text-xl text-rosa">
+            ⏰ ¡Tiempo extra terminado!
+          </p>
+          <p className="text-sm text-texto2">
+            Cualquiera puede revelar ya el podio.
           </p>
         </div>
       )}
@@ -340,7 +491,7 @@ export default function NocheLive({
               <button
                 key={b.id}
                 onClick={() => registrarBebida(b)}
-                disabled={terminada || bloqueada}
+                disabled={!puedeRegistrar}
                 className="flex min-h-28 flex-col items-center justify-center rounded-3xl border border-borde bg-tarjeta py-4 transition active:scale-90 active:border-ambar disabled:opacity-40"
               >
                 <span className="text-5xl">{b.icono}</span>
@@ -353,7 +504,7 @@ export default function NocheLive({
         </>
       )}
 
-      {terminada && (
+      {terminada && estadoNoche === "activa" && (
         <div className="mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-5 text-center glow-rosa">
           <p className="font-titulo text-xl text-rosa">⏰ ¡Se acabó el tiempo!</p>
           <p className="text-sm text-texto2">
@@ -362,12 +513,10 @@ export default function NocheLive({
         </div>
       )}
 
-      {bloqueada && !terminada && (
+      {bloqueada && (
         <div className="mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-5 text-center glow-rosa">
           <p className="font-titulo text-xl text-rosa">🔒 Noche cerrada</p>
-          <p className="text-sm text-texto2">
-            Un admin ha cerrado la noche. Cargando el podio…
-          </p>
+          <p className="text-sm text-texto2">Cargando el podio…</p>
         </div>
       )}
 
@@ -448,9 +597,14 @@ export default function NocheLive({
         )}
       </section>
 
-      {/* Cierre (admin siempre; cualquiera si el tiempo acabó) */}
-      {(esAdmin || terminada) && unido && (
+      {/* Barra inferior de cierre */}
+      {unido && estadoNoche === "activa" && (esAdmin || terminada) && (
         <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md bg-gradient-to-t from-fondo via-fondo to-transparent px-5 pb-5 pt-8">
+          {errorCierre && (
+            <p className="mb-2 rounded-xl bg-tarjeta px-4 py-2 text-center text-sm text-rosa">
+              {errorCierre}
+            </p>
+          )}
           {confirmandoCierre ? (
             <div className="flex gap-2">
               <button
@@ -460,11 +614,11 @@ export default function NocheLive({
                 Aún no
               </button>
               <button
-                onClick={cerrarNoche}
+                onClick={iniciarCierre}
                 disabled={cerrando}
                 className="flex-1 rounded-2xl bg-rosa py-4 font-titulo text-fondo active:scale-95 disabled:opacity-50"
               >
-                {cerrando ? "Cerrando…" : "¡Revelar podio! 🏆"}
+                {cerrando ? "Cerrando…" : "Sí, cerrar 🏁"}
               </button>
             </div>
           ) : (
@@ -474,6 +628,37 @@ export default function NocheLive({
             >
               🏁 Cerrar la noche
             </button>
+          )}
+        </div>
+      )}
+
+      {unido && estadoNoche === "cerrando" && (
+        <div className="fixed inset-x-0 bottom-0 mx-auto max-w-md bg-gradient-to-t from-fondo via-fondo to-transparent px-5 pb-5 pt-8">
+          {errorCierre && (
+            <p className="mb-2 rounded-xl bg-tarjeta px-4 py-2 text-center text-sm text-rosa">
+              {errorCierre}
+            </p>
+          )}
+          {graciaExpirada ? (
+            <button
+              onClick={finalizarNoche}
+              disabled={cerrando}
+              className="w-full rounded-2xl bg-rosa py-4 font-titulo text-xl text-fondo active:scale-95 disabled:opacity-50"
+            >
+              {cerrando ? "Calculando…" : "¡Revelar podio! 🏆"}
+            </button>
+          ) : esAdmin ? (
+            <button
+              onClick={finalizarNoche}
+              disabled={cerrando}
+              className="w-full rounded-2xl border-2 border-ambar bg-tarjeta py-3 text-sm text-ambar active:scale-95 disabled:opacity-50"
+            >
+              {cerrando ? "Calculando…" : "Saltarse la espera y revelar ya"}
+            </button>
+          ) : (
+            <p className="text-center text-xs text-texto2">
+              Esperando a que acabe el tiempo extra…
+            </p>
           )}
         </div>
       )}

@@ -19,7 +19,7 @@ export default async function NochePage({
 
   const { data: noche } = await supabase
     .from("noches")
-    .select("id, sala_id, estado, inicio, fin_programado")
+    .select("id, sala_id, estado, inicio, fin_programado, fin_gracia")
     .eq("id", id)
     .single();
 
@@ -68,7 +68,10 @@ export default async function NochePage({
 
   return (
     <NocheLive
-      noche={noche}
+      noche={{
+        ...noche,
+        estado: noche.estado as "activa" | "cerrando" | "cerrada",
+      }}
       salaNombre={sala?.nombre ?? ""}
       bebidas={(bebidas ?? []) as Bebida[]}
       jugadoresIniciales={jugadores}

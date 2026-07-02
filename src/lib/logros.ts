@@ -1,5 +1,29 @@
 export type LogroNoche = { icono: string; nombre: string };
 
+/** Logros que son "estables" durante la noche: una vez conseguidos, la
+ * condición no puede dejar de cumplirse. Son los únicos que mostramos como
+ * popup en directo — el resto (Ganador, El Fantasma, Sobrio Designado)
+ * dependen del resultado final y solo se muestran en el podio. */
+export const LOGROS_EN_VIVO = [
+  "Kamikaze",
+  "Degustador",
+  "Búho",
+  "Madrugador",
+  "Sprint",
+];
+
+export const LOGRO_DESCRIPCIONES: Record<string, string> = {
+  "Ganador de la noche": "Terminar 1º en puntos de bebida esa noche.",
+  "El Fantasma": "Unirte a la noche y no registrar ni una sola bebida.",
+  "Sobrio Designado":
+    "Registrar solo bebidas sin alcohol (agua o refresco) toda la noche.",
+  Kamikaze: "Registrar 10 o más bebidas en una sola noche.",
+  Degustador: "Probar 5 tipos de bebida distintos en una misma noche.",
+  Búho: "Registrar una bebida entre las 00:00 y las 06:00.",
+  Madrugador: "Ser quien abre la noche con el primer registro, antes de las 20:00.",
+  Sprint: "Registrar 3 bebidas en menos de 30 minutos.",
+};
+
 /**
  * Cálculo ligero de logros de una noche a partir de los registros ya cargados.
  * Es un subconjunto simple del catálogo completo de DISEÑO.md — pensado para

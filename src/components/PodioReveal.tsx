@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
+import { LOGRO_DESCRIPCIONES } from "@/lib/logros";
 
 export type ResultadoJugador = {
   id: string;
@@ -30,31 +31,40 @@ export default function PodioReveal({
   resultados,
   salaId,
   fecha,
+  vistaHistorica,
 }: {
   resultados: ResultadoJugador[];
   salaId: string;
   fecha: string;
+  vistaHistorica: boolean;
 }) {
-  // Fases: countdown 3-2-1 → revelado de últimos a primeros → fin
-  const [cuenta, setCuenta] = useState(3);
-  const [revelados, setRevelados] = useState(0);
-
   const ordenados = [...resultados].sort((a, b) => a.posicion - b.posicion);
   const total = ordenados.length;
+
+  // Si es una visita al historial, nos saltamos la cuenta atrás y el
+  // revelado escalonado: mostramos el resultado completo directamente.
+  const [cuenta, setCuenta] = useState(vistaHistorica ? 0 : 3);
+  const [revelados, setRevelados] = useState(vistaHistorica ? total : 0);
+  const [logroInfo, setLogroInfo] = useState<{
+    icono: string;
+    nombre: string;
+    descripcion: string;
+  } | null>(null);
+
   const enCountdown = cuenta > 0;
   const terminado = revelados >= total;
 
   // Cuenta atrás
   useEffect(() => {
-    if (!enCountdown) return;
+    if (vistaHistorica || !enCountdown) return;
     if (navigator.vibrate) navigator.vibrate(100);
     const t = setTimeout(() => setCuenta((c) => c - 1), 1000);
     return () => clearTimeout(t);
-  }, [cuenta, enCountdown]);
+  }, [cuenta, enCountdown, vistaHistorica]);
 
   // Revelado escalonado: del último al primero, con pausa dramática antes del 1º
   useEffect(() => {
-    if (enCountdown || terminado) return;
+    if (vistaHistorica || enCountdown || terminado) return;
     const siguiente = total - revelados; // posición que toca revelar
     const pausa = siguiente === 1 ? 2200 : siguiente <= 3 ? 1400 : 700;
     const t = setTimeout(() => {
@@ -70,7 +80,7 @@ export default function PodioReveal({
       }
     }, pausa);
     return () => clearTimeout(t);
-  }, [enCountdown, revelados, terminado, total]);
+  }, [enCountdown, revelados, terminado, total, vistaHistorica]);
 
   const esVisible = (posicion: number) => posicion > total - revelados;
 
@@ -96,6 +106,30 @@ export default function PodioReveal({
 
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-5 pb-10 pt-10">
+      {logroInfo && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-6"
+          onClick={() => setLogroInfo(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-3xl border-2 border-ambar bg-tarjeta p-6 text-center glow-ambar"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="mb-2 text-5xl">{logroInfo.icono}</p>
+            <p className="mb-2 font-titulo text-xl text-ambar">
+              {logroInfo.nombre}
+            </p>
+            <p className="mb-5 text-sm text-texto2">{logroInfo.descripcion}</p>
+            <button
+              onClick={() => setLogroInfo(null)}
+              className="w-full rounded-2xl bg-ambar py-3 font-titulo text-fondo active:scale-95"
+            >
+              Entendido
+            </button>
+          </div>
+        </div>
+      )}
+
       <h1 className="mb-2 text-center font-titulo text-3xl text-ambar">
         🏆 EL PODIO
       </h1>
@@ -209,6 +243,9 @@ export default function PodioReveal({
           <h2 className="mb-3 font-titulo text-lg text-texto">
             🏅 Logros de la noche
           </h2>
+          <p className="mb-3 text-xs text-texto2">
+            Toca un logro para ver cómo se consigue.
+          </p>
           <ul className="space-y-2">
             {ordenados
               .filter((j) => j.logros.length > 0)
@@ -220,14 +257,22 @@ export default function PodioReveal({
                   <p className="mb-2 font-titulo text-texto">{j.nombre}</p>
                   <div className="flex flex-wrap gap-2">
                     {j.logros.map((l) => (
-                      <span
+                      <button
                         key={l.nombre}
-                        className="flex items-center gap-1 rounded-full border border-ambar/50 bg-fondo px-3 py-1.5 text-sm text-ambar"
-                        title={l.nombre}
+                        onClick={() =>
+                          setLogroInfo({
+                            icono: l.icono,
+                            nombre: l.nombre,
+                            descripcion:
+                              LOGRO_DESCRIPCIONES[l.nombre] ??
+                              "Logro especial de la noche.",
+                          })
+                        }
+                        className="flex items-center gap-1 rounded-full border border-ambar/50 bg-fondo px-3 py-1.5 text-sm text-ambar active:scale-95"
                       >
                         <span className="text-lg">{l.icono}</span>
                         {l.nombre}
-                      </span>
+                      </button>
                     ))}
                   </div>
                 </li>

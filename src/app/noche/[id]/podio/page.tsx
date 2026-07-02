@@ -13,12 +13,19 @@ export default async function PodioPage({
 
   const { data: noche } = await supabase
     .from("noches")
-    .select("id, sala_id, estado, inicio")
+    .select("id, sala_id, estado, inicio, fin_real")
     .eq("id", id)
     .single();
 
   if (!noche) notFound();
   if (noche.estado !== "cerrada") redirect(`/noche/${id}`);
+
+  // Si hace más de un par de minutos que se cerró, asumimos que es una
+  // visita al historial: mostramos el resultado directamente, sin repetir
+  // la cuenta atrás ni el revelado dramático cada vez que se vuelve a mirar.
+  const vistaHistorica = noche.fin_real
+    ? Date.now() - new Date(noche.fin_real).getTime() > 2 * 60 * 1000
+    : false;
 
   const { data: jugadoresRaw } = await supabase
     .from("noche_jugadores")
@@ -105,6 +112,7 @@ export default async function PodioPage({
       resultados={resultados}
       salaId={noche.sala_id}
       fecha={noche.inicio}
+      vistaHistorica={vistaHistorica}
     />
   );
 }
