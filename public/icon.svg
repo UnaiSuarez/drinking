@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#0d0e1a"/>
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="#ffb627" stroke-width="16"/>
+  <!-- Jarra de cerveza -->
+  <g>
+    <rect x="150" y="160" width="160" height="220" rx="24" fill="#ffb627"/>
+    <rect x="310" y="200" width="60" height="120" rx="20" fill="none" stroke="#ffb627" stroke-width="24"/>
+    <!-- Espuma -->
+    <circle cx="175" cy="150" r="34" fill="#f5f1e8"/>
+    <circle cx="230" cy="135" r="42" fill="#f5f1e8"/>
+    <circle cx="288" cy="150" r="34" fill="#f5f1e8"/>
+    <!-- Brillo -->
+    <rect x="172" y="200" width="28" height="150" rx="14" fill="#ffd54a"/>
+  </g>
+  <!-- Corona -->
+  <path d="M186 96 L216 64 L256 92 L296 64 L326 96 L316 116 L196 116 Z" fill="#ff2e93"/>
+</svg>

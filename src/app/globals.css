@@ -1,26 +1,86 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-fondo: #0d0e1a;
+  --color-tarjeta: #1a1c2e;
+  --color-borde: #2a2d45;
+  --color-ambar: #ffb627;
+  --color-cian: #2de2e6;
+  --color-rosa: #ff2e93;
+  --color-lima: #9bf00b;
+  --color-texto: #f5f1e8;
+  --color-texto2: #8a8fa8;
+  --color-oro: #ffd54a;
+  --color-plata: #c7ccdb;
+  --color-bronce: #cd7f32;
+
+  --font-titulo: var(--font-lilita), system-ui, sans-serif;
+  --font-cuerpo: var(--font-nunito), system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background: var(--color-fondo);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-family: var(--font-cuerpo);
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Glow de neón reutilizable */
+.glow-ambar {
+  box-shadow: 0 0 24px rgba(255, 182, 39, 0.25);
+}
+.glow-cian {
+  box-shadow: 0 0 24px rgba(45, 226, 230, 0.2);
+}
+.glow-rosa {
+  box-shadow: 0 0 24px rgba(255, 46, 147, 0.25);
+}
+
+/* Animación del +1 flotante al registrar bebida */
+@keyframes flotar-mas-uno {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-48px) scale(1.4);
+  }
+}
+.mas-uno {
+  animation: flotar-mas-uno 0.9s ease-out forwards;
+}
+
+/* Pulso para la noche activa */
+@keyframes pulso-neon {
+  0%,
+  100% {
+    box-shadow: 0 0 16px rgba(255, 182, 39, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(255, 182, 39, 0.6);
+  }
+}
+.pulso-neon {
+  animation: pulso-neon 2s ease-in-out infinite;
+}
+
+/* Aparición del podio */
+@keyframes subir-podio {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.subir-podio {
+  animation: subir-podio 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
