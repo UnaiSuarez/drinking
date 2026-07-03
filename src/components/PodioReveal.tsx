@@ -12,7 +12,7 @@ export type ResultadoJugador = {
   puntos: number;
   pl: number;
   desglose: { nombre: string; icono: string; cantidad: number }[];
-  logros: { icono: string; nombre: string; descripcion: string }[];
+  logros: { icono: string; nombre: string; descripcion: string; n: number }[];
 };
 
 export type ResultadoVotacion = {
@@ -94,7 +94,9 @@ export default function PodioReveal({
       lineas.push("", "🏅 Logros:");
       for (const j of conLogros) {
         lineas.push(
-          `${j.nombre}: ${j.logros.map((l) => `${l.icono} ${l.nombre}`).join(", ")}`
+          `${j.nombre}: ${j.logros
+            .map((l) => `${l.icono} ${l.nombre}${l.n > 1 ? ` ×${l.n}` : ""}`)
+            .join(", ")}`
         );
       }
     }
@@ -404,6 +406,11 @@ export default function PodioReveal({
                       >
                         <span className="text-lg">{l.icono}</span>
                         {l.nombre}
+                        {l.n > 1 && (
+                          <span className="font-titulo text-lima">
+                            ×{l.n}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>

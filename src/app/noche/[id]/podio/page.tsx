@@ -85,9 +85,11 @@ export default async function PodioPage({
     totales.set(r.usuario_id, t);
   }
 
+  // Agrupamos por logro con contador: los repetibles por tramos pueden
+  // conseguirse varias veces la misma noche (ej. "Media Docena ×2")
   const logrosPorUsuario = new Map<
     string,
-    { icono: string; nombre: string; descripcion: string }[]
+    Map<string, { icono: string; nombre: string; descripcion: string; n: number }>
   >();
   for (const l of logrosRaw ?? []) {
     const info = l.logros as unknown as {
@@ -96,9 +98,11 @@ export default async function PodioPage({
       descripcion: string;
     } | null;
     if (!info) continue;
-    const lista = logrosPorUsuario.get(l.usuario_id) ?? [];
-    lista.push(info);
-    logrosPorUsuario.set(l.usuario_id, lista);
+    const porNombre = logrosPorUsuario.get(l.usuario_id) ?? new Map();
+    const existente = porNombre.get(info.nombre) ?? { ...info, n: 0 };
+    existente.n += 1;
+    porNombre.set(info.nombre, existente);
+    logrosPorUsuario.set(l.usuario_id, porNombre);
   }
 
   const nombrePorUsuario = new Map<string, string>();
@@ -117,7 +121,7 @@ export default async function PodioPage({
       desglose: t
         ? [...t.desglose.values()].sort((a, b) => b.cantidad - a.cantidad)
         : [],
-      logros: logrosPorUsuario.get(j.usuario_id) ?? [],
+      logros: [...(logrosPorUsuario.get(j.usuario_id)?.values() ?? [])],
     };
   });
 
