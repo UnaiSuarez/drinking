@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AvatarEditor, { type AvatarConfig } from "@/components/AvatarEditor";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
+import CumpleanosEditor from "@/components/CumpleanosEditor";
 import { progresoNivel } from "@/lib/niveles";
 
 const RAREZA_ESTILO: Record<string, string> = {
@@ -25,7 +26,7 @@ export default async function PerfilPage({
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina")
+    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina, cumpleanos")
     .eq("id", id)
     .single();
 
@@ -197,6 +198,7 @@ export default async function PerfilPage({
         )}
 
         {esMiPerfil && <AvatarEditor actual={avatar} />}
+        {esMiPerfil && <CumpleanosEditor actual={perfil.cumpleanos} />}
         {esMiPerfil && (
           <PerfilCustomizer
             tituloActual={perfil.titulo}
