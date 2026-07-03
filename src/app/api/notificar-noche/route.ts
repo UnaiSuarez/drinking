@@ -2,17 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import webpush from "web-push";
 import { createClient } from "@/lib/supabase/server";
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
 export async function POST(request: NextRequest) {
   const { salaId, salaNombre, nocheId, userId } = await request.json();
   if (!salaId || !nocheId) {
     return NextResponse.json({ error: "Faltan datos" }, { status: 400 });
   }
+
+  const { VAPID_SUBJECT, NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY } =
+    process.env;
+  if (!VAPID_SUBJECT || !NEXT_PUBLIC_VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    // Las notificaciones son un extra: si faltan las claves, no rompemos
+    // el inicio de la noche, simplemente no se manda el push.
+    return NextResponse.json({ enviados: 0, aviso: "VAPID no configurado" });
+  }
+  webpush.setVapidDetails(
+    VAPID_SUBJECT,
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY
+  );
 
   const supabase = await createClient();
 
