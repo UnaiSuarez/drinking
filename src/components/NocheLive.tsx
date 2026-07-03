@@ -56,17 +56,6 @@ type Noche = {
 };
 
 const DURACION_GRACIA_MS = 5 * 60 * 1000;
-const CARTAS_OBJETIVO = new Set(["cubata-obligatorio", "chupito-castigo"]);
-const CARTAS_IMPLEMENTADAS = new Set([
-  "noche-x10",
-  "happy-hour-salvaje",
-  "ronda-relampago",
-  "ultimo-aviso",
-  "doble-o-nada",
-  "cubata-obligatorio",
-  "chupito-castigo",
-  "confeti-caos",
-]);
 
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -181,11 +170,7 @@ export default function NocheLive({
   );
   const cartasUsables = useMemo(
     () =>
-      CARTAS_COFRES.filter(
-        (carta) =>
-          (miInventario.cartas[carta.id] ?? 0) > 0 &&
-          CARTAS_IMPLEMENTADAS.has(carta.id)
-      ),
+      CARTAS_COFRES.filter((carta) => (miInventario.cartas[carta.id] ?? 0) > 0),
     [miInventario.cartas]
   );
 
@@ -422,18 +407,27 @@ export default function NocheLive({
 
   async function registrarBebida(bebida: Bebida) {
     if (!puedeRegistrar) return;
-    const { error } = await supabase.from("registros").insert({
-      noche_id: noche.id,
-      usuario_id: userId,
-      bebida_tipo_id: bebida.id,
-    });
-    if (error) {
+    const { data, error } = await supabase
+      .from("registros")
+      .insert({
+        noche_id: noche.id,
+        usuario_id: userId,
+        bebida_tipo_id: bebida.id,
+      })
+      .select("id, usuario_id, bebida_tipo_id, ts")
+      .single();
+    if (error || !data) {
       // La noche se cerró (o el periodo de gracia venció) antes de que llegara
       // este registro: la política de la base de datos lo ha rechazado.
       setBloqueada(true);
       router.refresh();
       return;
     }
+    // Actualización optimista: no esperamos a que llegue el evento de
+    // Realtime para que el contador suba, así se ve al instante.
+    setRegistros((prev) =>
+      prev.some((r) => r.id === data.id) ? prev : [...prev, data as Registro]
+    );
     if (navigator.vibrate) navigator.vibrate(40);
     const idAnim = contadorMasUno.current++;
     setMasUnos((prev) => [...prev, { id: idAnim, icono: bebida.icono }]);
@@ -447,7 +441,7 @@ export default function NocheLive({
     if (!unido || !miJugador) return;
     const objetivoId = objetivosCarta[carta.id];
     const objetivo = jugadores.find((jugador) => jugador.id === objetivoId);
-    if (CARTAS_OBJETIVO.has(carta.id) && !objetivo) {
+    if (carta.alcance === "objetivo" && !objetivo) {
       setMensajeCarta("Elige a quién va dirigida la carta.");
       return;
     }
@@ -885,7 +879,7 @@ export default function NocheLive({
               <ul className="space-y-3">
                 {cartasUsables.slice(0, 6).map((carta) => {
                   const cantidad = miInventario.cartas[carta.id] ?? 0;
-                  const requiereObjetivo = CARTAS_OBJETIVO.has(carta.id);
+                  const requiereObjetivo = carta.alcance === "objetivo";
                   return (
                     <li
                       key={carta.id}
