@@ -2,14 +2,16 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AvatarEditor from "@/components/AvatarEditor";
-import AvatarFrame from "@/components/AvatarFrame";
+import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import CumpleanosEditor from "@/components/CumpleanosEditor";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
-import { MARCO_INFO, marcoPorLiga, marcoPorNivel, mejorMarco } from "@/lib/marcos";
+import { calcularDivision } from "@/lib/liga";
+import { MARCO_INFO, marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
+import { parseTiendaState } from "@/lib/tienda";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -20,10 +22,13 @@ const RAREZA_ESTILO: Record<string, string> = {
 
 export default async function PerfilPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ sala?: string }>;
 }) {
   const { id } = await params;
+  const { sala: salaParam } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -37,8 +42,24 @@ export default async function PerfilPage({
 
   if (!perfil) notFound();
   const avatar = parseAvatarConfig(perfil.avatar_config);
+  const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
+  const marcoNivel = marcoPorNivel(nivel.nivel);
   const vitrinaSlugs = (perfil.vitrina ?? []) as string[];
+
+  const { data: salasPerfilRaw } = await supabase
+    .from("sala_miembros")
+    .select("sala_id, salas(id, nombre)")
+    .eq("usuario_id", id)
+    .order("joined_at");
+  const salasPerfil = (salasPerfilRaw ?? [])
+    .map((m) => {
+      const sala = m.salas as unknown as { id: string; nombre: string } | null;
+      return sala ? { id: sala.id, nombre: sala.nombre } : null;
+    })
+    .filter((sala): sala is { id: string; nombre: string } => Boolean(sala));
+  const salaContexto =
+    salasPerfil.find((sala) => sala.id === salaParam) ?? salasPerfil[0] ?? null;
 
   // Noches jugadas (solo cerradas, visibles según salas compartidas)
   const { data: participaciones } = await supabase
@@ -67,10 +88,64 @@ export default async function PerfilPage({
     (n) => n.posicion_final !== null && n.posicion_final! <= 3
   ).length;
   const plTotal = noches.reduce((acc, n) => acc + (n.pl_ganados ?? 0), 0);
-  const marcoPerfil = mejorMarco(
-    marcoPorNivel(nivel.nivel),
-    marcoPorLiga(plTotal)
-  );
+
+  let rankingSala:
+    | {
+        salaId: string;
+        salaNombre: string;
+        temporadaNombre: string | null;
+        pl: number;
+        posicion: number | null;
+        jugadores: number;
+        esTop1: boolean;
+      }
+    | null = null;
+
+  if (salaContexto) {
+    const { data: temporadaSala } = await supabase
+      .from("temporadas")
+      .select("id, nombre")
+      .eq("sala_id", salaContexto.id)
+      .eq("estado", "activa")
+      .gt("fin", new Date().toISOString())
+      .maybeSingle();
+
+    if (temporadaSala) {
+      const { data: ligaSalaRaw } = await supabase
+        .from("liga")
+        .select("usuario_id, pl")
+        .eq("temporada_id", temporadaSala.id)
+        .order("pl", { ascending: false });
+      const ligaSala = ligaSalaRaw ?? [];
+      const indice = ligaSala.findIndex((entrada) => entrada.usuario_id === id);
+      const entrada = indice >= 0 ? ligaSala[indice] : null;
+      rankingSala = {
+        salaId: salaContexto.id,
+        salaNombre: salaContexto.nombre,
+        temporadaNombre: temporadaSala.nombre,
+        pl: entrada?.pl ?? 0,
+        posicion: indice >= 0 ? indice + 1 : null,
+        jugadores: ligaSala.length,
+        esTop1: indice === 0,
+      };
+    } else {
+      rankingSala = {
+        salaId: salaContexto.id,
+        salaNombre: salaContexto.nombre,
+        temporadaNombre: null,
+        pl: 0,
+        posicion: null,
+        jugadores: 0,
+        esTop1: false,
+      };
+    }
+  }
+  const divisionSala = rankingSala
+    ? calcularDivision(rankingSala.pl, rankingSala.esTop1)
+    : null;
+  const marcoLigaSala = rankingSala
+    ? marcoPorLiga(rankingSala.pl, rankingSala.esTop1)
+    : "madera";
 
   const regs = registros ?? [];
   const totalBebidas = regs.length;
@@ -134,13 +209,25 @@ export default async function PerfilPage({
       <BackButton />
 
       <header className="mb-8 mt-4 text-center">
-        <div className="mb-2 flex justify-center">
-          <AvatarFrame
+        <div className="mb-4 flex flex-col items-center">
+          <AvatarFramePreview
             config={avatar}
-            marco={marcoPerfil}
-            className="h-32 w-32"
+            marco={marcoNivel}
+            titulo={perfil.nombre}
+            subtitulo={`Nivel ${nivel.nivel} · ${MARCO_INFO[marcoNivel].nombre}`}
+            triggerClassName="h-32 w-32"
+            previewClassName="h-80 w-80"
           />
+          <p className="mt-3 font-titulo text-sm text-cian">
+            Nivel {nivel.nivel} · {MARCO_INFO[marcoNivel].nombre}
+          </p>
+          {tienda.marcoEquipado && tienda.marcoEquipado !== marcoNivel && (
+            <p className="text-[11px] text-texto2">
+              Marco cosmético equipado: {MARCO_INFO[tienda.marcoEquipado].nombre}
+            </p>
+          )}
         </div>
+
         <h1 className="font-titulo text-3xl text-texto">
           {perfil.nombre}
           {esMiPerfil && (
@@ -150,9 +237,6 @@ export default async function PerfilPage({
         {perfil.titulo && (
           <p className="font-titulo text-sm text-ambar">« {perfil.titulo} »</p>
         )}
-        <p className="font-titulo text-xs text-cian">
-          {MARCO_INFO[marcoPerfil].nombre}
-        </p>
         <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
           {new Date(perfil.created_at).toLocaleDateString("es-ES", {
@@ -161,26 +245,120 @@ export default async function PerfilPage({
           })}
         </p>
 
-        {/* Nivel y barra de XP */}
-        <div className="mx-auto mb-3 max-w-xs">
-          <div className="mb-1 flex items-baseline justify-between text-xs">
-            <span className="font-titulo text-cian">Nivel {nivel.nivel}</span>
-            <span className="text-texto2">
-              {nivel.actual}/{nivel.necesario} XP
-            </span>
-          </div>
-          <div className="h-2.5 overflow-hidden rounded-full bg-fondo">
-            <div
-              className="h-full rounded-full bg-cian transition-all"
-              style={{
-                width: `${Math.min(
-                  100,
-                  Math.round((nivel.actual / nivel.necesario) * 100)
-                )}%`,
-              }}
-            />
-          </div>
+        <div className="mb-5 grid grid-cols-2 gap-3 text-left">
+          <section className="rounded-2xl border border-cian/50 bg-tarjeta p-3">
+            <p className="mb-2 font-titulo text-xs uppercase text-cian">
+              Nivel personal
+            </p>
+            <div className="mb-2 flex justify-center">
+              <AvatarFramePreview
+                config={avatar}
+                marco={marcoNivel}
+                titulo={perfil.nombre}
+                subtitulo={`Nivel personal ${nivel.nivel}`}
+                triggerClassName="h-24 w-24"
+                previewClassName="h-72 w-72"
+              />
+            </div>
+            <p className="text-center font-titulo text-xl text-texto">
+              Nivel {nivel.nivel}
+            </p>
+            <p className="mb-2 text-center text-[11px] text-texto2">
+              {MARCO_INFO[marcoNivel].nombre}
+            </p>
+            <div className="mb-1 flex justify-between text-[11px] text-texto2">
+              <span>XP</span>
+              <span>
+                {nivel.actual}/{nivel.necesario}
+              </span>
+            </div>
+            <div className="h-2 overflow-hidden rounded-full bg-fondo">
+              <div
+                className="h-full rounded-full bg-cian transition-all"
+                style={{
+                  width: `${Math.min(
+                    100,
+                    Math.round((nivel.actual / nivel.necesario) * 100)
+                  )}%`,
+                }}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-ambar/50 bg-tarjeta p-3">
+            <p className="mb-2 font-titulo text-xs uppercase text-ambar">
+              Liga de sala
+            </p>
+            <div className="mb-2 flex justify-center">
+              <AvatarFramePreview
+                config={avatar}
+                marco={marcoLigaSala}
+                titulo={divisionSala?.nombre ?? "Liga de sala"}
+                subtitulo={
+                  rankingSala
+                    ? `${rankingSala.salaNombre} · ${rankingSala.pl} PL`
+                    : "Sin sala"
+                }
+                triggerClassName="h-24 w-24"
+                previewClassName="h-72 w-72"
+              />
+            </div>
+            {rankingSala && divisionSala ? (
+              <>
+                <p className="text-center font-titulo text-lg text-texto">
+                  {rankingSala.posicion
+                    ? `#${rankingSala.posicion}`
+                    : "Sin puesto"}
+                </p>
+                <p className={`text-center font-titulo text-xs ${divisionSala.color}`}>
+                  {divisionSala.icono} {divisionSala.nombre}
+                </p>
+                <p className="mt-1 truncate text-center text-[11px] text-texto2">
+                  {rankingSala.salaNombre}
+                </p>
+                <p className="text-center font-titulo text-sm text-lima">
+                  {rankingSala.pl} PL
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-center font-titulo text-lg text-texto">
+                  Sin sala
+                </p>
+                <p className="text-center text-xs text-texto2">
+                  Entra desde una sala para ver su ranking.
+                </p>
+              </>
+            )}
+          </section>
         </div>
+
+        {rankingSala && (
+          <div className="mb-5 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-left">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="font-titulo text-sm text-texto">
+                  Ranking en {rankingSala.salaNombre}
+                </p>
+                <p className="text-xs text-texto2">
+                  {rankingSala.temporadaNombre
+                    ? rankingSala.temporadaNombre
+                    : "Sin temporada activa"}
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="font-titulo text-lg text-lima">
+                  {rankingSala.pl} PL
+                </p>
+                <p className="text-xs text-texto2">
+                  {rankingSala.posicion
+                    ? `${rankingSala.posicion}/${rankingSala.jugadores}`
+                    : "sin liga"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Vitrina */}
         {vitrinaSlugs.length > 0 && (
@@ -196,6 +374,8 @@ export default async function PerfilPage({
                 >
                   <MedalIcon
                     icono={m.icono}
+                    nombre={m.nombre}
+                    slug={m.slug}
                     rareza={m.rareza}
                     className="h-16 w-16"
                     contador={m.n}
@@ -206,7 +386,23 @@ export default async function PerfilPage({
           </div>
         )}
 
-        {esMiPerfil && <AvatarEditor actual={avatar} />}
+        {esMiPerfil && (
+          <div className="mx-auto mb-2 grid w-fit grid-cols-2 gap-2">
+            <Link
+              href="/tienda"
+              className="rounded-xl border border-ambar px-4 py-2 text-xs text-ambar active:scale-95"
+            >
+              🪙 Tienda
+            </Link>
+            <Link
+              href="/inventario"
+              className="rounded-xl border border-cian px-4 py-2 text-xs text-cian active:scale-95"
+            >
+              🎴 Inventario
+            </Link>
+          </div>
+        )}
+        {esMiPerfil && <AvatarEditor actual={perfil.avatar_config} />}
         {esMiPerfil && <CumpleanosEditor actual={perfil.cumpleanos} />}
         {esMiPerfil && (
           <PerfilCustomizer
@@ -298,6 +494,8 @@ export default async function PerfilPage({
                 <div className="mb-1 flex justify-center">
                   <MedalIcon
                     icono={m.icono}
+                    nombre={m.nombre}
+                    slug={m.slug}
                     rareza={m.rareza}
                     className="h-16 w-16"
                     contador={m.n}

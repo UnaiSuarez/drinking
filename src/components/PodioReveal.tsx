@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import AvatarFrame from "@/components/AvatarFrame";
+import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import { claseTambaleo, estadoPorBebidas, type AvatarConfig } from "@/lib/avatar";
+import { COFRES_TIPOS, type CofreTipo } from "@/lib/cofresDesign";
+import { parseInventarioState } from "@/lib/inventario";
 import { type MarcoPerfil } from "@/lib/marcos";
+import { createClient } from "@/lib/supabase/client";
 
 export type ResultadoJugador = {
   id: string;
@@ -51,18 +54,32 @@ const MARCO_PODIO: Record<number, MarcoPerfil> = {
 
 type Fase = "countdown" | "votacion" | "revelado";
 
+type PremioPodio = {
+  nocheId: string;
+  cofreId: CofreTipo["id"];
+  posicion: number;
+  avatarConfigRaw: unknown;
+};
+
+function objetoConfig(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return raw as Record<string, unknown>;
+}
+
 export default function PodioReveal({
   resultados,
   salaId,
   fecha,
   vistaHistorica,
   votacion,
+  premioPodio,
 }: {
   resultados: ResultadoJugador[];
   salaId: string;
   fecha: string;
   vistaHistorica: boolean;
   votacion: ResultadoVotacion | null;
+  premioPodio: PremioPodio | null;
 }) {
   const ordenados = [...resultados].sort((a, b) => a.posicion - b.posicion);
   const total = ordenados.length;
@@ -80,6 +97,9 @@ export default function PodioReveal({
     rareza: string;
   } | null>(null);
   const [compartido, setCompartido] = useState(false);
+  const [premioEstado, setPremioEstado] = useState<
+    "idle" | "guardando" | "entregado" | "error"
+  >("idle");
 
   async function compartirResumen() {
     const medalla = (pos: number) =>
@@ -133,6 +153,9 @@ export default function PodioReveal({
   }
 
   const terminado = revelados >= total;
+  const cofrePremio = premioPodio
+    ? COFRES_TIPOS.find((cofre) => cofre.id === premioPodio.cofreId) ?? null
+    : null;
 
   // Cuenta atrás → aperitivo de votación (si hubo votos) → revelado
   useEffect(() => {
@@ -175,6 +198,50 @@ export default function PodioReveal({
     }, pausa);
     return () => clearTimeout(t);
   }, [fase, revelados, terminado, total, vistaHistorica]);
+
+  useEffect(() => {
+    if (!terminado || !premioPodio || premioEstado !== "idle") return;
+    const premio = premioPodio;
+
+    async function entregarPremio() {
+      setPremioEstado("guardando");
+      const inventario = parseInventarioState(premio.avatarConfigRaw);
+      if (inventario.podiosPremiados.includes(premio.nocheId)) {
+        setPremioEstado("entregado");
+        return;
+      }
+
+      const nextInventario = {
+        ...inventario,
+        cofres: {
+          ...inventario.cofres,
+          [premio.cofreId]: (inventario.cofres[premio.cofreId] ?? 0) + 1,
+        },
+        podiosPremiados: [...inventario.podiosPremiados, premio.nocheId],
+      };
+      const nextConfig = {
+        ...objetoConfig(premio.avatarConfigRaw),
+        inventario: nextInventario,
+      };
+      const supabase = createClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setPremioEstado("error");
+        return;
+      }
+
+      const { error } = await supabase
+        .from("perfiles")
+        .update({ avatar_config: nextConfig })
+        .eq("id", user.id);
+
+      setPremioEstado(error ? "error" : "entregado");
+    }
+
+    entregarPremio();
+  }, [premioEstado, premioPodio, terminado]);
 
   const esVisible = (posicion: number) => posicion > total - revelados;
 
@@ -236,6 +303,7 @@ export default function PodioReveal({
             <div className="mb-2 flex justify-center">
               <MedalIcon
                 icono={logroInfo.icono}
+                nombre={logroInfo.nombre}
                 rareza={logroInfo.rareza}
                 className="h-20 w-20"
               />
@@ -275,15 +343,18 @@ export default function PodioReveal({
             <div key={pos} className="flex w-24 flex-col items-center">
               {mostrado ? (
                 <div className="subir-podio mb-2 text-center">
-                  <AvatarFrame
+                  <AvatarFramePreview
                     config={j.avatarConfig}
                     estado={estadoPorBebidas(j.bebidas)}
                     marco={MARCO_PODIO[pos] ?? "madera"}
-                    className={`mx-auto h-16 w-16 ${
+                    titulo={j.nombre}
+                    subtitulo={`${j.puntos} pts · ${j.bebidas} bebidas`}
+                    triggerClassName={`mx-auto h-16 w-16 ${
                       pos === 1 && terminado
                         ? "baile-victoria"
                         : claseTambaleo(j.bebidas)
                     }`}
+                    previewClassName="h-72 w-72"
                   />
                   <p className="text-2xl">{MEDALLAS[pos]}</p>
                   <p className="font-titulo text-sm text-texto">{j.nombre}</p>
@@ -312,6 +383,24 @@ export default function PodioReveal({
         <p className="subir-podio mb-8 text-center font-titulo text-xl text-oro drop-shadow-[0_0_16px_rgba(255,213,74,0.5)]">
           👑 ¡{ganador.nombre} gana la noche!
         </p>
+      )}
+
+      {terminado && cofrePremio && premioEstado !== "idle" && (
+        <section className="subir-podio mb-8 rounded-3xl border border-ambar/50 bg-tarjeta p-4 text-center">
+          <p className="font-titulo text-sm uppercase text-texto2">
+            Recompensa de podio
+          </p>
+          <p className="mt-1 font-titulo text-xl text-ambar">
+            {cofrePremio.nombre}
+          </p>
+          <p className="mt-1 text-xs text-texto2">
+            {premioEstado === "entregado"
+              ? `Puesto #${premioPodio?.posicion}: cofre añadido a tu inventario.`
+              : premioEstado === "guardando"
+                ? "Guardando tu premio..."
+                : "No se pudo guardar el premio. Recarga el podio para reintentarlo."}
+          </p>
+        </section>
       )}
 
       {/* Resto de posiciones */}
@@ -439,6 +528,7 @@ export default function PodioReveal({
                       >
                         <MedalIcon
                           icono={l.icono}
+                          nombre={l.nombre}
                           rareza={l.rareza}
                           className="h-8 w-8"
                           contador={l.n}

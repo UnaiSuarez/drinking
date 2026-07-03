@@ -8,7 +8,7 @@ import { calcularDivision } from "@/lib/liga";
 import { marcoPorLiga } from "@/lib/marcos";
 import { activarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
 import { type AvatarConfig } from "@/lib/avatar";
-import AvatarFrame from "@/components/AvatarFrame";
+import AvatarFramePreview from "@/components/AvatarFramePreview";
 
 export type Miembro = {
   id: string;
@@ -251,7 +251,7 @@ export default function SalaView({
               return (
                 <li key={e.usuarioId}>
                   <Link
-                    href={`/perfil/${e.usuarioId}`}
+                    href={`/perfil/${e.usuarioId}?sala=${sala.id}`}
                     className={`flex items-center justify-between rounded-2xl border bg-tarjeta px-4 py-3 transition active:scale-[0.98] ${
                       i === 0 && e.pl > 0 ? "border-oro" : "border-borde"
                     }`}
@@ -260,10 +260,14 @@ export default function SalaView({
                       <span className="font-titulo text-texto2">
                       {i + 1}.
                       </span>
-                      <AvatarFrame
+                      <AvatarFramePreview
                         config={e.avatarConfig}
                         marco={marcoPorLiga(e.pl, i === 0)}
-                        className="h-9 w-9"
+                        titulo={e.nombre}
+                        subtitulo={`${div.nombre} · ${e.pl} PL`}
+                        triggerClassName="h-9 w-9"
+                        previewClassName="h-72 w-72"
+                        asSpan
                       />
                       <span>
                         {e.nombre}
@@ -292,11 +296,18 @@ export default function SalaView({
           {miembros.map((m) => (
             <li key={m.id}>
               <Link
-                href={`/perfil/${m.id}`}
+                href={`/perfil/${m.id}?sala=${sala.id}`}
                 className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3 transition active:scale-[0.98]"
               >
                 <span className="flex items-center gap-2 text-texto">
-                  <AvatarFrame config={m.avatarConfig} className="h-9 w-9" />
+                  <AvatarFramePreview
+                    config={m.avatarConfig}
+                    titulo={m.nombre}
+                    subtitulo={m.rol === "miembro" ? "Miembro" : m.rol}
+                    triggerClassName="h-9 w-9"
+                    previewClassName="h-72 w-72"
+                    asSpan
+                  />
                   <span>
                     {m.nombre}
                     {m.id === userId && (

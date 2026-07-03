@@ -97,28 +97,33 @@ export default function LoginPage() {
         </p>
       </div>
 
-      {enviado ? (
-        <div className="w-full max-w-sm rounded-3xl border border-borde bg-tarjeta p-8 text-center glow-cian">
-          <div className="mb-3 text-5xl">📬</div>
-          <h2 className="font-titulo text-2xl text-cian">¡Revisa tu correo!</h2>
-          <p className="mt-2 text-texto2">
-            Te hemos enviado un enlace mágico a{" "}
-            <span className="text-texto">{email}</span>. Tócalo y estás dentro.
-          </p>
-        </div>
-      ) : registrado ? (
-        <div className="w-full max-w-sm rounded-3xl border border-borde bg-tarjeta p-8 text-center glow-cian">
-          <div className="mb-3 text-5xl">📬</div>
-          <h2 className="font-titulo text-2xl text-cian">¡Ya casi!</h2>
-          <p className="mt-2 text-texto2">
-            Confirma tu cuenta desde el correo que te hemos enviado a{" "}
-            <span className="text-texto">{email}</span>.
-          </p>
-        </div>
-      ) : (
-        <div className="w-full max-w-sm">
+      <section className="w-full max-w-sm">
+        {enviado ? (
+          <div className="rounded-3xl border border-borde bg-tarjeta p-8 text-center glow-cian">
+            <div className="mb-3 text-5xl">📬</div>
+            <h2 className="font-titulo text-2xl text-cian">
+              ¡Revisa tu correo!
+            </h2>
+            <p className="mt-2 text-texto2">
+              Te hemos enviado un enlace mágico a{" "}
+              <span className="text-texto">{email}</span>. Tócalo y estás
+              dentro.
+            </p>
+          </div>
+        ) : registrado ? (
+          <div className="rounded-3xl border border-borde bg-tarjeta p-8 text-center glow-cian">
+            <div className="mb-3 text-5xl">📬</div>
+            <h2 className="font-titulo text-2xl text-cian">¡Ya casi!</h2>
+            <p className="mt-2 text-texto2">
+              Confirma tu cuenta desde el correo que te hemos enviado a{" "}
+              <span className="text-texto">{email}</span>.
+            </p>
+          </div>
+        ) : (
+          <>
           <div className="mb-4 flex rounded-2xl border border-borde bg-tarjeta p-1">
             <button
+              type="button"
               onClick={() => {
                 setModo("magic");
                 setError(null);
@@ -132,6 +137,7 @@ export default function LoginPage() {
               Enlace mágico
             </button>
             <button
+              type="button"
               onClick={() => {
                 setModo("password-entrar");
                 setError(null);
@@ -146,6 +152,7 @@ export default function LoginPage() {
 
           {modo === "magic" && (
             <form
+              key="magic"
               onSubmit={enviarMagicLink}
               className="rounded-3xl border border-borde bg-tarjeta p-8 glow-ambar"
             >
@@ -180,6 +187,7 @@ export default function LoginPage() {
 
           {modo !== "magic" && (
             <form
+              key="password"
               onSubmit={
                 modo === "password-entrar"
                   ? entrarConPassword
@@ -247,8 +255,9 @@ export default function LoginPage() {
               </button>
             </form>
           )}
-        </div>
-      )}
+          </>
+        )}
+      </section>
     </main>
   );
 }

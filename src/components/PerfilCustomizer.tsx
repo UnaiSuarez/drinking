@@ -94,7 +94,13 @@ export default function PerfilCustomizer({
             }`}
           >
             <span className="inline-flex items-center gap-1.5">
-              <MedalIcon icono={m.icono} rareza={m.rareza} className="h-6 w-6" />
+              <MedalIcon
+                icono={m.icono}
+                nombre={m.nombre}
+                slug={m.slug}
+                rareza={m.rareza}
+                className="h-6 w-6"
+              />
               {m.nombre}
             </span>
           </button>
@@ -119,7 +125,13 @@ export default function PerfilCustomizer({
             >
               {elegida && "✓ "}
               <span className="inline-flex items-center gap-1.5">
-                <MedalIcon icono={m.icono} rareza={m.rareza} className="h-6 w-6" />
+                <MedalIcon
+                  icono={m.icono}
+                  nombre={m.nombre}
+                  slug={m.slug}
+                  rareza={m.rareza}
+                  className="h-6 w-6"
+                />
                 {m.nombre}
               </span>
             </button>
