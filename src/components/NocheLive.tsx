@@ -40,8 +40,22 @@ export type Registro = {
   usuario_id: string;
   bebida_tipo_id: number;
   ts: string;
+  retroactivo?: boolean;
 };
 export type Voto = { votante_id: string; votado_id: string };
+export type PenalizacionTipo = {
+  id: number;
+  slug: string;
+  nombre: string;
+  icono: string;
+  pl: number;
+};
+export type Penalizacion = {
+  id: string;
+  usuario_id: string;
+  penalizacion_id: number;
+  otorgada_por: string;
+};
 
 type EstadoNoche = "activa" | "cerrando" | "cerrada";
 
@@ -56,10 +70,18 @@ type Noche = {
 };
 
 const DURACION_GRACIA_MS = 5 * 60 * 1000;
+const VEINTICUATRO_HORAS_MS = 24 * 60 * 60 * 1000;
 
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
+}
+
+function puntosBaseRegistro(registro: Registro, bebidasMap: Map<number, Bebida>) {
+  const puntos = bebidasMap.get(registro.bebida_tipo_id)?.puntos ?? 0;
+  // Lo que se registra en el tiempo extra de cierre (bebidas olvidadas) cuenta
+  // como mucho 1 punto, igual que calcula finalizar_noche en el cierre real.
+  return registro.retroactivo ? Math.min(puntos, 1) : puntos;
 }
 
 function normalizar(texto: string) {
@@ -90,6 +112,9 @@ export default function NocheLive({
   jugadoresIniciales,
   registrosIniciales,
   votosIniciales,
+  confirmacionesIniciales,
+  penalizacionesTipo,
+  penalizacionesIniciales,
   userId,
   esAdmin,
 }: {
@@ -99,6 +124,9 @@ export default function NocheLive({
   jugadoresIniciales: Jugador[];
   registrosIniciales: Registro[];
   votosIniciales: Voto[];
+  confirmacionesIniciales: string[];
+  penalizacionesTipo: PenalizacionTipo[];
+  penalizacionesIniciales: Penalizacion[];
   userId: string;
   esAdmin: boolean;
 }) {
@@ -122,6 +150,16 @@ export default function NocheLive({
   const [usandoCarta, setUsandoCarta] = useState<string | null>(null);
   const [objetivosCarta, setObjetivosCarta] = useState<Record<string, string>>({});
   const [mensajeCarta, setMensajeCarta] = useState<string | null>(null);
+  const [confirmaciones, setConfirmaciones] = useState<string[]>(
+    confirmacionesIniciales
+  );
+  const [confirmando, setConfirmando] = useState(false);
+  const [penalizaciones, setPenalizaciones] = useState<Penalizacion[]>(
+    penalizacionesIniciales
+  );
+  const [objetivoPenalizacion, setObjetivoPenalizacion] = useState("");
+  const [tipoPenalizacion, setTipoPenalizacion] = useState("");
+  const [marcandoPenalizacion, setMarcandoPenalizacion] = useState(false);
   const contadorMasUno = useRef(0);
 
   // Logros en directo: cola de popups + set de los ya mostrados esta sesión
@@ -135,16 +173,23 @@ export default function NocheLive({
   const graciaMs = finGracia ? new Date(finGracia).getTime() : null;
   const enGracia = estadoNoche === "cerrando";
   const graciaActiva = enGracia && graciaMs !== null && ahora < graciaMs;
+  // Pasados los 5 min de gracia normal se entra en el tiempo extra: modo
+  // "añade lo que se te olvidó", donde cada bebida cuenta solo 1 punto.
   const graciaExpirada = enGracia && graciaMs !== null && ahora >= graciaMs;
   const cercaFin = finMs - ahora <= 5 * 60 * 1000;
   const cercaGracia =
     graciaMs !== null && Math.abs(graciaMs - ahora) <= 5 * 60 * 1000;
   const relojRapido = cercaFin || cercaGracia;
   const puedeRegistrar =
-    unido &&
-    !bloqueada &&
-    ((estadoNoche === "activa" && !terminada) ||
-      (estadoNoche === "cerrando" && graciaActiva));
+    unido && !bloqueada && ((estadoNoche === "activa" && !terminada) || enGracia);
+
+  const inicioMs = new Date(noche.inicio).getTime();
+  const pasaron24h = ahora - inicioMs >= VEINTICUATRO_HORAS_MS;
+  const confirmadosSet = useMemo(() => new Set(confirmaciones), [confirmaciones]);
+  const yoConfirme = confirmadosSet.has(userId);
+  const todosConfirmados =
+    jugadores.length > 0 && jugadores.every((j) => confirmadosSet.has(j.id));
+  const puedeRevelarPodio = esAdmin || todosConfirmados || pasaron24h;
 
   const bebidasMap = useMemo(
     () => new Map(bebidas.map((b) => [b.id, b])),
@@ -319,6 +364,48 @@ export default function NocheLive({
           ]);
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "noche_confirmaciones",
+          filter: `noche_id=eq.${noche.id}`,
+        },
+        (payload) => {
+          const nueva = payload.new as { usuario_id: string };
+          setConfirmaciones((prev) =>
+            prev.includes(nueva.usuario_id) ? prev : [...prev, nueva.usuario_id]
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "noche_penalizaciones",
+          filter: `noche_id=eq.${noche.id}`,
+        },
+        (payload) => {
+          const nueva = payload.new as Penalizacion;
+          setPenalizaciones((prev) =>
+            prev.some((p) => p.id === nueva.id) ? prev : [...prev, nueva]
+          );
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "noche_penalizaciones",
+        },
+        (payload) => {
+          const borrada = payload.old as { id: string };
+          setPenalizaciones((prev) => prev.filter((p) => p.id !== borrada.id));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -330,10 +417,7 @@ export default function NocheLive({
   useEffect(() => {
     if (!unido) return;
     const misRegs = registros.filter((r) => r.usuario_id === userId);
-    const puntos = misRegs.reduce(
-      (acc, r) => acc + (bebidasMap.get(r.bebida_tipo_id)?.puntos ?? 0),
-      0
-    );
+    const puntos = misRegs.reduce((acc, r) => acc + puntosBaseRegistro(r, bebidasMap), 0);
     const tiposDistintos = new Set(misRegs.map((r) => r.bebida_tipo_id)).size;
     const timestamps = misRegs.map((r) => new Date(r.ts).getTime());
     const ordenTotal = [...registros].sort(
@@ -414,7 +498,7 @@ export default function NocheLive({
         usuario_id: userId,
         bebida_tipo_id: bebida.id,
       })
-      .select("id, usuario_id, bebida_tipo_id, ts")
+      .select("id, usuario_id, bebida_tipo_id, ts, retroactivo")
       .single();
     if (error || !data) {
       // La noche se cerró (o el periodo de gracia venció) antes de que llegara
@@ -526,7 +610,7 @@ export default function NocheLive({
 
   /** Emite o cambia tu voto de la categoría de la noche. */
   async function votar(votadoId: string) {
-    if (votadoId === userId || !graciaActiva) return;
+    if (votadoId === userId || !enGracia) return;
     setVotando(true);
     const { error } = await supabase.from("noche_votos").upsert({
       noche_id: noche.id,
@@ -541,6 +625,53 @@ export default function NocheLive({
         { votante_id: userId, votado_id: votadoId },
       ]);
     }
+  }
+
+  /** Marca que ya no tienes más bebidas olvidadas que añadir. */
+  async function confirmarSinMasBebidas() {
+    if (yoConfirme || confirmando) return;
+    setConfirmando(true);
+    const { error } = await supabase.from("noche_confirmaciones").insert({
+      noche_id: noche.id,
+      usuario_id: userId,
+    });
+    setConfirmando(false);
+    if (!error) {
+      setConfirmaciones((prev) =>
+        prev.includes(userId) ? prev : [...prev, userId]
+      );
+      if (navigator.vibrate) navigator.vibrate(30);
+    }
+  }
+
+  /** Marca a alguien con una penalización (ha vomitado, KO...) durante el cierre. */
+  async function marcarPenalizacion() {
+    if (!objetivoPenalizacion || !tipoPenalizacion) return;
+    setMarcandoPenalizacion(true);
+    const { data, error } = await supabase
+      .from("noche_penalizaciones")
+      .insert({
+        noche_id: noche.id,
+        usuario_id: objetivoPenalizacion,
+        penalizacion_id: Number(tipoPenalizacion),
+        otorgada_por: userId,
+      })
+      .select("id, usuario_id, penalizacion_id, otorgada_por")
+      .single();
+    setMarcandoPenalizacion(false);
+    if (!error && data) {
+      setPenalizaciones((prev) =>
+        prev.some((p) => p.id === data.id) ? prev : [...prev, data]
+      );
+      setObjetivoPenalizacion("");
+      setTipoPenalizacion("");
+    }
+  }
+
+  /** Quita una penalización que tú mismo pusiste, por si fue un error. */
+  async function quitarPenalizacion(id: string) {
+    await supabase.from("noche_penalizaciones").delete().eq("id", id);
+    setPenalizaciones((prev) => prev.filter((p) => p.id !== id));
   }
 
   /** Cierra de verdad tras el periodo de gracia y calcula el podio. */
@@ -596,7 +727,7 @@ export default function NocheLive({
     function puntosRegistro(registro: Registro) {
       const bebida = bebidasMap.get(registro.bebida_tipo_id);
       const nombreBebida = normalizar(`${bebida?.nombre ?? ""} ${bebida?.icono ?? ""}`);
-      const puntos = bebida?.puntos ?? 0;
+      const puntos = puntosBaseRegistro(registro, bebidasMap);
       let multiplicador = 1;
       let bonus = 0;
 
@@ -727,20 +858,20 @@ export default function NocheLive({
       {graciaActiva && (
         <div className="pulso-neon mb-6 rounded-3xl border-2 border-ambar bg-tarjeta p-4 text-center">
           <p className="font-titulo text-lg text-ambar">
-            🕐 ¡Añade lo que se te olvidó!
+            ⏳ Gracia de cierre
           </p>
           <p className="font-titulo text-4xl text-ambar">
             {formatearMMSS((graciaMs ?? ahora) - ahora)}
           </p>
           <p className="text-xs text-texto2">
-            Un admin ha cerrado la noche, pero todavía hay tiempo extra para
-            registrar bebidas antes de que salga el podio.
+            Un admin ha cerrado la noche. Todavía puedes registrar a valor
+            normal antes de pasar al tiempo extra.
           </p>
         </div>
       )}
 
-      {/* Votación relámpago durante el periodo de gracia */}
-      {graciaActiva && unido && categoria && (
+      {/* Votación relámpago y penalizaciones, disponibles durante todo el cierre */}
+      {enGracia && unido && categoria && (
         <section className="mb-6 rounded-3xl border-2 border-cian bg-tarjeta p-5 glow-cian">
           <p className="text-center font-titulo text-xs uppercase tracking-wide text-texto2">
             🗳️ Votación de la noche
@@ -789,12 +920,105 @@ export default function NocheLive({
       {graciaExpirada && (
         <div className="mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-5 text-center glow-rosa">
           <p className="font-titulo text-xl text-rosa">
-            ⏰ ¡Tiempo extra terminado!
+            🕐 Tiempo extra: añade lo olvidado
           </p>
           <p className="text-sm text-texto2">
-            Cualquiera puede revelar ya el podio.
+            Ya pasó la gracia normal. Todavía puedes registrar bebidas que se
+            te olvidaron, pero ahora cada una cuenta solo 1 punto.
           </p>
+          {unido && (
+            <div className="mt-4">
+              {yoConfirme ? (
+                <p className="text-sm text-lima">
+                  ✓ Ya confirmaste que no te falta nada.
+                </p>
+              ) : (
+                <button
+                  onClick={confirmarSinMasBebidas}
+                  disabled={confirmando}
+                  className="w-full rounded-2xl bg-rosa py-3 font-titulo text-fondo active:scale-95 disabled:opacity-50"
+                >
+                  {confirmando ? "Confirmando…" : "Ya no tengo más bebidas que añadir"}
+                </button>
+              )}
+              <p className="mt-2 text-xs text-texto2">
+                {confirmadosSet.size}/{jugadores.length} han confirmado · el
+                podio se revela cuando confirméis todos o lo haga un admin
+              </p>
+            </div>
+          )}
         </div>
+      )}
+
+      {/* Penalizaciones tipo "ha vomitado", disponibles durante todo el cierre */}
+      {enGracia && unido && (
+        <section className="mb-6 rounded-3xl border border-borde bg-tarjeta p-4">
+          <p className="mb-3 font-titulo text-lg text-texto">
+            🚨 Cosas que han pasado
+          </p>
+          <div className="mb-3 grid grid-cols-2 gap-2">
+            <select
+              value={objetivoPenalizacion}
+              onChange={(event) => setObjetivoPenalizacion(event.target.value)}
+              className="rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+            >
+              <option value="">¿Quién?</option>
+              {jugadores.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.nombre}
+                </option>
+              ))}
+            </select>
+            <select
+              value={tipoPenalizacion}
+              onChange={(event) => setTipoPenalizacion(event.target.value)}
+              className="rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+            >
+              <option value="">¿Qué ha pasado?</option>
+              {penalizacionesTipo.map((tipo) => (
+                <option key={tipo.id} value={tipo.id}>
+                  {tipo.icono} {tipo.nombre} ({tipo.pl} PL)
+                </option>
+              ))}
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={marcarPenalizacion}
+            disabled={!objetivoPenalizacion || !tipoPenalizacion || marcandoPenalizacion}
+            className="w-full rounded-xl bg-rosa py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-45"
+          >
+            {marcandoPenalizacion ? "Marcando…" : "Marcar"}
+          </button>
+
+          {penalizaciones.length > 0 && (
+            <ul className="mt-3 space-y-1.5">
+              {penalizaciones.map((p) => {
+                const tipo = penalizacionesTipo.find((t) => t.id === p.penalizacion_id);
+                if (!tipo) return null;
+                return (
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between rounded-xl bg-fondo px-3 py-2 text-xs text-texto2"
+                  >
+                    <span>
+                      {tipo.icono} {jugadoresMap.get(p.usuario_id) ?? "???"}{" "}
+                      {tipo.nombre.toLowerCase()} ({tipo.pl} PL)
+                    </span>
+                    {p.otorgada_por === userId && (
+                      <button
+                        onClick={() => quitarPenalizacion(p.id)}
+                        className="text-rosa underline"
+                      >
+                        quitar
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
       )}
 
       {!unido ? (
@@ -1070,6 +1294,11 @@ export default function NocheLive({
                       {jugadoresMap.get(r.usuario_id) ?? "???"}
                     </span>{" "}
                     {b?.icono} {b?.nombre}
+                    {r.retroactivo && (
+                      <span className="ml-1 text-texto2" title="Añadida en el tiempo extra: 1 punto">
+                        🕐
+                      </span>
+                    )}
                   </span>
                   <span className="text-xs text-texto2">
                     {new Date(r.ts).toLocaleTimeString("es-ES", {
@@ -1126,7 +1355,7 @@ export default function NocheLive({
               {errorCierre}
             </p>
           )}
-          {graciaExpirada ? (
+          {puedeRevelarPodio && graciaExpirada ? (
             <button
               onClick={finalizarNoche}
               disabled={cerrando}
@@ -1134,7 +1363,7 @@ export default function NocheLive({
             >
               {cerrando ? "Calculando…" : "¡Revelar podio! 🏆"}
             </button>
-          ) : esAdmin ? (
+          ) : puedeRevelarPodio ? (
             <button
               onClick={finalizarNoche}
               disabled={cerrando}
@@ -1144,7 +1373,9 @@ export default function NocheLive({
             </button>
           ) : (
             <p className="text-center text-xs text-texto2">
-              Esperando a que acabe el tiempo extra…
+              {graciaExpirada
+                ? `Esperando a que confirméis todos (${confirmadosSet.size}/${jugadores.length}) o a que un admin revele el podio…`
+                : "Esperando a que acabe la gracia de cierre…"}
             </p>
           )}
         </div>
