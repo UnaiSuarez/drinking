@@ -1,4 +1,4 @@
-export type LogroNoche = { icono: string; nombre: string };
+export type LogroNoche = { icono: string; nombre: string; rareza: string };
 
 /** Logros que son "estables" durante la noche: una vez conseguidos, la
  * condición no puede dejar de cumplirse. Son los únicos que mostramos como
@@ -49,28 +49,28 @@ export function calcularLogrosNoche(params: {
   const logros: LogroNoche[] = [];
 
   if (esGanador && bebidas > 0) {
-    logros.push({ icono: "🥇", nombre: "Ganador de la noche" });
+    logros.push({ icono: "🥇", nombre: "Ganador de la noche", rareza: "rara" });
   }
   if (bebidas === 0) {
-    logros.push({ icono: "👻", nombre: "El Fantasma" });
+    logros.push({ icono: "👻", nombre: "El Fantasma", rareza: "rara" });
   }
   if (bebidas > 0 && puntos === 0) {
-    logros.push({ icono: "🧊", nombre: "Sobrio Designado" });
+    logros.push({ icono: "🧊", nombre: "Sobrio Designado", rareza: "rara" });
   }
   if (bebidas >= 10) {
-    logros.push({ icono: "💀", nombre: "Kamikaze" });
+    logros.push({ icono: "💀", nombre: "Kamikaze", rareza: "epica" });
   }
   if (tiposDistintos >= 5) {
-    logros.push({ icono: "🌈", nombre: "Degustador" });
+    logros.push({ icono: "🌈", nombre: "Degustador", rareza: "rara" });
   }
   if (timestamps.some((t) => new Date(t).getHours() < 6)) {
-    logros.push({ icono: "🦉", nombre: "Búho" });
+    logros.push({ icono: "🦉", nombre: "Búho", rareza: "comun" });
   }
   if (esPrimerRegistroDeLaNocheAntesDe20h) {
-    logros.push({ icono: "🕐", nombre: "Madrugador" });
+    logros.push({ icono: "🕐", nombre: "Madrugador", rareza: "comun" });
   }
   if (tieneRachaSprint(timestamps)) {
-    logros.push({ icono: "⚡", nombre: "Sprint" });
+    logros.push({ icono: "⚡", nombre: "Sprint", rareza: "rara" });
   }
 
   return logros;

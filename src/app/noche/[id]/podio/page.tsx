@@ -27,7 +27,7 @@ export default async function PodioPage({
   // visita al historial: mostramos el resultado directamente, sin repetir
   // la cuenta atrás ni el revelado dramático cada vez que se vuelve a mirar.
   const vistaHistorica = noche.fin_real
-    ? Date.now() - new Date(noche.fin_real).getTime() > 2 * 60 * 1000
+    ? new Date().getTime() - new Date(noche.fin_real).getTime() > 2 * 60 * 1000
     : false;
 
   const { data: jugadoresRaw } = await supabase
@@ -90,13 +90,23 @@ export default async function PodioPage({
   // conseguirse varias veces la misma noche (ej. "Media Docena ×2")
   const logrosPorUsuario = new Map<
     string,
-    Map<string, { icono: string; nombre: string; descripcion: string; n: number }>
+    Map<
+      string,
+      {
+        icono: string;
+        nombre: string;
+        descripcion: string;
+        rareza: string;
+        n: number;
+      }
+    >
   >();
   for (const l of logrosRaw ?? []) {
     const info = l.logros as unknown as {
       nombre: string;
       icono: string;
       descripcion: string;
+      rareza: string;
     } | null;
     if (!info) continue;
     const porNombre = logrosPorUsuario.get(l.usuario_id) ?? new Map();

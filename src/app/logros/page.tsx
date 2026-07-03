@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import BackButton from "@/components/BackButton";
+import MedalIcon from "@/components/MedalIcon";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -74,7 +75,13 @@ export default async function LogrosPage() {
                   : "border-borde opacity-60"
               }`}
             >
-              <span className="text-4xl">{oculto ? "❓" : l.icono}</span>
+              <MedalIcon
+                icono={l.icono}
+                rareza={l.rareza}
+                secreto={oculto}
+                contador={n}
+                className="h-16 w-16"
+              />
               <div className="min-w-0 flex-1">
                 <p className="font-titulo text-texto">
                   {oculto ? "???" : l.nombre}

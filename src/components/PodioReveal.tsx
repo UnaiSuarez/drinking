@@ -3,8 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import AvatarSVG from "@/components/AvatarSVG";
+import AvatarFrame from "@/components/AvatarFrame";
+import MedalIcon from "@/components/MedalIcon";
 import { claseTambaleo, estadoPorBebidas, type AvatarConfig } from "@/lib/avatar";
+import { type MarcoPerfil } from "@/lib/marcos";
 
 export type ResultadoJugador = {
   id: string;
@@ -15,7 +17,13 @@ export type ResultadoJugador = {
   puntos: number;
   pl: number;
   desglose: { nombre: string; icono: string; cantidad: number }[];
-  logros: { icono: string; nombre: string; descripcion: string; n: number }[];
+  logros: {
+    icono: string;
+    nombre: string;
+    descripcion: string;
+    rareza: string;
+    n: number;
+  }[];
 };
 
 export type ResultadoVotacion = {
@@ -35,6 +43,11 @@ const COLORES: Record<number, string> = {
   3: "bg-bronce",
 };
 const MEDALLAS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+const MARCO_PODIO: Record<number, MarcoPerfil> = {
+  1: "challenger",
+  2: "plata",
+  3: "oro",
+};
 
 type Fase = "countdown" | "votacion" | "revelado";
 
@@ -64,6 +77,7 @@ export default function PodioReveal({
     icono: string;
     nombre: string;
     descripcion: string;
+    rareza: string;
   } | null>(null);
   const [compartido, setCompartido] = useState(false);
 
@@ -219,7 +233,13 @@ export default function PodioReveal({
             className="w-full max-w-sm rounded-3xl border-2 border-ambar bg-tarjeta p-6 text-center glow-ambar"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="mb-2 text-5xl">{logroInfo.icono}</p>
+            <div className="mb-2 flex justify-center">
+              <MedalIcon
+                icono={logroInfo.icono}
+                rareza={logroInfo.rareza}
+                className="h-20 w-20"
+              />
+            </div>
             <p className="mb-2 font-titulo text-xl text-ambar">
               {logroInfo.nombre}
             </p>
@@ -255,10 +275,11 @@ export default function PodioReveal({
             <div key={pos} className="flex w-24 flex-col items-center">
               {mostrado ? (
                 <div className="subir-podio mb-2 text-center">
-                  <AvatarSVG
+                  <AvatarFrame
                     config={j.avatarConfig}
                     estado={estadoPorBebidas(j.bebidas)}
-                    className={`mx-auto h-14 w-14 ${
+                    marco={MARCO_PODIO[pos] ?? "madera"}
+                    className={`mx-auto h-16 w-16 ${
                       pos === 1 && terminado
                         ? "baile-victoria"
                         : claseTambaleo(j.bebidas)
@@ -416,13 +437,13 @@ export default function PodioReveal({
                         onClick={() => setLogroInfo(l)}
                         className="flex items-center gap-1 rounded-full border border-ambar/50 bg-fondo px-3 py-1.5 text-sm text-ambar active:scale-95"
                       >
-                        <span className="text-lg">{l.icono}</span>
+                        <MedalIcon
+                          icono={l.icono}
+                          rareza={l.rareza}
+                          className="h-8 w-8"
+                          contador={l.n}
+                        />
                         {l.nombre}
-                        {l.n > 1 && (
-                          <span className="font-titulo text-lima">
-                            ×{l.n}
-                          </span>
-                        )}
                       </button>
                     ))}
                   </div>

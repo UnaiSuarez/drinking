@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { calcularDivision } from "@/lib/liga";
+import { marcoPorLiga } from "@/lib/marcos";
 import { activarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
 import { type AvatarConfig } from "@/lib/avatar";
-import AvatarSVG from "@/components/AvatarSVG";
+import AvatarFrame from "@/components/AvatarFrame";
 
 export type Miembro = {
   id: string;
@@ -103,7 +104,7 @@ export default function SalaView({
   async function iniciarNoche(horas: number) {
     setCargando(true);
     const supabase = createClient();
-    const fin = new Date(Date.now() + horas * 3600 * 1000).toISOString();
+    const fin = new Date(new Date().getTime() + horas * 3600 * 1000).toISOString();
     const { data, error } = await supabase
       .from("noches")
       .insert({ sala_id: sala.id, creada_por: userId, fin_programado: fin })
@@ -257,9 +258,13 @@ export default function SalaView({
                   >
                     <span className="flex items-center gap-2 text-texto">
                       <span className="font-titulo text-texto2">
-                        {i + 1}.
+                      {i + 1}.
                       </span>
-                      <AvatarSVG config={e.avatarConfig} className="h-8 w-8 flex-shrink-0" />
+                      <AvatarFrame
+                        config={e.avatarConfig}
+                        marco={marcoPorLiga(e.pl, i === 0)}
+                        className="h-9 w-9"
+                      />
                       <span>
                         {e.nombre}
                         {e.usuarioId === userId && (
@@ -291,7 +296,7 @@ export default function SalaView({
                 className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3 transition active:scale-[0.98]"
               >
                 <span className="flex items-center gap-2 text-texto">
-                  <AvatarSVG config={m.avatarConfig} className="h-8 w-8 flex-shrink-0" />
+                  <AvatarFrame config={m.avatarConfig} className="h-9 w-9" />
                   <span>
                     {m.nombre}
                     {m.id === userId && (

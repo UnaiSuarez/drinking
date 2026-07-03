@@ -11,7 +11,8 @@ import {
   parseAvatarConfig,
   type AvatarConfig,
 } from "@/lib/avatar";
-import AvatarSVG from "@/components/AvatarSVG";
+import AvatarFrame from "@/components/AvatarFrame";
+import MedalIcon from "@/components/MedalIcon";
 
 export type Bebida = {
   id: number;
@@ -110,6 +111,10 @@ export default function NocheLive({
   const enGracia = estadoNoche === "cerrando";
   const graciaActiva = enGracia && graciaMs !== null && ahora < graciaMs;
   const graciaExpirada = enGracia && graciaMs !== null && ahora >= graciaMs;
+  const cercaFin = finMs - ahora <= 5 * 60 * 1000;
+  const cercaGracia =
+    graciaMs !== null && Math.abs(graciaMs - ahora) <= 5 * 60 * 1000;
+  const relojRapido = cercaFin || cercaGracia;
   const puedeRegistrar =
     unido &&
     !bloqueada &&
@@ -127,17 +132,12 @@ export default function NocheLive({
 
   // Reloj: se acelera a cada segundo cuando se acerca algún límite relevante
   useEffect(() => {
-    const restanteFin = finMs - ahora;
-    const restanteGracia = graciaMs !== null ? graciaMs - ahora : Infinity;
-    const cerca =
-      restanteFin <= 5 * 60 * 1000 || Math.abs(restanteGracia) <= 5 * 60 * 1000;
-    const t = setInterval(() => setAhora(Date.now()), cerca ? 1000 : 15000);
+    const t = setInterval(
+      () => setAhora(new Date().getTime()),
+      relojRapido ? 1000 : 15000
+    );
     return () => clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    finMs - ahora <= 5 * 60 * 1000,
-    graciaMs !== null && Math.abs(graciaMs - ahora) <= 5 * 60 * 1000,
-  ]);
+  }, [relojRapido]);
 
   const cargarJugador = useCallback(
     async (usuarioId: string) => {
@@ -294,9 +294,14 @@ export default function NocheLive({
   // Saca el siguiente logro de la cola cuando no hay ninguno mostrándose
   useEffect(() => {
     if (logroActual || colaLogros.length === 0) return;
-    const [siguiente, ...resto] = colaLogros;
-    setLogroActual(siguiente);
-    setColaLogros(resto);
+    const t = setTimeout(() => {
+      setColaLogros((prev) => {
+        const [siguiente, ...resto] = prev;
+        if (siguiente) setLogroActual(siguiente);
+        return resto;
+      });
+    }, 0);
+    return () => clearTimeout(t);
   }, [colaLogros, logroActual]);
 
   useEffect(() => {
@@ -446,7 +451,11 @@ export default function NocheLive({
       {logroActual && (
         <div className="fixed inset-x-0 top-6 z-50 mx-auto flex max-w-md justify-center px-5">
           <div className="subir-podio flex items-center gap-3 rounded-2xl border-2 border-ambar bg-tarjeta px-5 py-4 glow-ambar">
-            <span className="text-4xl">{logroActual.icono}</span>
+            <MedalIcon
+              icono={logroActual.icono}
+              rareza={logroActual.rareza}
+              className="h-14 w-14"
+            />
             <div>
               <p className="font-titulo text-xs text-texto2">
                 ¡Logro desbloqueado!
@@ -659,10 +668,11 @@ export default function NocheLive({
               >
                 <span className="flex items-center gap-2 text-texto">
                   <span className="font-titulo text-texto2">{i + 1}.</span>
-                  <AvatarSVG
+                  <AvatarFrame
                     config={j.avatarConfig}
                     estado={estadoPorBebidas(j.bebidas)}
-                    className={`h-9 w-9 flex-shrink-0 ${claseTambaleo(j.bebidas)}`}
+                    marco={i === 0 && j.puntos > 0 ? "oro" : "madera"}
+                    className={`h-10 w-10 ${claseTambaleo(j.bebidas)}`}
                   />
                   <span>
                     {j.nombre}

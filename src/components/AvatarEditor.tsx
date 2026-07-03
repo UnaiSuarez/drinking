@@ -6,9 +6,11 @@ import { createClient } from "@/lib/supabase/client";
 import AvatarSVG from "@/components/AvatarSVG";
 import {
   ACCESORIOS,
+  BARBAS,
   COLORES_PELO,
   COLORES_ROPA,
   ESTILOS_PELO,
+  GESTOS,
   TONOS_PIEL,
   parseAvatarConfig,
   type AvatarConfig,
@@ -20,6 +22,22 @@ const NOMBRE_ACCESORIO: Record<AvatarConfig["accesorio"], string> = {
   gorro: "Gorro 🎉",
   pajarita: "Pajarita 🎀",
   corona: "Corona 👑",
+  parche: "Parche 🏴‍☠️",
+  diadema: "Diadema ✨",
+};
+
+const NOMBRE_GESTO: Record<AvatarConfig["gesto"], string> = {
+  sonrisa: "Sonrisa",
+  picaro: "Pícaro",
+  serio: "Serio",
+  lengua: "Lengua",
+};
+
+const NOMBRE_BARBA: Record<AvatarConfig["barba"], string> = {
+  ninguna: "Sin barba",
+  bigote: "Bigote",
+  perilla: "Perilla",
+  barba: "Barba",
 };
 
 export default function AvatarEditor({ actual }: { actual: unknown }) {
@@ -121,6 +139,44 @@ export default function AvatarEditor({ actual }: { actual: unknown }) {
             }`}
             style={{ backgroundColor: c }}
           />
+        ))}
+      </div>
+
+      <p className="mb-2 font-titulo text-xs uppercase text-texto2">
+        Cara
+      </p>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {GESTOS.map((g) => (
+          <button
+            key={g}
+            onClick={() => set("gesto", g)}
+            className={`rounded-full border px-3 py-1.5 text-sm transition active:scale-95 ${
+              config.gesto === g
+                ? "border-cian bg-cian text-fondo"
+                : "border-borde text-texto"
+            }`}
+          >
+            {NOMBRE_GESTO[g]}
+          </button>
+        ))}
+      </div>
+
+      <p className="mb-2 font-titulo text-xs uppercase text-texto2">
+        Barba y bigote
+      </p>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {BARBAS.map((b) => (
+          <button
+            key={b}
+            onClick={() => set("barba", b)}
+            className={`rounded-full border px-3 py-1.5 text-sm transition active:scale-95 ${
+              config.barba === b
+                ? "border-cian bg-cian text-fondo"
+                : "border-borde text-texto"
+            }`}
+          >
+            {NOMBRE_BARBA[b]}
+          </button>
         ))}
       </div>
 

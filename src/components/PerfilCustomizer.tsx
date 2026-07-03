@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import MedalIcon from "@/components/MedalIcon";
 
 export type MedallaDisponible = {
   slug: string;
   nombre: string;
   icono: string;
+  rareza: string;
 };
 
 export default function PerfilCustomizer({
@@ -91,7 +93,10 @@ export default function PerfilCustomizer({
                 : "border-borde text-texto"
             }`}
           >
-            {m.icono} {m.nombre}
+            <span className="inline-flex items-center gap-1.5">
+              <MedalIcon icono={m.icono} rareza={m.rareza} className="h-6 w-6" />
+              {m.nombre}
+            </span>
           </button>
         ))}
       </div>
@@ -113,7 +118,10 @@ export default function PerfilCustomizer({
               }`}
             >
               {elegida && "✓ "}
-              {m.icono} {m.nombre}
+              <span className="inline-flex items-center gap-1.5">
+                <MedalIcon icono={m.icono} rareza={m.rareza} className="h-6 w-6" />
+                {m.nombre}
+              </span>
             </button>
           );
         })}

@@ -33,19 +33,132 @@ function Pelo({ estilo, color }: { estilo: number; color: string }) {
   }
 }
 
-function Cara({ estado }: { estado: EstadoAvatar }) {
+function Boca({ gesto }: { gesto: AvatarConfig["gesto"] }) {
+  switch (gesto) {
+    case "picaro":
+      return (
+        <path
+          d="M39 61 Q49 70 64 58"
+          stroke="#1a1c2e"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
+      );
+    case "serio":
+      return (
+        <path
+          d="M40 62 L61 62"
+          stroke="#1a1c2e"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
+      );
+    case "lengua":
+      return (
+        <>
+          <path
+            d="M38 59 Q50 70 62 59"
+            stroke="#1a1c2e"
+            strokeWidth="3"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <path
+            d="M49 66 Q54 73 59 66"
+            fill="#ff6fae"
+            stroke="#1a1c2e"
+            strokeWidth="1.5"
+          />
+        </>
+      );
+    default:
+      return (
+        <path
+          d="M38 58 Q50 68 62 58"
+          stroke="#1a1c2e"
+          strokeWidth="3"
+          fill="none"
+          strokeLinecap="round"
+        />
+      );
+  }
+}
+
+function Barba({
+  tipo,
+  color,
+}: {
+  tipo: AvatarConfig["barba"];
+  color: string;
+}) {
+  switch (tipo) {
+    case "bigote":
+      return (
+        <path
+          d="M48 57 Q39 51 31 58 Q40 61 49 58 Q59 61 69 58 Q61 51 52 57Z"
+          fill={color}
+          opacity="0.95"
+        />
+      );
+    case "perilla":
+      return (
+        <path
+          d="M45 66 Q50 76 55 66 Q50 70 45 66Z"
+          fill={color}
+          opacity="0.95"
+        />
+      );
+    case "barba":
+      return (
+        <path
+          d="M25 53 Q31 78 50 80 Q69 78 75 53 Q67 68 50 69 Q33 68 25 53Z"
+          fill={color}
+          opacity="0.9"
+        />
+      );
+    default:
+      return null;
+  }
+}
+
+function Cara({
+  estado,
+  gesto,
+  barba,
+  peloColor,
+}: {
+  estado: EstadoAvatar;
+  gesto: AvatarConfig["gesto"];
+  barba: AvatarConfig["barba"];
+  peloColor: string;
+}) {
   const rubor = estado !== "sobrio" && (
     <>
       <ellipse cx="30" cy="54" rx="7" ry="4" fill="#ff2e93" opacity="0.35" />
       <ellipse cx="70" cy="54" rx="7" ry="4" fill="#ff2e93" opacity="0.35" />
     </>
   );
+  const sombraNariz = (
+    <path
+      d="M50 49 Q46 55 51 57"
+      stroke="#bf7c58"
+      strokeWidth="2"
+      fill="none"
+      strokeLinecap="round"
+      opacity="0.35"
+    />
+  );
+  const barbaCapa = <Barba tipo={barba} color={peloColor} />;
 
   switch (estado) {
     case "ko":
       return (
         <>
           {rubor}
+          {sombraNariz}
+          {barbaCapa}
           <path d="M34 42 L46 50 M46 42 L34 50" stroke="#1a1c2e" strokeWidth="3" strokeLinecap="round" />
           <path d="M54 42 L66 50 M66 42 L54 50" stroke="#1a1c2e" strokeWidth="3" strokeLinecap="round" />
           <path d="M40 62 Q50 58 60 62" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -56,6 +169,8 @@ function Cara({ estado }: { estado: EstadoAvatar }) {
       return (
         <>
           {rubor}
+          {sombraNariz}
+          {barbaCapa}
           <path d="M32 46 Q40 40 48 46" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
           <path d="M52 46 Q60 40 68 46" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
           <path d="M38 60 Q50 68 62 60" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -67,6 +182,8 @@ function Cara({ estado }: { estado: EstadoAvatar }) {
       return (
         <>
           {rubor}
+          {sombraNariz}
+          {barbaCapa}
           <path d="M33 47 Q40 43 47 47" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
           <path d="M53 47 Q60 43 67 47" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
           <path d="M37 58 Q50 70 63 58" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -76,6 +193,8 @@ function Cara({ estado }: { estado: EstadoAvatar }) {
       return (
         <>
           {rubor}
+          {sombraNariz}
+          {barbaCapa}
           <circle cx="40" cy="46" r="4" fill="#1a1c2e" />
           <circle cx="60" cy="46" r="4" fill="#1a1c2e" />
           <path d="M38 60 Q50 66 62 58" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
@@ -84,9 +203,21 @@ function Cara({ estado }: { estado: EstadoAvatar }) {
     default: // sobrio
       return (
         <>
+          {sombraNariz}
+          {barbaCapa}
           <circle cx="40" cy="46" r="4" fill="#1a1c2e" />
-          <circle cx="60" cy="46" r="4" fill="#1a1c2e" />
-          <path d="M38 58 Q50 66 62 58" stroke="#1a1c2e" strokeWidth="3" fill="none" strokeLinecap="round" />
+          {gesto === "picaro" ? (
+            <path
+              d="M55 46 Q60 42 66 46"
+              stroke="#1a1c2e"
+              strokeWidth="3"
+              fill="none"
+              strokeLinecap="round"
+            />
+          ) : (
+            <circle cx="60" cy="46" r="4" fill="#1a1c2e" />
+          )}
+          <Boca gesto={gesto} />
         </>
       );
   }
@@ -122,6 +253,32 @@ function Accesorio({ tipo }: { tipo: AvatarConfig["accesorio"] }) {
           strokeWidth="1"
         />
       );
+    case "parche":
+      return (
+        <g>
+          <path d="M26 29 L76 63" stroke="#1a1c2e" strokeWidth="2.5" />
+          <path
+            d="M31 39 Q40 31 49 39 Q45 52 34 51 Q29 47 31 39Z"
+            fill="#0d0e1a"
+          />
+          <path d="M35 43 L42 43" stroke="#ffb627" strokeWidth="1.5" />
+        </g>
+      );
+    case "diadema":
+      return (
+        <g>
+          <path
+            d="M25 28 Q50 8 75 28"
+            stroke="#2de2e6"
+            strokeWidth="4"
+            fill="none"
+            strokeLinecap="round"
+          />
+          <circle cx="35" cy="18" r="4" fill="#ff2e93" />
+          <circle cx="50" cy="13" r="4" fill="#9bf00b" />
+          <circle cx="65" cy="18" r="4" fill="#ffb627" />
+        </g>
+      );
     default:
       return null;
   }
@@ -138,11 +295,31 @@ export default function AvatarSVG({
 }) {
   return (
     <svg viewBox="0 0 100 100" className={className}>
+      <defs>
+        <radialGradient id="avatarGlow" cx="50%" cy="18%" r="70%">
+          <stop offset="0%" stopColor="#ffffff" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#000000" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+      <circle cx="50" cy="51" r="45" fill="url(#avatarGlow)" />
       {/* Cuerpo/ropa */}
       <path d="M20 100 Q20 72 50 72 Q80 72 80 100Z" fill={config.ropaColor} />
+      <path
+        d="M36 78 L50 90 L64 78"
+        stroke="#0d0e1a"
+        strokeWidth="3"
+        fill="none"
+        opacity="0.35"
+      />
       {/* Cabeza */}
       <circle cx="50" cy="45" r="32" fill={config.piel} />
-      <Cara estado={estado} />
+      <ellipse cx="39" cy="35" rx="7" ry="3" fill="#fff" opacity="0.18" />
+      <Cara
+        estado={estado}
+        gesto={config.gesto}
+        barba={config.barba}
+        peloColor={config.peloColor}
+      />
       <Pelo estilo={config.peloEstilo} color={config.peloColor} />
       <Accesorio tipo={config.accesorio} />
     </svg>

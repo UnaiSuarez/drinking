@@ -2,12 +2,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AvatarEditor from "@/components/AvatarEditor";
-import AvatarSVG from "@/components/AvatarSVG";
+import AvatarFrame from "@/components/AvatarFrame";
+import MedalIcon from "@/components/MedalIcon";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import CumpleanosEditor from "@/components/CumpleanosEditor";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
+import { MARCO_INFO, marcoPorLiga, marcoPorNivel, mejorMarco } from "@/lib/marcos";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -65,6 +67,10 @@ export default async function PerfilPage({
     (n) => n.posicion_final !== null && n.posicion_final! <= 3
   ).length;
   const plTotal = noches.reduce((acc, n) => acc + (n.pl_ganados ?? 0), 0);
+  const marcoPerfil = mejorMarco(
+    marcoPorNivel(nivel.nivel),
+    marcoPorLiga(plTotal)
+  );
 
   const regs = registros ?? [];
   const totalBebidas = regs.length;
@@ -129,7 +135,11 @@ export default async function PerfilPage({
 
       <header className="mb-8 mt-4 text-center">
         <div className="mb-2 flex justify-center">
-          <AvatarSVG config={avatar} className="h-28 w-28" />
+          <AvatarFrame
+            config={avatar}
+            marco={marcoPerfil}
+            className="h-32 w-32"
+          />
         </div>
         <h1 className="font-titulo text-3xl text-texto">
           {perfil.nombre}
@@ -140,6 +150,9 @@ export default async function PerfilPage({
         {perfil.titulo && (
           <p className="font-titulo text-sm text-ambar">« {perfil.titulo} »</p>
         )}
+        <p className="font-titulo text-xs text-cian">
+          {MARCO_INFO[marcoPerfil].nombre}
+        </p>
         <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
           {new Date(perfil.created_at).toLocaleDateString("es-ES", {
@@ -179,11 +192,14 @@ export default async function PerfilPage({
                 <span
                   key={slug}
                   title={m.nombre}
-                  className={`flex h-14 w-14 items-center justify-center rounded-2xl border-2 bg-tarjeta text-3xl ${
-                    RAREZA_ESTILO[m.rareza]?.split(" ")[0] ?? "border-borde"
-                  }`}
+                  className="inline-flex"
                 >
-                  {m.icono}
+                  <MedalIcon
+                    icono={m.icono}
+                    rareza={m.rareza}
+                    className="h-16 w-16"
+                    contador={m.n}
+                  />
                 </span>
               );
             })}
@@ -200,6 +216,7 @@ export default async function PerfilPage({
               slug: m.slug,
               nombre: m.nombre,
               icono: m.icono,
+              rareza: m.rareza,
             }))}
           />
         )}
@@ -278,12 +295,16 @@ export default async function PerfilPage({
                   RAREZA_ESTILO[m.rareza] ?? "border-borde"
                 }`}
               >
-                <p className="text-3xl">{m.icono}</p>
+                <div className="mb-1 flex justify-center">
+                  <MedalIcon
+                    icono={m.icono}
+                    rareza={m.rareza}
+                    className="h-16 w-16"
+                    contador={m.n}
+                  />
+                </div>
                 <p className="font-titulo text-sm text-texto">
                   {m.nombre}
-                  {m.n > 1 && (
-                    <span className="ml-1 text-ambar">×{m.n}</span>
-                  )}
                 </p>
                 <p className="mt-1 text-[10px] leading-tight text-texto2">
                   {m.descripcion}

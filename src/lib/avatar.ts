@@ -5,7 +5,16 @@ export type AvatarConfig = {
   peloEstilo: number; // 0-5
   peloColor: string;
   ropaColor: string;
-  accesorio: "ninguno" | "gafas" | "gorro" | "pajarita" | "corona";
+  accesorio:
+    | "ninguno"
+    | "gafas"
+    | "gorro"
+    | "pajarita"
+    | "corona"
+    | "parche"
+    | "diadema";
+  gesto: "sonrisa" | "picaro" | "serio" | "lengua";
+  barba: "ninguna" | "bigote" | "perilla" | "barba";
 };
 
 export const AVATAR_PREDETERMINADO: AvatarConfig = {
@@ -14,6 +23,8 @@ export const AVATAR_PREDETERMINADO: AvatarConfig = {
   peloColor: "#3d2b1f",
   ropaColor: "#ffb627",
   accesorio: "ninguno",
+  gesto: "sonrisa",
+  barba: "ninguna",
 };
 
 export const TONOS_PIEL = ["#ffe0bd", "#f2c397", "#c68642", "#8d5524", "#4a2c1a"];
@@ -30,6 +41,20 @@ export const ACCESORIOS: AvatarConfig["accesorio"][] = [
   "gorro",
   "pajarita",
   "corona",
+  "parche",
+  "diadema",
+];
+export const GESTOS: AvatarConfig["gesto"][] = [
+  "sonrisa",
+  "picaro",
+  "serio",
+  "lengua",
+];
+export const BARBAS: AvatarConfig["barba"][] = [
+  "ninguna",
+  "bigote",
+  "perilla",
+  "barba",
 ];
 
 /** Estado de embriaguez del avatar según las bebidas de la noche (DISEÑO §8) */
@@ -53,11 +78,23 @@ export function claseTambaleo(bebidas: number): string {
 
 export function parseAvatarConfig(raw: unknown): AvatarConfig {
   const r = (raw ?? {}) as Partial<AvatarConfig>;
+  const accesorio = ACCESORIOS.includes(r.accesorio ?? "ninguno")
+    ? r.accesorio!
+    : AVATAR_PREDETERMINADO.accesorio;
+  const gesto = GESTOS.includes(r.gesto ?? "sonrisa")
+    ? r.gesto!
+    : AVATAR_PREDETERMINADO.gesto;
+  const barba = BARBAS.includes(r.barba ?? "ninguna")
+    ? r.barba!
+    : AVATAR_PREDETERMINADO.barba;
+
   return {
     piel: r.piel ?? AVATAR_PREDETERMINADO.piel,
     peloEstilo: r.peloEstilo ?? AVATAR_PREDETERMINADO.peloEstilo,
     peloColor: r.peloColor ?? AVATAR_PREDETERMINADO.peloColor,
     ropaColor: r.ropaColor ?? AVATAR_PREDETERMINADO.ropaColor,
-    accesorio: r.accesorio ?? AVATAR_PREDETERMINADO.accesorio,
+    accesorio,
+    gesto,
+    barba,
   };
 }
