@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import NocheLive, {
   type Bebida,
   type Jugador,
+  type Penalizacion,
+  type PenalizacionTipo,
   type Registro,
   type Voto,
 } from "@/components/NocheLive";
@@ -72,7 +74,7 @@ export default async function NochePage({
 
   const { data: registros } = await supabase
     .from("registros")
-    .select("id, usuario_id, bebida_tipo_id, ts")
+    .select("id, usuario_id, bebida_tipo_id, ts, retroactivo")
     .eq("noche_id", id)
     .eq("anulado", false)
     .order("ts");
@@ -80,6 +82,21 @@ export default async function NochePage({
   const { data: votos } = await supabase
     .from("noche_votos")
     .select("votante_id, votado_id")
+    .eq("noche_id", id);
+
+  const { data: confirmaciones } = await supabase
+    .from("noche_confirmaciones")
+    .select("usuario_id")
+    .eq("noche_id", id);
+
+  const { data: penalizacionesTipo } = await supabase
+    .from("penalizaciones_tipo")
+    .select("id, slug, nombre, icono, pl")
+    .order("id");
+
+  const { data: penalizaciones } = await supabase
+    .from("noche_penalizaciones")
+    .select("id, usuario_id, penalizacion_id, otorgada_por")
     .eq("noche_id", id);
 
   return (
@@ -93,6 +110,9 @@ export default async function NochePage({
       jugadoresIniciales={jugadores}
       registrosIniciales={(registros ?? []) as Registro[]}
       votosIniciales={(votos ?? []) as Voto[]}
+      confirmacionesIniciales={(confirmaciones ?? []).map((c) => c.usuario_id)}
+      penalizacionesTipo={(penalizacionesTipo ?? []) as PenalizacionTipo[]}
+      penalizacionesIniciales={(penalizaciones ?? []) as Penalizacion[]}
       userId={user!.id}
       esAdmin={esAdmin}
     />
