@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "medals:generate": "node scripts/generate-medal-items.mjs",
+    "avatars:generate": "node scripts/generate-avatar-items.mjs",
+    "frames:generate": "node scripts/generate-frame-items.mjs",
+    "rewards:generate": "node scripts/generate-reward-assets.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.0",
@@ -26,6 +30,7 @@
     "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

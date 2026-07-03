@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
+import { CARTAS_COFRES, type CartaCofre } from "@/lib/cofresDesign";
+import {
+  cartasActivasDeNoche,
+  cartaPorId,
+  parseInventarioState,
+  usarCartaEnNoche,
+  type CartaActiva,
+} from "@/lib/inventario";
 import { calcularLogrosNoche, LOGROS_EN_VIVO, type LogroNoche } from "@/lib/logros";
 import {
   claseTambaleo,
@@ -11,7 +20,7 @@ import {
   parseAvatarConfig,
   type AvatarConfig,
 } from "@/lib/avatar";
-import AvatarFrame from "@/components/AvatarFrame";
+import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 
 export type Bebida = {
@@ -24,6 +33,7 @@ export type Jugador = {
   id: string;
   nombre: string;
   avatarConfig: AvatarConfig;
+  avatarConfigRaw: unknown;
 };
 export type Registro = {
   id: string;
@@ -46,6 +56,29 @@ type Noche = {
 };
 
 const DURACION_GRACIA_MS = 5 * 60 * 1000;
+const CARTAS_OBJETIVO = new Set(["cubata-obligatorio", "chupito-castigo"]);
+const CARTAS_IMPLEMENTADAS = new Set([
+  "noche-x10",
+  "happy-hour-salvaje",
+  "ronda-relampago",
+  "ultimo-aviso",
+  "doble-o-nada",
+  "cubata-obligatorio",
+  "chupito-castigo",
+  "confeti-caos",
+]);
+
+function objetoConfig(raw: unknown): Record<string, unknown> {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
+  return raw as Record<string, unknown>;
+}
+
+function normalizar(texto: string) {
+  return texto
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 function formatearRestante(ms: number): string {
   if (ms <= 0) return "¡Tiempo!";
@@ -97,6 +130,9 @@ export default function NocheLive({
   const [cerrando, setCerrando] = useState(false);
   const [errorCierre, setErrorCierre] = useState<string | null>(null);
   const [confirmandoCierre, setConfirmandoCierre] = useState(false);
+  const [usandoCarta, setUsandoCarta] = useState<string | null>(null);
+  const [objetivosCarta, setObjetivosCarta] = useState<Record<string, string>>({});
+  const [mensajeCarta, setMensajeCarta] = useState<string | null>(null);
   const contadorMasUno = useRef(0);
 
   // Logros en directo: cola de popups + set de los ya mostrados esta sesión
@@ -129,6 +165,29 @@ export default function NocheLive({
     () => new Map(jugadores.map((j) => [j.id, j.nombre])),
     [jugadores]
   );
+  const miJugador = jugadores.find((j) => j.id === userId) ?? null;
+  const miInventario = useMemo(
+    () => parseInventarioState(miJugador?.avatarConfigRaw),
+    [miJugador?.avatarConfigRaw]
+  );
+  const cartasActivas = useMemo(
+    () =>
+      cartasActivasDeNoche(
+        jugadores.map((jugador) => jugador.avatarConfigRaw),
+        noche.id,
+        ahora
+      ),
+    [jugadores, noche.id, ahora]
+  );
+  const cartasUsables = useMemo(
+    () =>
+      CARTAS_COFRES.filter(
+        (carta) =>
+          (miInventario.cartas[carta.id] ?? 0) > 0 &&
+          CARTAS_IMPLEMENTADAS.has(carta.id)
+      ),
+    [miInventario.cartas]
+  );
 
   // Reloj: se acelera a cada segundo cuando se acerca algún límite relevante
   useEffect(() => {
@@ -151,6 +210,7 @@ export default function NocheLive({
           id: data.id,
           nombre: data.nombre,
           avatarConfig: parseAvatarConfig(data.avatar_config),
+          avatarConfigRaw: data.avatar_config,
         };
         setJugadores((prev) =>
           prev.some((j) => j.id === jugador.id)
@@ -205,6 +265,33 @@ export default function NocheLive({
         (payload) => {
           const nuevo = payload.new as { usuario_id: string };
           cargarJugador(nuevo.usuario_id);
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "perfiles",
+        },
+        (payload) => {
+          const actualizado = payload.new as {
+            id: string;
+            nombre: string;
+            avatar_config: unknown;
+          };
+          setJugadores((prev) =>
+            prev.map((jugador) =>
+              jugador.id === actualizado.id
+                ? {
+                    ...jugador,
+                    nombre: actualizado.nombre ?? jugador.nombre,
+                    avatarConfig: parseAvatarConfig(actualizado.avatar_config),
+                    avatarConfigRaw: actualizado.avatar_config,
+                  }
+                : jugador
+            )
+          );
         }
       )
       .on(
@@ -321,7 +408,12 @@ export default function NocheLive({
           ? prev
           : [
               ...prev,
-              { id: userId, nombre: "Tú", avatarConfig: parseAvatarConfig(null) },
+              {
+                id: userId,
+                nombre: "Tú",
+                avatarConfig: parseAvatarConfig(null),
+                avatarConfigRaw: null,
+              },
             ]
       );
       cargarJugador(userId);
@@ -349,6 +441,66 @@ export default function NocheLive({
       () => setMasUnos((prev) => prev.filter((m) => m.id !== idAnim)),
       900
     );
+  }
+
+  async function usarCarta(carta: CartaCofre) {
+    if (!unido || !miJugador) return;
+    const objetivoId = objetivosCarta[carta.id];
+    const objetivo = jugadores.find((jugador) => jugador.id === objetivoId);
+    if (CARTAS_OBJETIVO.has(carta.id) && !objetivo) {
+      setMensajeCarta("Elige a quién va dirigida la carta.");
+      return;
+    }
+
+    setUsandoCarta(carta.id);
+    setMensajeCarta(null);
+    const resultado = usarCartaEnNoche({
+      inventario: miInventario,
+      cartaId: carta.id,
+      nocheId: noche.id,
+      usuarioId: userId,
+      usuarioNombre: miJugador.nombre,
+      objetivoId: objetivo?.id,
+      objetivoNombre: objetivo?.nombre,
+    });
+
+    if (!resultado) {
+      setMensajeCarta("No tienes esa carta disponible.");
+      setUsandoCarta(null);
+      return;
+    }
+
+    const nextConfig = {
+      ...objetoConfig(miJugador.avatarConfigRaw),
+      inventario: resultado.inventario,
+    };
+    const { error } = await supabase
+      .from("perfiles")
+      .update({ avatar_config: nextConfig })
+      .eq("id", userId);
+
+    if (error) {
+      setMensajeCarta("No se pudo usar la carta. Prueba otra vez.");
+    } else {
+      setJugadores((prev) =>
+        prev.map((jugador) =>
+          jugador.id === userId
+            ? {
+                ...jugador,
+                avatarConfig: parseAvatarConfig(nextConfig),
+                avatarConfigRaw: nextConfig,
+              }
+            : jugador
+        )
+      );
+      setMensajeCarta(
+        objetivo
+          ? `${carta.nombre} enviada a ${objetivo.nombre}.`
+          : `${carta.nombre} activada.`
+      );
+      if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
+    }
+    setUsandoCarta(null);
   }
 
   async function deshacerUltima() {
@@ -421,12 +573,87 @@ export default function NocheLive({
   const ranking = useMemo(() => {
     const totales = new Map<string, { bebidas: number; puntos: number }>();
     for (const j of jugadores) totales.set(j.id, { bebidas: 0, puntos: 0 });
+
+    function enVentana(activa: CartaActiva, registro: Registro) {
+      const ts = new Date(registro.ts).getTime();
+      const inicio = new Date(activa.usadaEn).getTime();
+      const fin = activa.expiraEn ? new Date(activa.expiraEn).getTime() : Infinity;
+      return ts >= inicio && ts <= fin;
+    }
+
+    function esPrimerRegistroEnVentana(activa: CartaActiva, registro: Registro) {
+      if (!enVentana(activa, registro)) return false;
+      return !registros.some(
+        (otro) =>
+          otro.usuario_id === registro.usuario_id &&
+          otro.id !== registro.id &&
+          enVentana(activa, otro) &&
+          new Date(otro.ts).getTime() < new Date(registro.ts).getTime()
+      );
+    }
+
+    function esPrimerRegistroDelObjetivo(activa: CartaActiva, registro: Registro) {
+      if (!activa.objetivoId || activa.objetivoId !== registro.usuario_id) {
+        return false;
+      }
+      return esPrimerRegistroEnVentana(activa, registro);
+    }
+
+    function puntosRegistro(registro: Registro) {
+      const bebida = bebidasMap.get(registro.bebida_tipo_id);
+      const nombreBebida = normalizar(`${bebida?.nombre ?? ""} ${bebida?.icono ?? ""}`);
+      const puntos = bebida?.puntos ?? 0;
+      let multiplicador = 1;
+      let bonus = 0;
+
+      for (const activa of cartasActivas) {
+        if (!enVentana(activa, registro)) continue;
+        if (activa.cartaId === "noche-x10") multiplicador = Math.max(multiplicador, 10);
+        if (activa.cartaId === "ultimo-aviso") bonus += 1;
+        if (
+          (activa.cartaId === "happy-hour-salvaje" ||
+            activa.cartaId === "ronda-relampago") &&
+          esPrimerRegistroEnVentana(activa, registro)
+        ) {
+          bonus += activa.cartaId === "happy-hour-salvaje" ? 2 : 2;
+        }
+        if (
+          activa.cartaId === "doble-o-nada" &&
+          activa.usuarioId === registro.usuario_id &&
+          esPrimerRegistroEnVentana(activa, registro)
+        ) {
+          multiplicador = Math.max(multiplicador, 2);
+        }
+        if (
+          activa.cartaId === "cubata-obligatorio" &&
+          esPrimerRegistroDelObjetivo(activa, registro) &&
+          (nombreBebida.includes("cubata") ||
+            nombreBebida.includes("coctel") ||
+            nombreBebida.includes("cocktail") ||
+            nombreBebida.includes("combinado"))
+        ) {
+          bonus += 5;
+        }
+        if (
+          activa.cartaId === "chupito-castigo" &&
+          esPrimerRegistroDelObjetivo(activa, registro) &&
+          (nombreBebida.includes("chupit") ||
+            nombreBebida.includes("shot") ||
+            nombreBebida.includes("tequila") ||
+            nombreBebida.includes("jager"))
+        ) {
+          bonus += 3;
+        }
+      }
+
+      return puntos * multiplicador + bonus;
+    }
+
     for (const r of registros) {
       const t = totales.get(r.usuario_id);
-      const b = bebidasMap.get(r.bebida_tipo_id);
       if (t) {
         t.bebidas += 1;
-        t.puntos += b?.puntos ?? 0;
+        t.puntos += puntosRegistro(r);
       }
     }
     return [...totales.entries()]
@@ -440,7 +667,7 @@ export default function NocheLive({
         };
       })
       .sort((a, b) => b.puntos - a.puntos || b.bebidas - a.bebidas);
-  }, [jugadores, registros, bebidasMap, jugadoresMap]);
+  }, [jugadores, registros, bebidasMap, jugadoresMap, cartasActivas]);
 
   const feed = useMemo(() => [...registros].reverse().slice(0, 20), [registros]);
   const misPuntos =
@@ -453,6 +680,7 @@ export default function NocheLive({
           <div className="subir-podio flex items-center gap-3 rounded-2xl border-2 border-ambar bg-tarjeta px-5 py-4 glow-ambar">
             <MedalIcon
               icono={logroActual.icono}
+              nombre={logroActual.nombre}
               rareza={logroActual.rareza}
               className="h-14 w-14"
             />
@@ -627,6 +855,105 @@ export default function NocheLive({
               </button>
             ))}
           </div>
+
+          <section className="mb-6 rounded-3xl border border-borde bg-tarjeta p-4">
+            <div className="mb-3 flex items-baseline justify-between gap-3">
+              <div>
+                <h2 className="font-titulo text-lg text-texto">
+                  🎴 Cartas de noche
+                </h2>
+                <p className="text-xs text-texto2">
+                  Se gastan al usarlas y afectan a esta noche.
+                </p>
+              </div>
+              <Link href="/inventario" className="text-xs text-cian underline">
+                Inventario
+              </Link>
+            </div>
+
+            {mensajeCarta && (
+              <p className="mb-3 rounded-xl bg-fondo px-3 py-2 text-xs text-cian">
+                {mensajeCarta}
+              </p>
+            )}
+
+            {cartasUsables.length === 0 ? (
+              <p className="rounded-2xl border border-borde bg-fondo/60 p-4 text-center text-sm text-texto2">
+                No tienes cartas jugables ahora mismo.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {cartasUsables.slice(0, 6).map((carta) => {
+                  const cantidad = miInventario.cartas[carta.id] ?? 0;
+                  const requiereObjetivo = CARTAS_OBJETIVO.has(carta.id);
+                  return (
+                    <li
+                      key={carta.id}
+                      className="rounded-2xl border border-borde bg-fondo/60 p-3"
+                    >
+                      <div className="flex gap-3">
+                        <Image
+                          src={carta.imagen}
+                          alt={carta.nombre}
+                          width={768}
+                          height={768}
+                          className="h-16 w-16 rounded-xl object-cover"
+                          sizes="64px"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center justify-between gap-2">
+                            <p className="font-titulo text-sm text-texto">
+                              {carta.nombre}
+                            </p>
+                            <span className="rounded-full bg-tarjeta px-2 py-0.5 font-titulo text-xs text-ambar">
+                              x{cantidad}
+                            </span>
+                          </div>
+                          <p className="text-[11px] leading-snug text-texto2">
+                            {carta.efecto}
+                          </p>
+                        </div>
+                      </div>
+
+                      {requiereObjetivo && (
+                        <select
+                          value={objetivosCarta[carta.id] ?? ""}
+                          onChange={(event) =>
+                            setObjetivosCarta((prev) => ({
+                              ...prev,
+                              [carta.id]: event.target.value,
+                            }))
+                          }
+                          className="mt-3 w-full rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm text-texto"
+                        >
+                          <option value="">Elegir objetivo</option>
+                          {jugadores
+                            .filter((jugador) => jugador.id !== userId)
+                            .map((jugador) => (
+                              <option key={jugador.id} value={jugador.id}>
+                                {jugador.nombre}
+                              </option>
+                            ))}
+                        </select>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={
+                          usandoCarta === carta.id ||
+                          (requiereObjetivo && !objetivosCarta[carta.id])
+                        }
+                        onClick={() => usarCarta(carta)}
+                        className="mt-3 w-full rounded-xl bg-cian py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-45"
+                      >
+                        {usandoCarta === carta.id ? "Usando..." : "Usar carta"}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </section>
         </>
       )}
 
@@ -647,6 +974,36 @@ export default function NocheLive({
       )}
 
       {/* Ranking en vivo */}
+      {cartasActivas.length > 0 && (
+        <section className="mb-6">
+          <h2 className="mb-3 font-titulo text-lg text-texto">
+            ✨ Efectos activos
+          </h2>
+          <ul className="space-y-2">
+            {cartasActivas.slice(0, 8).map((activa) => {
+              const carta = cartaPorId(activa.cartaId);
+              if (!carta) return null;
+              return (
+                <li
+                  key={activa.id}
+                  className="rounded-2xl border border-cian/40 bg-tarjeta px-4 py-3"
+                >
+                  <p className="font-titulo text-sm text-cian">
+                    {carta.nombre}
+                  </p>
+                  <p className="text-xs text-texto2">
+                    {activa.usuarioNombre}
+                    {activa.objetivoNombre
+                      ? ` → ${activa.objetivoNombre}`
+                      : " ha activado la carta"}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
       <section className="mb-6">
         <h2 className="mb-3 font-titulo text-lg text-texto">
           📊 Ranking en vivo
@@ -668,11 +1025,15 @@ export default function NocheLive({
               >
                 <span className="flex items-center gap-2 text-texto">
                   <span className="font-titulo text-texto2">{i + 1}.</span>
-                  <AvatarFrame
+                  <AvatarFramePreview
                     config={j.avatarConfig}
                     estado={estadoPorBebidas(j.bebidas)}
                     marco={i === 0 && j.puntos > 0 ? "oro" : "madera"}
-                    className={`h-10 w-10 ${claseTambaleo(j.bebidas)}`}
+                    titulo={j.nombre}
+                    subtitulo={`${j.puntos} pts · ${j.bebidas} bebidas`}
+                    triggerClassName={`h-10 w-10 ${claseTambaleo(j.bebidas)}`}
+                    previewClassName="h-72 w-72"
+                    asSpan
                   />
                   <span>
                     {j.nombre}

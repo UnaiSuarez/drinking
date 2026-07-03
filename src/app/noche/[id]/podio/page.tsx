@@ -5,6 +5,8 @@ import PodioReveal, {
   type ResultadoVotacion,
 } from "@/components/PodioReveal";
 import { parseAvatarConfig } from "@/lib/avatar";
+import { cofrePorPodio } from "@/lib/cofresDesign";
+import { parseInventarioState } from "@/lib/inventario";
 
 export default async function PodioPage({
   params,
@@ -13,6 +15,9 @@ export default async function PodioPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: noche } = await supabase
     .from("noches")
@@ -35,6 +40,24 @@ export default async function PodioPage({
     .select("usuario_id, posicion_final, pl_ganados, perfiles(nombre, avatar_config)")
     .eq("noche_id", id)
     .order("posicion_final");
+
+  const jugadorActual = (jugadoresRaw ?? []).find(
+    (jugador) => jugador.usuario_id === user?.id
+  );
+  const perfilActual = jugadorActual?.perfiles as unknown as {
+    avatar_config: unknown;
+  } | null;
+  const cofrePodio = cofrePorPodio(jugadorActual?.posicion_final ?? 99);
+  const inventarioActual = parseInventarioState(perfilActual?.avatar_config);
+  const premioPodio =
+    user && jugadorActual && cofrePodio && !inventarioActual.podiosPremiados.includes(id)
+      ? {
+          nocheId: id,
+          cofreId: cofrePodio,
+          posicion: jugadorActual.posicion_final ?? 99,
+          avatarConfigRaw: perfilActual?.avatar_config ?? null,
+        }
+      : null;
 
   const { data: registros } = await supabase
     .from("registros")
@@ -167,6 +190,7 @@ export default async function PodioPage({
       fecha={noche.inicio}
       vistaHistorica={vistaHistorica}
       votacion={votacion}
+      premioPodio={premioPodio}
     />
   );
 }

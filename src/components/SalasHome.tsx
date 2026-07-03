@@ -67,12 +67,20 @@ export default function SalasHome({
           <h1 className="font-titulo text-3xl text-ambar">EL RANKING 🍻</h1>
           <p className="text-sm text-texto2">Hola, {nombreUsuario} 👋</p>
         </div>
-        <button
-          onClick={cerrarSesion}
-          className="rounded-xl border border-borde px-3 py-2 text-xs text-texto2 active:scale-95"
-        >
-          Salir
-        </button>
+        <div className="flex gap-2">
+          <Link
+            href="/tienda"
+            className="rounded-xl border border-ambar px-3 py-2 text-xs text-ambar active:scale-95"
+          >
+            Tienda
+          </Link>
+          <button
+            onClick={cerrarSesion}
+            className="rounded-xl border border-borde px-3 py-2 text-xs text-texto2 active:scale-95"
+          >
+            Salir
+          </button>
+        </div>
       </header>
 
       <section className="mb-8">

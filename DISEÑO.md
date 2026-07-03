@@ -282,9 +282,9 @@ Los de racha/histórico (Tricampeón, Dinastía, Eterno Segundón, los escalonad
 
 | Logro | Condición | Rareza final |
 |---|---|---|
-| 🍺 **Cervecero** I–IV | 50 / 250 / 1.000 / 5.000 cervezas | Común → Legendaria |
-| 🥃 **Centurión** I–IV | 25 / 100 / 500 / 1.000 chupitos | Común → Legendaria |
-| 🍹 **Coctelero** I–IV | 25 / 100 / 500 / 1.000 cubatas | Común → Legendaria |
+| 🍺 **Cervecero** I–IV | 50 / 150 / 300 / 500 cervezas eq. (caña = 1, pinta/litro = 2) | Común → Legendaria |
+| 🥃 **Centurión del Chupito** I–IV | 25 / 100 / 300 / 700 chupitos | Común → Legendaria |
+| 🍹 **Coctelero** I–IV | 25 / 75 / 150 / 300 cubatas | Común → Legendaria |
 | 🌊 **El Océano** | 1.000 bebidas totales | Épica |
 | 🗿 **Monumento Nacional** | 5.000 bebidas totales | Legendaria |
 | 🌈 **Enciclopedia Etílica** | Probar todos los tipos del catálogo | Rara |
@@ -334,7 +334,7 @@ Los de racha/histórico (Tricampeón, Dinastía, Eterno Segundón, los escalonad
 | 🏔️ **Escalador** | Subir 2 divisiones en una temporada | Rara |
 | 🏆 **Campeón de Temporada** | Acabar 1º de la liga | Legendaria |
 | 🐢 **Lento pero Seguro** | Acabar temporada sin ganar ni una noche pero en top 3 de liga | Épica |
-| 🎖️ **Veterano** I–IV | 10 / 50 / 100 / 250 noches totales | Común → Legendaria |
+| 🎖️ **Veterano** I–IV | 10 / 40 / 90 / 175 noches totales | Común → Legendaria |
 
 ### ❓ Secretos (se muestran como "???" con silueta — generan especulación)
 

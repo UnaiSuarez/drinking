@@ -66,6 +66,7 @@ export default async function NochePage({
       id: j.usuario_id,
       nombre: p?.nombre ?? "???",
       avatarConfig: parseAvatarConfig(p?.avatar_config),
+      avatarConfigRaw: p?.avatar_config ?? null,
     };
   });
 
