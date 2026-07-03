@@ -5,6 +5,7 @@ import SalaView, {
   type Miembro,
   type NocheResumen,
 } from "@/components/SalaView";
+import { parseAvatarConfig } from "@/lib/avatar";
 
 export default async function SalaPage({
   params,
@@ -27,16 +28,22 @@ export default async function SalaPage({
 
   const { data: miembrosRaw } = await supabase
     .from("sala_miembros")
-    .select("rol, usuario_id, perfiles(nombre)")
+    .select("rol, usuario_id, perfiles(nombre, avatar_config)")
     .eq("sala_id", id)
     .order("joined_at");
 
-  const miembros: Miembro[] = (miembrosRaw ?? []).map((m) => ({
-    id: m.usuario_id,
-    rol: m.rol,
-    nombre:
-      (m.perfiles as unknown as { nombre: string } | null)?.nombre ?? "???",
-  }));
+  const miembros: Miembro[] = (miembrosRaw ?? []).map((m) => {
+    const p = m.perfiles as unknown as {
+      nombre: string;
+      avatar_config: unknown;
+    } | null;
+    return {
+      id: m.usuario_id,
+      rol: m.rol,
+      nombre: p?.nombre ?? "???",
+      avatarConfig: parseAvatarConfig(p?.avatar_config),
+    };
+  });
 
   const miRol = miembros.find((m) => m.id === user!.id)?.rol ?? "miembro";
 
@@ -85,11 +92,15 @@ export default async function SalaPage({
       .select("usuario_id, pl")
       .eq("temporada_id", temporada.id)
       .order("pl", { ascending: false });
-    liga = (ligaRaw ?? []).map((e) => ({
-      usuarioId: e.usuario_id,
-      nombre: miembros.find((m) => m.id === e.usuario_id)?.nombre ?? "???",
-      pl: e.pl,
-    }));
+    liga = (ligaRaw ?? []).map((e) => {
+      const miembro = miembros.find((m) => m.id === e.usuario_id);
+      return {
+        usuarioId: e.usuario_id,
+        nombre: miembro?.nombre ?? "???",
+        avatarConfig: miembro?.avatarConfig ?? parseAvatarConfig(null),
+        pl: e.pl,
+      };
+    });
   }
 
   return (

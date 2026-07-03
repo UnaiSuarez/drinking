@@ -1,19 +1,32 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { calcularDivision } from "@/lib/liga";
+import { activarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
+import { type AvatarConfig } from "@/lib/avatar";
+import AvatarSVG from "@/components/AvatarSVG";
 
-export type Miembro = { id: string; nombre: string; rol: string };
+export type Miembro = {
+  id: string;
+  nombre: string;
+  rol: string;
+  avatarConfig: AvatarConfig;
+};
 export type NocheResumen = {
   id: string;
   inicio: string;
   ganador: string | null;
   jugadores: number;
 };
-export type EntradaLiga = { usuarioId: string; nombre: string; pl: number };
+export type EntradaLiga = {
+  usuarioId: string;
+  nombre: string;
+  avatarConfig: AvatarConfig;
+  pl: number;
+};
 
 const DURACIONES = [
   { horas: 4, etiqueta: "4 horas" },
@@ -45,7 +58,31 @@ export default function SalaView({
   const [eligiendoDuracion, setEligiendoDuracion] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [notifSoportado, setNotifSoportado] = useState(false);
+  const [notifActivas, setNotifActivas] = useState(true); // evita el flash del banner antes de comprobar
+  const [activandoNotif, setActivandoNotif] = useState(false);
+  const [errorNotif, setErrorNotif] = useState<string | null>(null);
   const esAdmin = miRol === "fundador" || miRol === "admin";
+
+  useEffect(() => {
+    (async () => {
+      const soportado = await pushSoportado();
+      setNotifSoportado(soportado);
+      if (soportado) setNotifActivas(await estaSuscrito());
+    })();
+  }, []);
+
+  async function activarNotif() {
+    setActivandoNotif(true);
+    setErrorNotif(null);
+    const r = await activarNotificaciones();
+    setActivandoNotif(false);
+    if (r.ok) {
+      setNotifActivas(true);
+    } else {
+      setErrorNotif(r.error);
+    }
+  }
 
   async function compartirCodigo() {
     const texto = `¡Únete a "${sala.nombre}" en El Ranking! 🍻 Código: ${sala.codigo}`;
@@ -74,6 +111,18 @@ export default function SalaView({
       .single();
     setCargando(false);
     if (!error && data) {
+      fetch("/api/notificar-noche", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          salaId: sala.id,
+          salaNombre: sala.nombre,
+          nocheId: data.id,
+          userId,
+        }),
+      }).catch(() => {
+        // el push es un extra: si falla el envío, la noche ya se creó igualmente
+      });
       router.push(`/noche/${data.id}`);
     }
   }
@@ -104,6 +153,23 @@ export default function SalaView({
           </div>
         </div>
       </header>
+
+      {notifSoportado && !notifActivas && (
+        <div className="mb-6 rounded-2xl border border-cian/50 bg-tarjeta p-4 text-center">
+          <p className="mb-2 text-sm text-texto2">
+            🔔 Activa las notificaciones para enterarte al instante cuando se
+            inicie una noche.
+          </p>
+          {errorNotif && <p className="mb-2 text-xs text-rosa">{errorNotif}</p>}
+          <button
+            onClick={activarNotif}
+            disabled={activandoNotif}
+            className="rounded-xl border border-cian px-4 py-2 text-sm text-cian active:scale-95 disabled:opacity-50"
+          >
+            {activandoNotif ? "Activando…" : "Activar notificaciones"}
+          </button>
+        </div>
+      )}
 
       {nocheActiva ? (
         <Link
@@ -189,16 +255,19 @@ export default function SalaView({
                       i === 0 && e.pl > 0 ? "border-oro" : "border-borde"
                     }`}
                   >
-                    <span className="text-texto">
-                      <span className="mr-2 font-titulo text-texto2">
+                    <span className="flex items-center gap-2 text-texto">
+                      <span className="font-titulo text-texto2">
                         {i + 1}.
                       </span>
-                      {e.nombre}
-                      {e.usuarioId === userId && (
-                        <span className="ml-1 text-xs text-texto2">(tú)</span>
-                      )}
-                      <span className={`ml-2 text-xs ${div.color}`}>
-                        {div.icono} {div.nombre}
+                      <AvatarSVG config={e.avatarConfig} className="h-8 w-8 flex-shrink-0" />
+                      <span>
+                        {e.nombre}
+                        {e.usuarioId === userId && (
+                          <span className="ml-1 text-xs text-texto2">(tú)</span>
+                        )}
+                        <span className={`ml-2 text-xs ${div.color}`}>
+                          {div.icono} {div.nombre}
+                        </span>
                       </span>
                     </span>
                     <span className="font-titulo text-lima">{e.pl} PL</span>
@@ -221,11 +290,14 @@ export default function SalaView({
                 href={`/perfil/${m.id}`}
                 className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3 transition active:scale-[0.98]"
               >
-                <span className="text-texto">
-                  {m.nombre}
-                  {m.id === userId && (
-                    <span className="ml-2 text-xs text-texto2">(tú)</span>
-                  )}
+                <span className="flex items-center gap-2 text-texto">
+                  <AvatarSVG config={m.avatarConfig} className="h-8 w-8 flex-shrink-0" />
+                  <span>
+                    {m.nombre}
+                    {m.id === userId && (
+                      <span className="ml-2 text-xs text-texto2">(tú)</span>
+                    )}
+                  </span>
                 </span>
                 {m.rol !== "miembro" && (
                   <span className="rounded-full bg-fondo px-2 py-1 text-xs text-ambar">

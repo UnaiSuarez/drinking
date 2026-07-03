@@ -3,30 +3,34 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import AvatarSVG from "@/components/AvatarSVG";
+import {
+  ACCESORIOS,
+  COLORES_PELO,
+  COLORES_ROPA,
+  ESTILOS_PELO,
+  TONOS_PIEL,
+  parseAvatarConfig,
+  type AvatarConfig,
+} from "@/lib/avatar";
 
-export const EMOJIS_AVATAR = [
-  "🦊", "🐸", "🐵", "🦁", "🐯", "🐼", "🐨", "🐷",
-  "🐙", "🦄", "🐳", "🦖", "🍄", "👽", "🤖", "👻",
-  "🎃", "🦈", "🐺", "🥷", "🧙", "🦉", "🐔", "🍺",
-];
+const NOMBRE_ACCESORIO: Record<AvatarConfig["accesorio"], string> = {
+  ninguno: "Nada",
+  gafas: "Gafas 🕶️",
+  gorro: "Gorro 🎉",
+  pajarita: "Pajarita 🎀",
+  corona: "Corona 👑",
+};
 
-const COLORES_AVATAR = [
-  "#ffb627", "#2de2e6", "#ff2e93", "#9bf00b",
-  "#a78bfa", "#fb7185", "#38bdf8", "#f5f1e8",
-];
-
-export type AvatarConfig = { emoji?: string; color?: string };
-
-export default function AvatarEditor({
-  actual,
-}: {
-  actual: AvatarConfig | null;
-}) {
+export default function AvatarEditor({ actual }: { actual: unknown }) {
   const router = useRouter();
-  const [emoji, setEmoji] = useState(actual?.emoji ?? "🍺");
-  const [color, setColor] = useState(actual?.color ?? "#ffb627");
+  const [config, setConfig] = useState<AvatarConfig>(parseAvatarConfig(actual));
   const [abierto, setAbierto] = useState(false);
   const [guardando, setGuardando] = useState(false);
+
+  function set<K extends keyof AvatarConfig>(clave: K, valor: AvatarConfig[K]) {
+    setConfig((prev) => ({ ...prev, [clave]: valor }));
+  }
 
   async function guardar() {
     setGuardando(true);
@@ -37,7 +41,7 @@ export default function AvatarEditor({
     if (user) {
       await supabase
         .from("perfiles")
-        .update({ avatar_config: { emoji, color } })
+        .update({ avatar_config: config })
         .eq("id", user.id);
     }
     setGuardando(false);
@@ -57,44 +61,85 @@ export default function AvatarEditor({
   }
 
   return (
-    <div className="mb-6 rounded-3xl border border-borde bg-tarjeta p-5">
+    <div className="mb-6 rounded-3xl border border-borde bg-tarjeta p-5 text-left">
       <div className="mb-4 flex justify-center">
-        <span
-          className="flex h-20 w-20 items-center justify-center rounded-full text-5xl"
-          style={{ backgroundColor: `${color}33`, border: `3px solid ${color}` }}
-        >
-          {emoji}
-        </span>
+        <AvatarSVG config={config} className="h-28 w-28" />
       </div>
 
-      <p className="mb-2 font-titulo text-xs uppercase text-texto2">
-        Tu personaje
-      </p>
-      <div className="mb-4 grid grid-cols-8 gap-1">
-        {EMOJIS_AVATAR.map((e) => (
-          <button
-            key={e}
-            onClick={() => setEmoji(e)}
-            className={`rounded-xl py-1.5 text-2xl transition active:scale-90 ${
-              emoji === e ? "bg-fondo ring-2 ring-ambar" : ""
-            }`}
-          >
-            {e}
-          </button>
-        ))}
-      </div>
-
-      <p className="mb-2 font-titulo text-xs uppercase text-texto2">Color</p>
-      <div className="mb-5 flex justify-between">
-        {COLORES_AVATAR.map((c) => (
+      <p className="mb-2 font-titulo text-xs uppercase text-texto2">Piel</p>
+      <div className="mb-4 flex gap-2">
+        {TONOS_PIEL.map((c) => (
           <button
             key={c}
-            onClick={() => setColor(c)}
-            className={`h-9 w-9 rounded-full transition active:scale-90 ${
-              color === c ? "ring-2 ring-texto ring-offset-2 ring-offset-tarjeta" : ""
+            onClick={() => set("piel", c)}
+            className={`h-8 w-8 rounded-full transition active:scale-90 ${
+              config.piel === c ? "ring-2 ring-texto ring-offset-2 ring-offset-tarjeta" : ""
             }`}
             style={{ backgroundColor: c }}
           />
+        ))}
+      </div>
+
+      <p className="mb-2 font-titulo text-xs uppercase text-texto2">Pelo</p>
+      <div className="mb-2 flex gap-2">
+        {ESTILOS_PELO.map((e) => (
+          <button
+            key={e}
+            onClick={() => set("peloEstilo", e)}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl border transition active:scale-90 ${
+              config.peloEstilo === e ? "border-ambar bg-fondo" : "border-borde"
+            }`}
+          >
+            <AvatarSVG
+              config={{ ...config, peloEstilo: e }}
+              className="h-8 w-8"
+            />
+          </button>
+        ))}
+      </div>
+      <div className="mb-4 flex gap-2">
+        {COLORES_PELO.map((c) => (
+          <button
+            key={c}
+            onClick={() => set("peloColor", c)}
+            className={`h-7 w-7 rounded-full transition active:scale-90 ${
+              config.peloColor === c ? "ring-2 ring-texto ring-offset-2 ring-offset-tarjeta" : ""
+            }`}
+            style={{ backgroundColor: c }}
+          />
+        ))}
+      </div>
+
+      <p className="mb-2 font-titulo text-xs uppercase text-texto2">Ropa</p>
+      <div className="mb-4 flex gap-2">
+        {COLORES_ROPA.map((c) => (
+          <button
+            key={c}
+            onClick={() => set("ropaColor", c)}
+            className={`h-8 w-8 rounded-full transition active:scale-90 ${
+              config.ropaColor === c ? "ring-2 ring-texto ring-offset-2 ring-offset-tarjeta" : ""
+            }`}
+            style={{ backgroundColor: c }}
+          />
+        ))}
+      </div>
+
+      <p className="mb-2 font-titulo text-xs uppercase text-texto2">
+        Accesorio
+      </p>
+      <div className="mb-5 flex flex-wrap gap-2">
+        {ACCESORIOS.map((a) => (
+          <button
+            key={a}
+            onClick={() => set("accesorio", a)}
+            className={`rounded-full border px-3 py-1.5 text-sm transition active:scale-95 ${
+              config.accesorio === a
+                ? "border-ambar bg-ambar text-fondo"
+                : "border-borde text-texto"
+            }`}
+          >
+            {NOMBRE_ACCESORIO[a]}
+          </button>
         ))}
       </div>
 

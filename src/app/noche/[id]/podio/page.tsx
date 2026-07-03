@@ -4,6 +4,7 @@ import PodioReveal, {
   type ResultadoJugador,
   type ResultadoVotacion,
 } from "@/components/PodioReveal";
+import { parseAvatarConfig } from "@/lib/avatar";
 
 export default async function PodioPage({
   params,
@@ -31,7 +32,7 @@ export default async function PodioPage({
 
   const { data: jugadoresRaw } = await supabase
     .from("noche_jugadores")
-    .select("usuario_id, posicion_final, pl_ganados, perfiles(nombre)")
+    .select("usuario_id, posicion_final, pl_ganados, perfiles(nombre, avatar_config)")
     .eq("noche_id", id)
     .order("posicion_final");
 
@@ -108,12 +109,16 @@ export default async function PodioPage({
   const nombrePorUsuario = new Map<string, string>();
   const resultados: ResultadoJugador[] = (jugadoresRaw ?? []).map((j) => {
     const t = totales.get(j.usuario_id);
-    const nombre =
-      (j.perfiles as unknown as { nombre: string } | null)?.nombre ?? "???";
+    const p = j.perfiles as unknown as {
+      nombre: string;
+      avatar_config: unknown;
+    } | null;
+    const nombre = p?.nombre ?? "???";
     nombrePorUsuario.set(j.usuario_id, nombre);
     return {
       id: j.usuario_id,
       nombre,
+      avatarConfig: parseAvatarConfig(p?.avatar_config),
       posicion: j.posicion_final ?? 99,
       bebidas: t?.bebidas ?? 0,
       puntos: t?.puntos ?? 0,

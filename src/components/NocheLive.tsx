@@ -5,6 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { calcularLogrosNoche, LOGROS_EN_VIVO, type LogroNoche } from "@/lib/logros";
+import {
+  claseTambaleo,
+  estadoPorBebidas,
+  parseAvatarConfig,
+  type AvatarConfig,
+} from "@/lib/avatar";
+import AvatarSVG from "@/components/AvatarSVG";
 
 export type Bebida = {
   id: number;
@@ -15,18 +22,8 @@ export type Bebida = {
 export type Jugador = {
   id: string;
   nombre: string;
-  emoji: string;
-  color: string;
+  avatarConfig: AvatarConfig;
 };
-
-/** Estado de embriaguez del avatar según las bebidas de la noche (DISEÑO §8) */
-function estadoEmbriaguez(bebidas: number): string | null {
-  if (bebidas >= 12) return "💀";
-  if (bebidas >= 9) return "💫";
-  if (bebidas >= 6) return "🤪";
-  if (bebidas >= 3) return "🥴";
-  return null;
-}
 export type Registro = {
   id: string;
   usuario_id: string;
@@ -150,15 +147,10 @@ export default function NocheLive({
         .eq("id", usuarioId)
         .single();
       if (data) {
-        const av = (data.avatar_config ?? {}) as {
-          emoji?: string;
-          color?: string;
-        };
         const jugador: Jugador = {
           id: data.id,
           nombre: data.nombre,
-          emoji: av.emoji ?? "🍺",
-          color: av.color ?? "#ffb627",
+          avatarConfig: parseAvatarConfig(data.avatar_config),
         };
         setJugadores((prev) =>
           prev.some((j) => j.id === jugador.id)
@@ -322,7 +314,10 @@ export default function NocheLive({
       setJugadores((prev) =>
         prev.some((j) => j.id === userId)
           ? prev
-          : [...prev, { id: userId, nombre: "Tú", emoji: "🍺", color: "#ffb627" }]
+          : [
+              ...prev,
+              { id: userId, nombre: "Tú", avatarConfig: parseAvatarConfig(null) },
+            ]
       );
       cargarJugador(userId);
     }
@@ -435,8 +430,7 @@ export default function NocheLive({
         return {
           id,
           nombre: jugadoresMap.get(id) ?? "???",
-          emoji: j?.emoji ?? "🍺",
-          color: j?.color ?? "#ffb627",
+          avatarConfig: j?.avatarConfig ?? parseAvatarConfig(null),
           ...t,
         };
       })
@@ -665,22 +659,11 @@ export default function NocheLive({
               >
                 <span className="flex items-center gap-2 text-texto">
                   <span className="font-titulo text-texto2">{i + 1}.</span>
-                  <span className="relative inline-flex">
-                    <span
-                      className="flex h-9 w-9 items-center justify-center rounded-full text-xl"
-                      style={{
-                        backgroundColor: `${j.color}33`,
-                        border: `2px solid ${j.color}`,
-                      }}
-                    >
-                      {j.emoji}
-                    </span>
-                    {estadoEmbriaguez(j.bebidas) && (
-                      <span className="absolute -bottom-1 -right-1 text-sm">
-                        {estadoEmbriaguez(j.bebidas)}
-                      </span>
-                    )}
-                  </span>
+                  <AvatarSVG
+                    config={j.avatarConfig}
+                    estado={estadoPorBebidas(j.bebidas)}
+                    className={`h-9 w-9 flex-shrink-0 ${claseTambaleo(j.bebidas)}`}
+                  />
                   <span>
                     {j.nombre}
                     {j.id === userId && (

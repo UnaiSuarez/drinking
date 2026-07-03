@@ -3,10 +3,13 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
+import AvatarSVG from "@/components/AvatarSVG";
+import { claseTambaleo, estadoPorBebidas, type AvatarConfig } from "@/lib/avatar";
 
 export type ResultadoJugador = {
   id: string;
   nombre: string;
+  avatarConfig: AvatarConfig;
   posicion: number;
   bebidas: number;
   puntos: number;
@@ -252,7 +255,16 @@ export default function PodioReveal({
             <div key={pos} className="flex w-24 flex-col items-center">
               {mostrado ? (
                 <div className="subir-podio mb-2 text-center">
-                  <p className="text-4xl">{MEDALLAS[pos]}</p>
+                  <AvatarSVG
+                    config={j.avatarConfig}
+                    estado={estadoPorBebidas(j.bebidas)}
+                    className={`mx-auto h-14 w-14 ${
+                      pos === 1 && terminado
+                        ? "baile-victoria"
+                        : claseTambaleo(j.bebidas)
+                    }`}
+                  />
+                  <p className="text-2xl">{MEDALLAS[pos]}</p>
                   <p className="font-titulo text-sm text-texto">{j.nombre}</p>
                   <p className="text-xs text-texto2">
                     {j.puntos} pts · {j.bebidas} 🍺

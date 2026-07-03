@@ -1,11 +1,13 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import AvatarEditor, { type AvatarConfig } from "@/components/AvatarEditor";
+import AvatarEditor from "@/components/AvatarEditor";
+import AvatarSVG from "@/components/AvatarSVG";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import CumpleanosEditor from "@/components/CumpleanosEditor";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
+import { parseAvatarConfig } from "@/lib/avatar";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -32,7 +34,7 @@ export default async function PerfilPage({
     .single();
 
   if (!perfil) notFound();
-  const avatar = (perfil.avatar_config ?? {}) as AvatarConfig;
+  const avatar = parseAvatarConfig(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
   const vitrinaSlugs = (perfil.vitrina ?? []) as string[];
 
@@ -127,15 +129,7 @@ export default async function PerfilPage({
 
       <header className="mb-8 mt-4 text-center">
         <div className="mb-2 flex justify-center">
-          <span
-            className="flex h-24 w-24 items-center justify-center rounded-full text-6xl"
-            style={{
-              backgroundColor: `${avatar.color ?? "#ffb627"}33`,
-              border: `3px solid ${avatar.color ?? "#ffb627"}`,
-            }}
-          >
-            {avatar.emoji ?? "🍺"}
-          </span>
+          <AvatarSVG config={avatar} className="h-28 w-28" />
         </div>
         <h1 className="font-titulo text-3xl text-texto">
           {perfil.nombre}

@@ -6,6 +6,7 @@ import NocheLive, {
   type Registro,
   type Voto,
 } from "@/components/NocheLive";
+import { parseAvatarConfig } from "@/lib/avatar";
 
 export default async function NochePage({
   params,
@@ -59,13 +60,12 @@ export default async function NochePage({
   const jugadores: Jugador[] = (jugadoresRaw ?? []).map((j) => {
     const p = j.perfiles as unknown as {
       nombre: string;
-      avatar_config: { emoji?: string; color?: string } | null;
+      avatar_config: unknown;
     } | null;
     return {
       id: j.usuario_id,
       nombre: p?.nombre ?? "???",
-      emoji: p?.avatar_config?.emoji ?? "🍺",
-      color: p?.avatar_config?.color ?? "#ffb627",
+      avatarConfig: parseAvatarConfig(p?.avatar_config),
     };
   });
 
