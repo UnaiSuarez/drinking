@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import BackButton from "@/components/BackButton";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -48,9 +48,7 @@ export default async function LogrosPage() {
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
-      <Link href="/" className="text-sm text-texto2">
-        ← Volver
-      </Link>
+      <BackButton />
       <h1 className="mb-1 mt-2 font-titulo text-3xl text-texto">
         📖 Catálogo de logros
       </h1>

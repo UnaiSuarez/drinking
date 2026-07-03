@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import AvatarEditor, { type AvatarConfig } from "@/components/AvatarEditor";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import CumpleanosEditor from "@/components/CumpleanosEditor";
+import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 
 const RAREZA_ESTILO: Record<string, string> = {
@@ -122,9 +123,7 @@ export default async function PerfilPage({
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
-      <Link href="/" className="text-sm text-texto2">
-        ← Volver
-      </Link>
+      <BackButton />
 
       <header className="mb-8 mt-4 text-center">
         <div className="mb-2 flex justify-center">
