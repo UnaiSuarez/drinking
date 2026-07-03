@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import AvatarEditor, { type AvatarConfig } from "@/components/AvatarEditor";
+import PerfilCustomizer from "@/components/PerfilCustomizer";
+import { progresoNivel } from "@/lib/niveles";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -23,12 +25,14 @@ export default async function PerfilPage({
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("id, nombre, created_at, avatar_config")
+    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina")
     .eq("id", id)
     .single();
 
   if (!perfil) notFound();
   const avatar = (perfil.avatar_config ?? {}) as AvatarConfig;
+  const nivel = progresoNivel(perfil.xp ?? 0);
+  const vitrinaSlugs = (perfil.vitrina ?? []) as string[];
 
   // Noches jugadas (solo cerradas, visibles según salas compartidas)
   const { data: participaciones } = await supabase
@@ -86,6 +90,7 @@ export default async function PerfilPage({
   const coleccion = new Map<
     string,
     {
+      slug: string;
       nombre: string;
       icono: string;
       descripcion: string;
@@ -138,6 +143,9 @@ export default async function PerfilPage({
             <span className="ml-2 text-sm text-texto2">(tú)</span>
           )}
         </h1>
+        {perfil.titulo && (
+          <p className="font-titulo text-sm text-ambar">« {perfil.titulo} »</p>
+        )}
         <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
           {new Date(perfil.created_at).toLocaleDateString("es-ES", {
@@ -145,7 +153,61 @@ export default async function PerfilPage({
             year: "numeric",
           })}
         </p>
+
+        {/* Nivel y barra de XP */}
+        <div className="mx-auto mb-3 max-w-xs">
+          <div className="mb-1 flex items-baseline justify-between text-xs">
+            <span className="font-titulo text-cian">Nivel {nivel.nivel}</span>
+            <span className="text-texto2">
+              {nivel.actual}/{nivel.necesario} XP
+            </span>
+          </div>
+          <div className="h-2.5 overflow-hidden rounded-full bg-fondo">
+            <div
+              className="h-full rounded-full bg-cian transition-all"
+              style={{
+                width: `${Math.min(
+                  100,
+                  Math.round((nivel.actual / nivel.necesario) * 100)
+                )}%`,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Vitrina */}
+        {vitrinaSlugs.length > 0 && (
+          <div className="mb-3 flex justify-center gap-3">
+            {vitrinaSlugs.map((slug) => {
+              const m = coleccion.get(slug);
+              if (!m) return null;
+              return (
+                <span
+                  key={slug}
+                  title={m.nombre}
+                  className={`flex h-14 w-14 items-center justify-center rounded-2xl border-2 bg-tarjeta text-3xl ${
+                    RAREZA_ESTILO[m.rareza]?.split(" ")[0] ?? "border-borde"
+                  }`}
+                >
+                  {m.icono}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
         {esMiPerfil && <AvatarEditor actual={avatar} />}
+        {esMiPerfil && (
+          <PerfilCustomizer
+            tituloActual={perfil.titulo}
+            vitrinaActual={vitrinaSlugs}
+            medallas={medallasOrdenadas.map((m) => ({
+              slug: m.slug,
+              nombre: m.nombre,
+              icono: m.icono,
+            }))}
+          />
+        )}
       </header>
 
       {/* Stats principales */}
@@ -200,9 +262,14 @@ export default async function PerfilPage({
 
       {/* Colección de medallas */}
       <section className="mb-8">
-        <h2 className="mb-3 font-titulo text-xl text-texto">
-          🏅 Medallas ({medallasOrdenadas.length})
-        </h2>
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-titulo text-xl text-texto">
+            🏅 Medallas ({medallasOrdenadas.length})
+          </h2>
+          <Link href="/logros" className="text-xs text-cian underline">
+            Ver catálogo completo
+          </Link>
+        </div>
         {medallasOrdenadas.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-6 text-center text-sm text-texto2">
             Vitrina con telarañas… 🕸️ Las medallas se ganan saliendo.
