@@ -86,12 +86,22 @@ export default function SalaView({
         </Link>
         <div className="mt-2 flex items-start justify-between">
           <h1 className="font-titulo text-3xl text-texto">{sala.nombre}</h1>
-          <button
-            onClick={compartirCodigo}
-            className="rounded-xl border border-cian px-3 py-2 text-sm text-cian active:scale-95"
-          >
-            {copiado ? "¡Copiado!" : `${sala.codigo} 📤`}
-          </button>
+          <div className="flex gap-2">
+            {esAdmin && (
+              <Link
+                href={`/sala/${sala.id}/ajustes`}
+                className="rounded-xl border border-borde px-3 py-2 text-sm text-texto2 active:scale-95"
+              >
+                ⚖️
+              </Link>
+            )}
+            <button
+              onClick={compartirCodigo}
+              className="rounded-xl border border-cian px-3 py-2 text-sm text-cian active:scale-95"
+            >
+              {copiado ? "¡Copiado!" : `${sala.codigo} 📤`}
+            </button>
+          </div>
         </div>
       </header>
 

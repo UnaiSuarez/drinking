@@ -62,6 +62,56 @@ export default function PodioReveal({
     nombre: string;
     descripcion: string;
   } | null>(null);
+  const [compartido, setCompartido] = useState(false);
+
+  async function compartirResumen() {
+    const medalla = (pos: number) =>
+      pos === 1 ? "🥇" : pos === 2 ? "🥈" : pos === 3 ? "🥉" : ` ${pos}.`;
+    const lineas = [
+      `🍻 EL RANKING — ${new Date(fecha).toLocaleDateString("es-ES", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      })}`,
+      "",
+      ...ordenados.map(
+        (j) =>
+          `${medalla(j.posicion)} ${j.nombre} — ${j.puntos} pts (${
+            j.bebidas
+          } bebidas) · +${j.pl} PL`
+      ),
+    ];
+    if (votacion) {
+      lineas.push(
+        "",
+        `🗳️ ${votacion.categoria}: ${votacion.ganadores
+          .map((g) => g.nombre)
+          .join(" y ")}`
+      );
+    }
+    const conLogros = ordenados.filter((j) => j.logros.length > 0);
+    if (conLogros.length > 0) {
+      lineas.push("", "🏅 Logros:");
+      for (const j of conLogros) {
+        lineas.push(
+          `${j.nombre}: ${j.logros.map((l) => `${l.icono} ${l.nombre}`).join(", ")}`
+        );
+      }
+    }
+    const texto = lineas.join("\n");
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: texto });
+        return;
+      } catch {
+        // cancelado
+      }
+    } else {
+      await navigator.clipboard.writeText(texto);
+      setCompartido(true);
+      setTimeout(() => setCompartido(false), 2000);
+    }
+  }
 
   const terminado = revelados >= total;
 
@@ -364,12 +414,20 @@ export default function PodioReveal({
       )}
 
       {terminado && (
-        <Link
-          href={`/sala/${salaId}`}
-          className="subir-podio mt-auto block rounded-2xl bg-ambar py-4 text-center font-titulo text-lg text-fondo active:scale-95"
-        >
-          Volver a la sala
-        </Link>
+        <div className="subir-podio mt-auto space-y-2">
+          <button
+            onClick={compartirResumen}
+            className="w-full rounded-2xl border-2 border-lima bg-tarjeta py-4 font-titulo text-lg text-lima active:scale-95"
+          >
+            {compartido ? "¡Copiado! 📋" : "📤 Compartir resumen"}
+          </button>
+          <Link
+            href={`/sala/${salaId}`}
+            className="block rounded-2xl bg-ambar py-4 text-center font-titulo text-lg text-fondo active:scale-95"
+          >
+            Volver a la sala
+          </Link>
+        </div>
       )}
     </main>
   );

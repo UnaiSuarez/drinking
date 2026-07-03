@@ -12,7 +12,21 @@ export type Bebida = {
   icono: string;
   puntos: number;
 };
-export type Jugador = { id: string; nombre: string };
+export type Jugador = {
+  id: string;
+  nombre: string;
+  emoji: string;
+  color: string;
+};
+
+/** Estado de embriaguez del avatar según las bebidas de la noche (DISEÑO §8) */
+function estadoEmbriaguez(bebidas: number): string | null {
+  if (bebidas >= 12) return "💀";
+  if (bebidas >= 9) return "💫";
+  if (bebidas >= 6) return "🤪";
+  if (bebidas >= 3) return "🥴";
+  return null;
+}
 export type Registro = {
   id: string;
   usuario_id: string;
@@ -132,14 +146,24 @@ export default function NocheLive({
     async (usuarioId: string) => {
       const { data } = await supabase
         .from("perfiles")
-        .select("id, nombre")
+        .select("id, nombre, avatar_config")
         .eq("id", usuarioId)
         .single();
       if (data) {
+        const av = (data.avatar_config ?? {}) as {
+          emoji?: string;
+          color?: string;
+        };
+        const jugador: Jugador = {
+          id: data.id,
+          nombre: data.nombre,
+          emoji: av.emoji ?? "🍺",
+          color: av.color ?? "#ffb627",
+        };
         setJugadores((prev) =>
-          prev.some((j) => j.id === data.id)
-            ? prev
-            : [...prev, { id: data.id, nombre: data.nombre }]
+          prev.some((j) => j.id === jugador.id)
+            ? prev.map((j) => (j.id === jugador.id ? jugador : j))
+            : [...prev, jugador]
         );
       }
     },
@@ -298,7 +322,7 @@ export default function NocheLive({
       setJugadores((prev) =>
         prev.some((j) => j.id === userId)
           ? prev
-          : [...prev, { id: userId, nombre: "Tú" }]
+          : [...prev, { id: userId, nombre: "Tú", emoji: "🍺", color: "#ffb627" }]
       );
       cargarJugador(userId);
     }
@@ -406,11 +430,16 @@ export default function NocheLive({
       }
     }
     return [...totales.entries()]
-      .map(([id, t]) => ({
-        id,
-        nombre: jugadoresMap.get(id) ?? "???",
-        ...t,
-      }))
+      .map(([id, t]) => {
+        const j = jugadores.find((x) => x.id === id);
+        return {
+          id,
+          nombre: jugadoresMap.get(id) ?? "???",
+          emoji: j?.emoji ?? "🍺",
+          color: j?.color ?? "#ffb627",
+          ...t,
+        };
+      })
       .sort((a, b) => b.puntos - a.puntos || b.bebidas - a.bebidas);
   }, [jugadores, registros, bebidasMap, jugadoresMap]);
 
@@ -634,15 +663,31 @@ export default function NocheLive({
                     : "border-borde bg-tarjeta"
                 }`}
               >
-                <span className="text-texto">
-                  <span className="mr-2 font-titulo text-texto2">
-                    {i + 1}.
+                <span className="flex items-center gap-2 text-texto">
+                  <span className="font-titulo text-texto2">{i + 1}.</span>
+                  <span className="relative inline-flex">
+                    <span
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-xl"
+                      style={{
+                        backgroundColor: `${j.color}33`,
+                        border: `2px solid ${j.color}`,
+                      }}
+                    >
+                      {j.emoji}
+                    </span>
+                    {estadoEmbriaguez(j.bebidas) && (
+                      <span className="absolute -bottom-1 -right-1 text-sm">
+                        {estadoEmbriaguez(j.bebidas)}
+                      </span>
+                    )}
                   </span>
-                  {j.nombre}
-                  {j.id === userId && (
-                    <span className="ml-1 text-xs text-texto2">(tú)</span>
-                  )}
-                  {i === 0 && j.puntos > 0 && " 👑"}
+                  <span>
+                    {j.nombre}
+                    {j.id === userId && (
+                      <span className="ml-1 text-xs text-texto2">(tú)</span>
+                    )}
+                    {i === 0 && j.puntos > 0 && " 👑"}
+                  </span>
                 </span>
                 <span className="font-titulo text-ambar">
                   {j.puntos} pts

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import AvatarEditor, { type AvatarConfig } from "@/components/AvatarEditor";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -22,11 +23,12 @@ export default async function PerfilPage({
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("id, nombre, created_at")
+    .select("id, nombre, created_at, avatar_config")
     .eq("id", id)
     .single();
 
   if (!perfil) notFound();
+  const avatar = (perfil.avatar_config ?? {}) as AvatarConfig;
 
   // Noches jugadas (solo cerradas, visibles según salas compartidas)
   const { data: participaciones } = await supabase
@@ -119,20 +121,31 @@ export default async function PerfilPage({
       </Link>
 
       <header className="mb-8 mt-4 text-center">
-        <div className="mb-2 text-6xl">🍺</div>
+        <div className="mb-2 flex justify-center">
+          <span
+            className="flex h-24 w-24 items-center justify-center rounded-full text-6xl"
+            style={{
+              backgroundColor: `${avatar.color ?? "#ffb627"}33`,
+              border: `3px solid ${avatar.color ?? "#ffb627"}`,
+            }}
+          >
+            {avatar.emoji ?? "🍺"}
+          </span>
+        </div>
         <h1 className="font-titulo text-3xl text-texto">
           {perfil.nombre}
           {esMiPerfil && (
             <span className="ml-2 text-sm text-texto2">(tú)</span>
           )}
         </h1>
-        <p className="text-xs text-texto2">
+        <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
           {new Date(perfil.created_at).toLocaleDateString("es-ES", {
             month: "long",
             year: "numeric",
           })}
         </p>
+        {esMiPerfil && <AvatarEditor actual={avatar} />}
       </header>
 
       {/* Stats principales */}
