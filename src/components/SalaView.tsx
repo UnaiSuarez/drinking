@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { calcularDivision } from "@/lib/liga";
 
 export type Miembro = { id: string; nombre: string; rol: string };
 export type NocheResumen = {
@@ -12,6 +13,7 @@ export type NocheResumen = {
   ganador: string | null;
   jugadores: number;
 };
+export type EntradaLiga = { usuarioId: string; nombre: string; pl: number };
 
 const DURACIONES = [
   { horas: 4, etiqueta: "4 horas" },
@@ -27,6 +29,8 @@ export default function SalaView({
   userId,
   nocheActiva,
   nochesCerradas,
+  temporada,
+  liga,
 }: {
   sala: { id: string; nombre: string; codigo: string };
   miembros: Miembro[];
@@ -34,6 +38,8 @@ export default function SalaView({
   userId: string;
   nocheActiva: { id: string } | null;
   nochesCerradas: NocheResumen[];
+  temporada: { id: string; nombre: string; fin: string } | null;
+  liga: EntradaLiga[];
 }) {
   const router = useRouter();
   const [eligiendoDuracion, setEligiendoDuracion] = useState(false);
@@ -143,27 +149,80 @@ export default function SalaView({
         </div>
       )}
 
+      {/* Liga de la temporada */}
+      <section className="mb-8">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 className="font-titulo text-xl text-texto">🏆 Liga</h2>
+          {temporada && (
+            <span className="text-xs text-texto2">
+              {temporada.nombre} · acaba el{" "}
+              {new Date(temporada.fin).toLocaleDateString("es-ES", {
+                day: "numeric",
+                month: "short",
+              })}
+            </span>
+          )}
+        </div>
+        {liga.length === 0 ? (
+          <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
+            La liga arranca con vuestra primera noche 🌙
+          </p>
+        ) : (
+          <ul className="space-y-2">
+            {liga.map((e, i) => {
+              const div = calcularDivision(e.pl, i === 0);
+              return (
+                <li key={e.usuarioId}>
+                  <Link
+                    href={`/perfil/${e.usuarioId}`}
+                    className={`flex items-center justify-between rounded-2xl border bg-tarjeta px-4 py-3 transition active:scale-[0.98] ${
+                      i === 0 && e.pl > 0 ? "border-oro" : "border-borde"
+                    }`}
+                  >
+                    <span className="text-texto">
+                      <span className="mr-2 font-titulo text-texto2">
+                        {i + 1}.
+                      </span>
+                      {e.nombre}
+                      {e.usuarioId === userId && (
+                        <span className="ml-1 text-xs text-texto2">(tú)</span>
+                      )}
+                      <span className={`ml-2 text-xs ${div.color}`}>
+                        {div.icono} {div.nombre}
+                      </span>
+                    </span>
+                    <span className="font-titulo text-lima">{e.pl} PL</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       <section className="mb-8">
         <h2 className="mb-3 font-titulo text-xl text-texto">
           Miembros ({miembros.length})
         </h2>
         <ul className="space-y-2">
           {miembros.map((m) => (
-            <li
-              key={m.id}
-              className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
-            >
-              <span className="text-texto">
-                {m.nombre}
-                {m.id === userId && (
-                  <span className="ml-2 text-xs text-texto2">(tú)</span>
-                )}
-              </span>
-              {m.rol !== "miembro" && (
-                <span className="rounded-full bg-fondo px-2 py-1 text-xs text-ambar">
-                  {m.rol === "fundador" ? "👑 fundador" : "⭐ admin"}
+            <li key={m.id}>
+              <Link
+                href={`/perfil/${m.id}`}
+                className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3 transition active:scale-[0.98]"
+              >
+                <span className="text-texto">
+                  {m.nombre}
+                  {m.id === userId && (
+                    <span className="ml-2 text-xs text-texto2">(tú)</span>
+                  )}
                 </span>
-              )}
+                {m.rol !== "miembro" && (
+                  <span className="rounded-full bg-fondo px-2 py-1 text-xs text-ambar">
+                    {m.rol === "fundador" ? "👑 fundador" : "⭐ admin"}
+                  </span>
+                )}
+              </Link>
             </li>
           ))}
         </ul>

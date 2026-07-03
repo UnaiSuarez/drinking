@@ -19,6 +19,7 @@ export type Registro = {
   bebida_tipo_id: number;
   ts: string;
 };
+export type Voto = { votante_id: string; votado_id: string };
 
 type EstadoNoche = "activa" | "cerrando" | "cerrada";
 
@@ -29,6 +30,7 @@ type Noche = {
   inicio: string;
   fin_programado: string;
   fin_gracia: string | null;
+  votacion_categoria: string | null;
 };
 
 const DURACION_GRACIA_MS = 5 * 60 * 1000;
@@ -53,6 +55,7 @@ export default function NocheLive({
   bebidas,
   jugadoresIniciales,
   registrosIniciales,
+  votosIniciales,
   userId,
   esAdmin,
 }: {
@@ -61,6 +64,7 @@ export default function NocheLive({
   bebidas: Bebida[];
   jugadoresIniciales: Jugador[];
   registrosIniciales: Registro[];
+  votosIniciales: Voto[];
   userId: string;
   esAdmin: boolean;
 }) {
@@ -71,6 +75,11 @@ export default function NocheLive({
   const [bloqueada, setBloqueada] = useState(false);
   const [estadoNoche, setEstadoNoche] = useState<EstadoNoche>(noche.estado);
   const [finGracia, setFinGracia] = useState<string | null>(noche.fin_gracia);
+  const [categoria, setCategoria] = useState<string | null>(
+    noche.votacion_categoria
+  );
+  const [votos, setVotos] = useState<Voto[]>(votosIniciales);
+  const [votando, setVotando] = useState(false);
   const [ahora, setAhora] = useState(() => Date.now());
   const [masUnos, setMasUnos] = useState<{ id: number; icono: string }[]>([]);
   const [cerrando, setCerrando] = useState(false);
@@ -194,13 +203,32 @@ export default function NocheLive({
           const actualizada = payload.new as {
             estado: EstadoNoche;
             fin_gracia: string | null;
+            votacion_categoria: string | null;
           };
           if (actualizada.estado === "cerrada") {
             router.push(`/noche/${noche.id}/podio`);
           } else if (actualizada.estado === "cerrando") {
             setEstadoNoche("cerrando");
             setFinGracia(actualizada.fin_gracia);
+            setCategoria(actualizada.votacion_categoria);
           }
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "noche_votos",
+          filter: `noche_id=eq.${noche.id}`,
+        },
+        (payload) => {
+          const voto = payload.new as Voto;
+          if (!voto?.votante_id) return;
+          setVotos((prev) => [
+            ...prev.filter((v) => v.votante_id !== voto.votante_id),
+            voto,
+          ]);
         }
       )
       .subscribe();
@@ -326,6 +354,25 @@ export default function NocheLive({
     setFinGracia(new Date(Date.now() + DURACION_GRACIA_MS).toISOString());
   }
 
+  /** Emite o cambia tu voto de la categoría de la noche. */
+  async function votar(votadoId: string) {
+    if (votadoId === userId || !graciaActiva) return;
+    setVotando(true);
+    const { error } = await supabase.from("noche_votos").upsert({
+      noche_id: noche.id,
+      votante_id: userId,
+      votado_id: votadoId,
+    });
+    setVotando(false);
+    if (!error) {
+      if (navigator.vibrate) navigator.vibrate(30);
+      setVotos((prev) => [
+        ...prev.filter((v) => v.votante_id !== userId),
+        { votante_id: userId, votado_id: votadoId },
+      ]);
+    }
+  }
+
   /** Cierra de verdad tras el periodo de gracia y calcula el podio. */
   async function finalizarNoche() {
     setCerrando(true);
@@ -436,6 +483,53 @@ export default function NocheLive({
             registrar bebidas antes de que salga el podio.
           </p>
         </div>
+      )}
+
+      {/* Votación relámpago durante el periodo de gracia */}
+      {graciaActiva && unido && categoria && (
+        <section className="mb-6 rounded-3xl border-2 border-cian bg-tarjeta p-5 glow-cian">
+          <p className="text-center font-titulo text-xs uppercase tracking-wide text-texto2">
+            🗳️ Votación de la noche
+          </p>
+          <p className="mb-4 text-center font-titulo text-xl text-cian">
+            {categoria}
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {jugadores
+              .filter((j) => j.id !== userId)
+              .map((j) => {
+                const miVoto = votos.find(
+                  (v) => v.votante_id === userId
+                )?.votado_id;
+                const votado = miVoto === j.id;
+                return (
+                  <button
+                    key={j.id}
+                    onClick={() => votar(j.id)}
+                    disabled={votando}
+                    className={`rounded-2xl border-2 px-3 py-4 font-titulo transition active:scale-95 disabled:opacity-60 ${
+                      votado
+                        ? "border-cian bg-cian text-fondo"
+                        : "border-borde bg-fondo text-texto"
+                    }`}
+                  >
+                    {votado && "✓ "}
+                    {j.nombre}
+                  </button>
+                );
+              })}
+          </div>
+          {jugadores.length <= 1 ? (
+            <p className="mt-3 text-center text-xs text-texto2">
+              No hay a quién votar esta noche 🦗
+            </p>
+          ) : (
+            <p className="mt-3 text-center text-xs text-texto2">
+              {votos.length}/{jugadores.length} han votado · +5 PL por voto
+              recibido · puedes cambiarlo hasta que acabe el tiempo
+            </p>
+          )}
+        </section>
       )}
 
       {graciaExpirada && (

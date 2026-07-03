@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import { LOGRO_DESCRIPCIONES } from "@/lib/logros";
 
 export type ResultadoJugador = {
   id: string;
@@ -11,8 +10,15 @@ export type ResultadoJugador = {
   posicion: number;
   bebidas: number;
   puntos: number;
+  pl: number;
   desglose: { nombre: string; icono: string; cantidad: number }[];
-  logros: { icono: string; nombre: string }[];
+  logros: { icono: string; nombre: string; descripcion: string }[];
+};
+
+export type ResultadoVotacion = {
+  categoria: string;
+  ganadores: { nombre: string; votos: number }[];
+  totalVotos: number;
 };
 
 const ALTURAS: Record<number, string> = {
@@ -27,23 +33,29 @@ const COLORES: Record<number, string> = {
 };
 const MEDALLAS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
 
+type Fase = "countdown" | "votacion" | "revelado";
+
 export default function PodioReveal({
   resultados,
   salaId,
   fecha,
   vistaHistorica,
+  votacion,
 }: {
   resultados: ResultadoJugador[];
   salaId: string;
   fecha: string;
   vistaHistorica: boolean;
+  votacion: ResultadoVotacion | null;
 }) {
   const ordenados = [...resultados].sort((a, b) => a.posicion - b.posicion);
   const total = ordenados.length;
 
-  // Si es una visita al historial, nos saltamos la cuenta atrás y el
-  // revelado escalonado: mostramos el resultado completo directamente.
-  const [cuenta, setCuenta] = useState(vistaHistorica ? 0 : 3);
+  // Si es una visita al historial, nos saltamos toda la ceremonia.
+  const [fase, setFase] = useState<Fase>(
+    vistaHistorica ? "revelado" : "countdown"
+  );
+  const [cuenta, setCuenta] = useState(3);
   const [revelados, setRevelados] = useState(vistaHistorica ? total : 0);
   const [logroInfo, setLogroInfo] = useState<{
     icono: string;
@@ -51,20 +63,33 @@ export default function PodioReveal({
     descripcion: string;
   } | null>(null);
 
-  const enCountdown = cuenta > 0;
   const terminado = revelados >= total;
 
-  // Cuenta atrás
+  // Cuenta atrás → aperitivo de votación (si hubo votos) → revelado
   useEffect(() => {
-    if (vistaHistorica || !enCountdown) return;
+    if (fase !== "countdown") return;
     if (navigator.vibrate) navigator.vibrate(100);
-    const t = setTimeout(() => setCuenta((c) => c - 1), 1000);
+    const t = setTimeout(() => {
+      if (cuenta > 1) {
+        setCuenta((c) => c - 1);
+      } else {
+        setFase(votacion ? "votacion" : "revelado");
+      }
+    }, 1000);
     return () => clearTimeout(t);
-  }, [cuenta, enCountdown, vistaHistorica]);
+  }, [cuenta, fase, votacion]);
+
+  // El aperitivo de la votación se muestra unos segundos y pasa al podio
+  useEffect(() => {
+    if (fase !== "votacion") return;
+    if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
+    const t = setTimeout(() => setFase("revelado"), 4000);
+    return () => clearTimeout(t);
+  }, [fase]);
 
   // Revelado escalonado: del último al primero, con pausa dramática antes del 1º
   useEffect(() => {
-    if (vistaHistorica || enCountdown || terminado) return;
+    if (fase !== "revelado" || vistaHistorica || terminado) return;
     const siguiente = total - revelados; // posición que toca revelar
     const pausa = siguiente === 1 ? 2200 : siguiente <= 3 ? 1400 : 700;
     const t = setTimeout(() => {
@@ -80,11 +105,11 @@ export default function PodioReveal({
       }
     }, pausa);
     return () => clearTimeout(t);
-  }, [enCountdown, revelados, terminado, total, vistaHistorica]);
+  }, [fase, revelados, terminado, total, vistaHistorica]);
 
   const esVisible = (posicion: number) => posicion > total - revelados;
 
-  if (enCountdown) {
+  if (fase === "countdown") {
     return (
       <main className="flex min-h-dvh flex-col items-center justify-center">
         <p className="mb-4 font-titulo text-2xl text-texto2">
@@ -96,6 +121,30 @@ export default function PodioReveal({
         >
           {cuenta}
         </p>
+      </main>
+    );
+  }
+
+  if (fase === "votacion" && votacion) {
+    return (
+      <main className="flex min-h-dvh flex-col items-center justify-center px-6">
+        <p className="mb-2 font-titulo text-sm uppercase tracking-wide text-texto2">
+          🗳️ El grupo ha votado…
+        </p>
+        <p className="mb-6 text-center font-titulo text-2xl text-cian">
+          {votacion.categoria}
+        </p>
+        <div className="subir-podio rounded-3xl border-2 border-cian bg-tarjeta px-10 py-8 text-center glow-cian">
+          {votacion.ganadores.map((g) => (
+            <p key={g.nombre} className="font-titulo text-4xl text-texto">
+              {g.nombre}
+            </p>
+          ))}
+          <p className="mt-2 text-sm text-texto2">
+            con {votacion.ganadores[0]?.votos} de {votacion.totalVotos} votos
+            {votacion.ganadores.length > 1 && " (¡empate!)"}
+          </p>
+        </div>
       </main>
     );
   }
@@ -204,6 +253,47 @@ export default function PodioReveal({
         </ul>
       )}
 
+      {/* Resultado de la votación (sección estática) */}
+      {terminado && votacion && (
+        <section className="subir-podio mb-8 rounded-3xl border border-cian/40 bg-tarjeta p-4 text-center">
+          <p className="text-xs uppercase tracking-wide text-texto2">
+            🗳️ {votacion.categoria}
+          </p>
+          <p className="font-titulo text-xl text-cian">
+            {votacion.ganadores.map((g) => g.nombre).join(" y ")}
+          </p>
+          <p className="text-xs text-texto2">
+            {votacion.ganadores[0]?.votos}/{votacion.totalVotos} votos · +5 PL
+            por voto recibido
+          </p>
+        </section>
+      )}
+
+      {/* Puntos de Liga ganados */}
+      {terminado && (
+        <section className="subir-podio mb-8">
+          <h2 className="mb-3 font-titulo text-lg text-texto">
+            📈 Puntos de Liga de la noche
+          </h2>
+          <ul className="space-y-2">
+            {ordenados.map((j) => (
+              <li
+                key={j.id}
+                className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
+              >
+                <span className="text-texto">
+                  <span className="mr-2 font-titulo text-texto2">
+                    {j.posicion}.
+                  </span>
+                  {j.nombre}
+                </span>
+                <span className="font-titulo text-lima">+{j.pl} PL</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {terminado && (
         <section className="subir-podio mb-8">
           <h2 className="mb-3 font-titulo text-lg text-texto">
@@ -259,15 +349,7 @@ export default function PodioReveal({
                     {j.logros.map((l) => (
                       <button
                         key={l.nombre}
-                        onClick={() =>
-                          setLogroInfo({
-                            icono: l.icono,
-                            nombre: l.nombre,
-                            descripcion:
-                              LOGRO_DESCRIPCIONES[l.nombre] ??
-                              "Logro especial de la noche.",
-                          })
-                        }
+                        onClick={() => setLogroInfo(l)}
                         className="flex items-center gap-1 rounded-full border border-ambar/50 bg-fondo px-3 py-1.5 text-sm text-ambar active:scale-95"
                       >
                         <span className="text-lg">{l.icono}</span>

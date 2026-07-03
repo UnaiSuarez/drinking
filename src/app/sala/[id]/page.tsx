@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import SalaView, { type Miembro, type NocheResumen } from "@/components/SalaView";
+import SalaView, {
+  type EntradaLiga,
+  type Miembro,
+  type NocheResumen,
+} from "@/components/SalaView";
 
 export default async function SalaPage({
   params,
@@ -65,6 +69,29 @@ export default async function SalaPage({
     };
   });
 
+  // Liga de la temporada activa
+  const { data: temporada } = await supabase
+    .from("temporadas")
+    .select("id, nombre, fin")
+    .eq("sala_id", id)
+    .eq("estado", "activa")
+    .gt("fin", new Date().toISOString())
+    .maybeSingle();
+
+  let liga: EntradaLiga[] = [];
+  if (temporada) {
+    const { data: ligaRaw } = await supabase
+      .from("liga")
+      .select("usuario_id, pl")
+      .eq("temporada_id", temporada.id)
+      .order("pl", { ascending: false });
+    liga = (ligaRaw ?? []).map((e) => ({
+      usuarioId: e.usuario_id,
+      nombre: miembros.find((m) => m.id === e.usuario_id)?.nombre ?? "???",
+      pl: e.pl,
+    }));
+  }
+
   return (
     <SalaView
       sala={sala}
@@ -73,6 +100,8 @@ export default async function SalaPage({
       userId={user!.id}
       nocheActiva={nocheActiva}
       nochesCerradas={nochesCerradas}
+      temporada={temporada}
+      liga={liga}
     />
   );
 }

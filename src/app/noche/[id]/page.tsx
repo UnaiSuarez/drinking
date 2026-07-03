@@ -4,6 +4,7 @@ import NocheLive, {
   type Bebida,
   type Jugador,
   type Registro,
+  type Voto,
 } from "@/components/NocheLive";
 
 export default async function NochePage({
@@ -19,7 +20,9 @@ export default async function NochePage({
 
   const { data: noche } = await supabase
     .from("noches")
-    .select("id, sala_id, estado, inicio, fin_programado, fin_gracia")
+    .select(
+      "id, sala_id, estado, inicio, fin_programado, fin_gracia, votacion_categoria"
+    )
     .eq("id", id)
     .single();
 
@@ -66,6 +69,11 @@ export default async function NochePage({
     .eq("anulado", false)
     .order("ts");
 
+  const { data: votos } = await supabase
+    .from("noche_votos")
+    .select("votante_id, votado_id")
+    .eq("noche_id", id);
+
   return (
     <NocheLive
       noche={{
@@ -76,6 +84,7 @@ export default async function NochePage({
       bebidas={(bebidas ?? []) as Bebida[]}
       jugadoresIniciales={jugadores}
       registrosIniciales={(registros ?? []) as Registro[]}
+      votosIniciales={(votos ?? []) as Voto[]}
       userId={user!.id}
       esAdmin={esAdmin}
     />
