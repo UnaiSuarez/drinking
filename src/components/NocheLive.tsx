@@ -80,6 +80,30 @@ type Noche = {
 const DURACION_GRACIA_MS = 5 * 60 * 1000;
 const VEINTICUATRO_HORAS_MS = 24 * 60 * 60 * 1000;
 
+const RETOS_NOCHE = [
+  {
+    slug: "ronda_torera",
+    icono: "🥃",
+    nombre: "Ronda Torera",
+    nombres: ["Chupito", "Shot especial"],
+    umbral: 5,
+  },
+  {
+    slug: "media_docena",
+    icono: "🍺",
+    nombre: "Media Docena",
+    nombres: ["Cerveza", "Pinta"],
+    umbral: 6,
+  },
+  {
+    slug: "poker_copas",
+    icono: "🍹",
+    nombre: "Póker de Copas",
+    nombres: ["Cubata"],
+    umbral: 4,
+  },
+] as const;
+
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
@@ -953,6 +977,14 @@ export default function NocheLive({
       p_noche: noche.id,
     });
     if (!error) {
+      fetch("/api/notificar-liga", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ salaId: noche.sala_id }),
+      }).catch((err) => {
+        // el push es un extra: el podio ya está calculado igualmente
+        console.error("notificar-liga:", err);
+      });
       router.push(`/noche/${noche.id}/podio`);
     } else {
       setCerrando(false);
@@ -974,6 +1006,17 @@ export default function NocheLive({
   const feed = useMemo(() => [...registros].reverse().slice(0, 20), [registros]);
   const misPuntos =
     ranking.find((r) => r.id === userId) ?? { bebidas: 0, puntos: 0 };
+
+  const progresoRetos = useMemo(() => {
+    return RETOS_NOCHE.map((reto) => {
+      const total = misRegistros.filter((r) => {
+        const nombre = bebidasMap.get(r.bebida_tipo_id)?.nombre;
+        return nombre ? (reto.nombres as readonly string[]).includes(nombre) : false;
+      }).length;
+      const actual = total === 0 ? 0 : ((total - 1) % reto.umbral) + 1;
+      return { ...reto, actual };
+    });
+  }, [misRegistros, bebidasMap]);
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-32 pt-6">
@@ -1295,6 +1338,38 @@ export default function NocheLive({
               </button>
             ))}
           </div>
+
+          {progresoRetos.some((r) => r.actual > 0) && (
+            <section className="mb-6 rounded-3xl border border-borde bg-tarjeta p-4">
+              <h2 className="mb-3 font-titulo text-lg text-texto">
+                🎯 Progreso de esta noche
+              </h2>
+              <div className="space-y-3">
+                {progresoRetos
+                  .filter((r) => r.actual > 0)
+                  .map((r) => (
+                    <div key={r.slug}>
+                      <div className="mb-1 flex items-center justify-between text-xs text-texto2">
+                        <span>
+                          {r.icono} {r.nombre}
+                        </span>
+                        <span>
+                          {r.actual}/{r.umbral}
+                        </span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-fondo">
+                        <div
+                          className="h-full rounded-full bg-ambar transition-all"
+                          style={{
+                            width: `${(r.actual / r.umbral) * 100}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </section>
+          )}
 
           <section className="mb-6 rounded-3xl border border-borde bg-tarjeta p-4">
             <div className="mb-3 flex items-baseline justify-between gap-3">
