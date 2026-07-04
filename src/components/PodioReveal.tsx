@@ -106,9 +106,35 @@ export default function PodioReveal({
     rareza: string;
   } | null>(null);
   const [compartido, setCompartido] = useState(false);
+  const [generandoImagen, setGenerandoImagen] = useState(false);
+  const [errorImagen, setErrorImagen] = useState<string | null>(null);
   const [premioEstado, setPremioEstado] = useState<
     "idle" | "guardando" | "entregado" | "error"
   >("idle");
+
+  async function compartirImagen() {
+    setGenerandoImagen(true);
+    setErrorImagen(null);
+    try {
+      const res = await fetch(`/api/imagen-podio?noche=${nocheId}`);
+      if (!res.ok) throw new Error("No se pudo generar la imagen.");
+      const blob = await res.blob();
+      const file = new File([blob], "el-ranking.png", { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: "El Ranking" });
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "el-ranking.png";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    } catch {
+      setErrorImagen("No se pudo generar la imagen. Prueba otra vez.");
+    }
+    setGenerandoImagen(false);
+  }
 
   async function compartirResumen() {
     const medalla = (pos: number) =>
@@ -626,6 +652,16 @@ export default function PodioReveal({
           >
             {compartido ? "¡Copiado! 📋" : "📤 Compartir resumen"}
           </button>
+          <button
+            onClick={compartirImagen}
+            disabled={generandoImagen}
+            className="w-full rounded-2xl border-2 border-cian bg-tarjeta py-4 font-titulo text-lg text-cian active:scale-95 disabled:opacity-50"
+          >
+            {generandoImagen ? "Generando…" : "🖼️ Imagen para compartir"}
+          </button>
+          {errorImagen && (
+            <p className="text-center text-xs text-rosa">{errorImagen}</p>
+          )}
           <Link
             href={`/sala/${salaId}`}
             className="block rounded-2xl bg-ambar py-4 text-center font-titulo text-lg text-fondo active:scale-95"

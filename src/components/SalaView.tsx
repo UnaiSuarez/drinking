@@ -68,6 +68,8 @@ export default function SalaView({
   const [notifActivas, setNotifActivas] = useState(true); // evita el flash del banner antes de comprobar
   const [activandoNotif, setActivandoNotif] = useState(false);
   const [errorNotif, setErrorNotif] = useState<string | null>(null);
+  const [probandoNotif, setProbandoNotif] = useState(false);
+  const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
   const esAdmin = miRol === "fundador" || miRol === "admin";
 
   useEffect(() => {
@@ -88,6 +90,29 @@ export default function SalaView({
     } else {
       setErrorNotif(r.error);
     }
+  }
+
+  async function probarNotif() {
+    setProbandoNotif(true);
+    setResultadoPrueba(null);
+    try {
+      const r = await fetch("/api/notificar-prueba", { method: "POST" });
+      const data = await r.json();
+      if (!r.ok) {
+        setResultadoPrueba(`❌ ${data.error ?? "No se pudo enviar."}`);
+      } else if (data.enviados > 0) {
+        setResultadoPrueba(
+          "✅ Enviada. Si no te llega en unos segundos, revisa los permisos de notificaciones del navegador/móvil."
+        );
+      } else {
+        setResultadoPrueba(
+          `❌ No se pudo entregar a ningún dispositivo (${data.fallidos} fallo(s))${data.error ? `: ${data.error}` : "."}`
+        );
+      }
+    } catch {
+      setResultadoPrueba("❌ Fallo de red al pedir la prueba.");
+    }
+    setProbandoNotif(false);
   }
 
   async function compartirCodigo() {
@@ -126,9 +151,14 @@ export default function SalaView({
           nocheId: data.id,
           userId,
         }),
-      }).catch(() => {
-        // el push es un extra: si falla el envío, la noche ya se creó igualmente
-      });
+      })
+        .then(async (r) => {
+          if (!r.ok) console.error("notificar-noche:", await r.text());
+        })
+        .catch((err) => {
+          // el push es un extra: si falla el envío, la noche ya se creó igualmente
+          console.error("notificar-noche:", err);
+        });
       router.push(`/noche/${data.id}`);
     }
   }
@@ -181,6 +211,23 @@ export default function SalaView({
           >
             {activandoNotif ? "Activando…" : "Activar notificaciones"}
           </button>
+        </div>
+      )}
+
+      {notifSoportado && notifActivas && (
+        <div className="mb-6 rounded-2xl border border-borde bg-tarjeta p-3 text-center">
+          <button
+            onClick={probarNotif}
+            disabled={probandoNotif}
+            className="text-xs text-texto2 underline active:scale-95 disabled:opacity-50"
+          >
+            {probandoNotif
+              ? "Enviando prueba…"
+              : "🔔 Enviar notificación de prueba"}
+          </button>
+          {resultadoPrueba && (
+            <p className="mt-2 text-xs text-texto2">{resultadoPrueba}</p>
+          )}
         </div>
       )}
 

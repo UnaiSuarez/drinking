@@ -71,6 +71,12 @@ export default function SalasHome({
         </div>
         <div className="flex gap-2">
           <Link
+            href="/retos"
+            className="rounded-xl border border-cian px-3 py-2 text-xs text-cian active:scale-95"
+          >
+            🎯 Retos
+          </Link>
+          <Link
             href="/tienda"
             className="rounded-xl border border-ambar px-3 py-2 text-xs text-ambar active:scale-95"
           >
