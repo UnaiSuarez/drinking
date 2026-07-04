@@ -61,7 +61,7 @@ export default async function PodioPage({
 
   const { data: registros } = await supabase
     .from("registros")
-    .select("usuario_id, bebida_tipo_id, bebidas_tipo(nombre, icono, puntos)")
+    .select("usuario_id, bebida_tipo_id, retroactivo, bebidas_tipo(nombre, icono, puntos)")
     .eq("noche_id", id)
     .eq("anulado", false)
     .order("ts");
@@ -70,6 +70,12 @@ export default async function PodioPage({
   const { data: logrosRaw } = await supabase
     .from("logros_usuario")
     .select("usuario_id, logros(nombre, icono, descripcion, rareza)")
+    .eq("noche_id", id);
+
+  // Penalizaciones marcadas al cierre (ha vomitado, KO, etc.)
+  const { data: penalizacionesRaw } = await supabase
+    .from("noche_penalizaciones")
+    .select("usuario_id, penalizaciones_tipo(nombre, icono, pl)")
     .eq("noche_id", id);
 
   // Votación
@@ -96,7 +102,8 @@ export default async function PodioPage({
       desglose: new Map(),
     };
     t.bebidas += 1;
-    t.puntos += bt?.puntos ?? 0;
+    const puntosBase = bt?.puntos ?? 0;
+    t.puntos += r.retroactivo ? Math.min(puntosBase, 1) : puntosBase;
     if (bt) {
       const d = t.desglose.get(r.bebida_tipo_id) ?? {
         nombre: bt.nombre,
@@ -139,6 +146,22 @@ export default async function PodioPage({
     logrosPorUsuario.set(l.usuario_id, porNombre);
   }
 
+  const penalizacionesPorUsuario = new Map<
+    string,
+    { icono: string; nombre: string; pl: number }[]
+  >();
+  for (const pen of penalizacionesRaw ?? []) {
+    const info = pen.penalizaciones_tipo as unknown as {
+      nombre: string;
+      icono: string;
+      pl: number;
+    } | null;
+    if (!info) continue;
+    const lista = penalizacionesPorUsuario.get(pen.usuario_id) ?? [];
+    lista.push(info);
+    penalizacionesPorUsuario.set(pen.usuario_id, lista);
+  }
+
   const nombrePorUsuario = new Map<string, string>();
   const resultados: ResultadoJugador[] = (jugadoresRaw ?? []).map((j) => {
     const t = totales.get(j.usuario_id);
@@ -160,6 +183,7 @@ export default async function PodioPage({
         ? [...t.desglose.values()].sort((a, b) => b.cantidad - a.cantidad)
         : [],
       logros: [...(logrosPorUsuario.get(j.usuario_id)?.values() ?? [])],
+      penalizaciones: penalizacionesPorUsuario.get(j.usuario_id) ?? [],
     };
   });
 

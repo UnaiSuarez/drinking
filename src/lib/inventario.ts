@@ -33,6 +33,11 @@ export type CartaActiva = {
   objetivoNombre?: string;
   usadaEn: string;
   expiraEn?: string;
+  /** Condición que solo se puede comprobar en el momento de usar la carta
+   * (p.ej. "vas último ahora mismo" para Remontada Imposible). Se calcula en
+   * el cliente al activarla y luego el cierre de la noche solo confía en
+   * este valor ya guardado, no lo recalcula. */
+  condicionCumplida?: boolean;
 };
 
 export const FRAGMENTOS_PERSONAJE_NECESARIOS = 3;
@@ -367,6 +372,14 @@ function duracionCartaMs(cartaId: string) {
   if (cartaId === "cubata-obligatorio") return 45 * 60 * 1000;
   if (cartaId === "chupito-castigo") return 30 * 60 * 1000;
   if (cartaId === "doble-o-nada") return 30 * 60 * 1000;
+  if (cartaId === "pirata-del-hielo") return 30 * 60 * 1000;
+  if (cartaId === "ticket-barra-libre") return 30 * 60 * 1000;
+  if (cartaId === "triple-amenaza") return 90 * 60 * 1000;
+  if (cartaId === "luna-llena") return 20 * 60 * 1000;
+  if (cartaId === "remontada-imposible") return 45 * 60 * 1000;
+  if (cartaId === "brindis-forzado") return 10 * 60 * 1000;
+  if (cartaId === "confeti-caos") return 60 * 1000;
+  if (cartaId === "salpicon-puntos") return 60 * 1000;
   return 30 * 60 * 1000;
 }
 
@@ -378,6 +391,7 @@ export function usarCartaEnNoche(params: {
   usuarioNombre: string;
   objetivoId?: string;
   objetivoNombre?: string;
+  condicionCumplida?: boolean;
   ahora?: Date;
 }) {
   const carta = cartaPorId(params.cartaId);
@@ -394,6 +408,7 @@ export function usarCartaEnNoche(params: {
     usuarioNombre: params.usuarioNombre,
     objetivoId: params.objetivoId,
     objetivoNombre: params.objetivoNombre,
+    condicionCumplida: params.condicionCumplida,
     usadaEn: ahora.toISOString(),
     expiraEn: expiraEn.toISOString(),
   };
@@ -412,6 +427,25 @@ export function usarCartaEnNoche(params: {
       cartasActivas: [activa, ...params.inventario.cartasActivas].slice(0, 80),
     },
   };
+}
+
+/** Chapas que dan las cartas de economía al usarlas (jackpot-siete es
+ * aleatorio, lluvia-de-chapas depende del puesto actual en el ranking). */
+export function chapasPorCartaEconomia(
+  cartaId: string,
+  posicion: number,
+  random: () => number = Math.random
+): number {
+  if (cartaId === "jackpot-siete") {
+    return 20 + Math.floor(random() * 60);
+  }
+  if (cartaId === "lluvia-de-chapas") {
+    if (posicion === 1) return 60;
+    if (posicion === 2) return 45;
+    if (posicion === 3) return 30;
+    return 15;
+  }
+  return 0;
 }
 
 export function cartasActivasDeNoche(rawConfigs: unknown[], nocheId: string, ahora = Date.now()) {

@@ -27,6 +27,7 @@ export type ResultadoJugador = {
     rareza: string;
     n: number;
   }[];
+  penalizaciones: { icono: string; nombre: string; pl: number }[];
 };
 
 export type ResultadoVotacion = {
@@ -535,6 +536,36 @@ export default function PodioReveal({
                         />
                         {l.nombre}
                       </button>
+                    ))}
+                  </div>
+                </li>
+              ))}
+          </ul>
+        </section>
+      )}
+
+      {terminado && ordenados.some((j) => j.penalizaciones.length > 0) && (
+        <section className="subir-podio mb-8">
+          <h2 className="mb-3 font-titulo text-lg text-texto">
+            🚨 Cosas que pasaron
+          </h2>
+          <ul className="space-y-2">
+            {ordenados
+              .filter((j) => j.penalizaciones.length > 0)
+              .map((j) => (
+                <li
+                  key={j.id}
+                  className="rounded-2xl border border-rosa/40 bg-tarjeta p-4"
+                >
+                  <p className="mb-2 font-titulo text-texto">{j.nombre}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {j.penalizaciones.map((p, i) => (
+                      <span
+                        key={`${p.nombre}-${i}`}
+                        className="rounded-full border border-rosa/50 bg-fondo px-3 py-1.5 text-sm text-rosa"
+                      >
+                        {p.icono} {p.nombre} ({p.pl} PL)
+                      </span>
                     ))}
                   </div>
                 </li>

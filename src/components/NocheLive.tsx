@@ -9,6 +9,7 @@ import { CARTAS_COFRES, type CartaCofre } from "@/lib/cofresDesign";
 import {
   cartasActivasDeNoche,
   cartaPorId,
+  chapasPorCartaEconomia,
   parseInventarioState,
   usarCartaEnNoche,
   type CartaActiva,
@@ -25,6 +26,7 @@ import {
   parseAvatarConfig,
   type AvatarConfig,
 } from "@/lib/avatar";
+import { parseTiendaState } from "@/lib/tienda";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 
@@ -87,6 +89,185 @@ function puntosBaseRegistro(registro: Registro, bebidasMap: Map<number, Bebida>)
   // Lo que se registra en el tiempo extra de cierre (bebidas olvidadas) cuenta
   // como mucho 1 punto, igual que calcula finalizar_noche en el cierre real.
   return registro.retroactivo ? Math.min(puntos, 1) : puntos;
+}
+
+function enVentana(activa: CartaActiva, registro: Registro) {
+  const ts = new Date(registro.ts).getTime();
+  const inicio = new Date(activa.usadaEn).getTime();
+  const fin = activa.expiraEn ? new Date(activa.expiraEn).getTime() : Infinity;
+  return ts >= inicio && ts <= fin;
+}
+
+function esPrimerRegistroEnVentana(
+  activa: CartaActiva,
+  registro: Registro,
+  registros: Registro[]
+) {
+  if (!enVentana(activa, registro)) return false;
+  return !registros.some(
+    (otro) =>
+      otro.usuario_id === registro.usuario_id &&
+      otro.id !== registro.id &&
+      enVentana(activa, otro) &&
+      new Date(otro.ts).getTime() < new Date(registro.ts).getTime()
+  );
+}
+
+function esPrimerRegistroDelObjetivo(
+  activa: CartaActiva,
+  registro: Registro,
+  registros: Registro[]
+) {
+  if (!activa.objetivoId || activa.objetivoId !== registro.usuario_id) {
+    return false;
+  }
+  return esPrimerRegistroEnVentana(activa, registro, registros);
+}
+
+function rangoPropioEnVentana(
+  activa: CartaActiva,
+  registro: Registro,
+  registros: Registro[]
+) {
+  if (!enVentana(activa, registro)) return Infinity;
+  return registros.filter(
+    (otro) =>
+      otro.usuario_id === registro.usuario_id &&
+      enVentana(activa, otro) &&
+      new Date(otro.ts).getTime() <= new Date(registro.ts).getTime()
+  ).length;
+}
+
+function tipoDistintoDelAnterior(registro: Registro, registros: Registro[]) {
+  const propios = registros
+    .filter((r) => r.usuario_id === registro.usuario_id)
+    .sort((a, b) => new Date(a.ts).getTime() - new Date(b.ts).getTime());
+  const idx = propios.findIndex((r) => r.id === registro.id);
+  const anterior = idx > 0 ? propios[idx - 1] : null;
+  return !anterior || anterior.bebida_tipo_id !== registro.bebida_tipo_id;
+}
+
+function puntosRegistro(
+  registro: Registro,
+  registros: Registro[],
+  bebidasMap: Map<number, Bebida>,
+  cartasActivas: CartaActiva[]
+) {
+  const bebida = bebidasMap.get(registro.bebida_tipo_id);
+  const nombreBebida = normalizar(`${bebida?.nombre ?? ""} ${bebida?.icono ?? ""}`);
+  const puntos = puntosBaseRegistro(registro, bebidasMap);
+  let multiplicador = 1;
+  let bonus = 0;
+
+  for (const activa of cartasActivas) {
+    if (!enVentana(activa, registro)) continue;
+    if (activa.cartaId === "noche-x10") multiplicador = Math.max(multiplicador, 10);
+    if (activa.cartaId === "ultimo-aviso") bonus += 1;
+    if (
+      (activa.cartaId === "happy-hour-salvaje" ||
+        activa.cartaId === "ronda-relampago") &&
+      esPrimerRegistroEnVentana(activa, registro, registros)
+    ) {
+      bonus += 2;
+    }
+    if (
+      activa.cartaId === "doble-o-nada" &&
+      activa.usuarioId === registro.usuario_id &&
+      esPrimerRegistroEnVentana(activa, registro, registros)
+    ) {
+      multiplicador = Math.max(multiplicador, 2);
+    }
+    if (
+      activa.cartaId === "cubata-obligatorio" &&
+      esPrimerRegistroDelObjetivo(activa, registro, registros) &&
+      (nombreBebida.includes("cubata") ||
+        nombreBebida.includes("coctel") ||
+        nombreBebida.includes("cocktail") ||
+        nombreBebida.includes("combinado"))
+    ) {
+      bonus += 5;
+    }
+    if (
+      activa.cartaId === "chupito-castigo" &&
+      esPrimerRegistroDelObjetivo(activa, registro, registros) &&
+      (nombreBebida.includes("chupit") ||
+        nombreBebida.includes("shot") ||
+        nombreBebida.includes("tequila") ||
+        nombreBebida.includes("jager"))
+    ) {
+      bonus += 3;
+    }
+    if (
+      activa.cartaId === "pirata-del-hielo" &&
+      activa.usuarioId === registro.usuario_id &&
+      esPrimerRegistroEnVentana(activa, registro, registros) &&
+      puntos === 0
+    ) {
+      bonus += 1;
+    }
+    if (
+      activa.cartaId === "ticket-barra-libre" &&
+      activa.usuarioId === registro.usuario_id &&
+      esPrimerRegistroEnVentana(activa, registro, registros) &&
+      tipoDistintoDelAnterior(registro, registros)
+    ) {
+      bonus += 4;
+    }
+    if (
+      activa.cartaId === "triple-amenaza" &&
+      activa.usuarioId === registro.usuario_id &&
+      rangoPropioEnVentana(activa, registro, registros) <= 3 &&
+      tipoDistintoDelAnterior(registro, registros)
+    ) {
+      bonus += 3;
+    }
+    if (
+      activa.cartaId === "luna-llena" &&
+      (nombreBebida.includes("chupit") || nombreBebida.includes("shot"))
+    ) {
+      bonus += 4;
+    }
+    if (
+      activa.cartaId === "remontada-imposible" &&
+      activa.usuarioId === registro.usuario_id &&
+      activa.condicionCumplida &&
+      rangoPropioEnVentana(activa, registro, registros) <= 2
+    ) {
+      bonus += 6;
+    }
+  }
+
+  return puntos * multiplicador + bonus;
+}
+
+function calcularRanking(
+  jugadores: Jugador[],
+  registros: Registro[],
+  jugadoresMap: Map<string, string>,
+  bebidasMap: Map<number, Bebida>,
+  cartasActivas: CartaActiva[]
+) {
+  const totales = new Map<string, { bebidas: number; puntos: number }>();
+  for (const j of jugadores) totales.set(j.id, { bebidas: 0, puntos: 0 });
+
+  for (const r of registros) {
+    const t = totales.get(r.usuario_id);
+    if (t) {
+      t.bebidas += 1;
+      t.puntos += puntosRegistro(r, registros, bebidasMap, cartasActivas);
+    }
+  }
+  return [...totales.entries()]
+    .map(([id, t]) => {
+      const j = jugadores.find((x) => x.id === id);
+      return {
+        id,
+        nombre: jugadoresMap.get(id) ?? "???",
+        avatarConfig: j?.avatarConfig ?? parseAvatarConfig(null),
+        ...t,
+      };
+    })
+    .sort((a, b) => b.puntos - a.puntos || b.bebidas - a.bebidas);
 }
 
 function normalizar(texto: string) {
@@ -553,6 +734,27 @@ export default function NocheLive({
 
     setUsandoCarta(carta.id);
     setMensajeCarta(null);
+
+    // Se recalcula el ranking al vuelo (en vez de leer el memoizado más
+    // abajo) para que Remontada Imposible y las cartas de chapas usen la
+    // posición justo en el momento de usar la carta.
+    const rankingActual = calcularRanking(
+      jugadores,
+      registros,
+      jugadoresMap,
+      bebidasMap,
+      cartasActivas
+    );
+
+    // Remontada Imposible solo cuenta si vas último justo al usarla; se
+    // comprueba aquí (en vivo) y se guarda, el cierre de la noche ya no lo
+    // recalcula.
+    const condicionCumplida =
+      carta.id === "remontada-imposible"
+        ? rankingActual.length > 0 &&
+          rankingActual[rankingActual.length - 1]?.id === userId
+        : undefined;
+
     const resultado = usarCartaEnNoche({
       inventario: miInventario,
       cartaId: carta.id,
@@ -561,6 +763,7 @@ export default function NocheLive({
       usuarioNombre: miJugador.nombre,
       objetivoId: objetivo?.id,
       objetivoNombre: objetivo?.nombre,
+      condicionCumplida,
     });
 
     if (!resultado) {
@@ -569,10 +772,24 @@ export default function NocheLive({
       return;
     }
 
-    const nextConfig = {
-      ...objetoConfig(miJugador.avatarConfigRaw),
+    const configActual = objetoConfig(miJugador.avatarConfigRaw);
+    let nextConfig: Record<string, unknown> = {
+      ...configActual,
       inventario: resultado.inventario,
     };
+
+    // Cartas de chapas: la recompensa se aplica ya en el cliente, igual que
+    // al abrir un cofre (no dependen del cierre de la noche).
+    if (carta.id === "jackpot-siete" || carta.id === "lluvia-de-chapas") {
+      const tienda = parseTiendaState(configActual);
+      const miPosicion = rankingActual.findIndex((r) => r.id === userId) + 1;
+      const chapas = chapasPorCartaEconomia(carta.id, miPosicion);
+      nextConfig = {
+        ...nextConfig,
+        tienda: { ...tienda, bonus: tienda.bonus + chapas },
+      };
+    }
+
     const { error } = await supabase
       .from("perfiles")
       .update({ avatar_config: nextConfig })
@@ -716,104 +933,10 @@ export default function NocheLive({
     miUltimoRegistro &&
     ahora - new Date(miUltimoRegistro.ts).getTime() < 30000;
 
-  const ranking = useMemo(() => {
-    const totales = new Map<string, { bebidas: number; puntos: number }>();
-    for (const j of jugadores) totales.set(j.id, { bebidas: 0, puntos: 0 });
-
-    function enVentana(activa: CartaActiva, registro: Registro) {
-      const ts = new Date(registro.ts).getTime();
-      const inicio = new Date(activa.usadaEn).getTime();
-      const fin = activa.expiraEn ? new Date(activa.expiraEn).getTime() : Infinity;
-      return ts >= inicio && ts <= fin;
-    }
-
-    function esPrimerRegistroEnVentana(activa: CartaActiva, registro: Registro) {
-      if (!enVentana(activa, registro)) return false;
-      return !registros.some(
-        (otro) =>
-          otro.usuario_id === registro.usuario_id &&
-          otro.id !== registro.id &&
-          enVentana(activa, otro) &&
-          new Date(otro.ts).getTime() < new Date(registro.ts).getTime()
-      );
-    }
-
-    function esPrimerRegistroDelObjetivo(activa: CartaActiva, registro: Registro) {
-      if (!activa.objetivoId || activa.objetivoId !== registro.usuario_id) {
-        return false;
-      }
-      return esPrimerRegistroEnVentana(activa, registro);
-    }
-
-    function puntosRegistro(registro: Registro) {
-      const bebida = bebidasMap.get(registro.bebida_tipo_id);
-      const nombreBebida = normalizar(`${bebida?.nombre ?? ""} ${bebida?.icono ?? ""}`);
-      const puntos = puntosBaseRegistro(registro, bebidasMap);
-      let multiplicador = 1;
-      let bonus = 0;
-
-      for (const activa of cartasActivas) {
-        if (!enVentana(activa, registro)) continue;
-        if (activa.cartaId === "noche-x10") multiplicador = Math.max(multiplicador, 10);
-        if (activa.cartaId === "ultimo-aviso") bonus += 1;
-        if (
-          (activa.cartaId === "happy-hour-salvaje" ||
-            activa.cartaId === "ronda-relampago") &&
-          esPrimerRegistroEnVentana(activa, registro)
-        ) {
-          bonus += activa.cartaId === "happy-hour-salvaje" ? 2 : 2;
-        }
-        if (
-          activa.cartaId === "doble-o-nada" &&
-          activa.usuarioId === registro.usuario_id &&
-          esPrimerRegistroEnVentana(activa, registro)
-        ) {
-          multiplicador = Math.max(multiplicador, 2);
-        }
-        if (
-          activa.cartaId === "cubata-obligatorio" &&
-          esPrimerRegistroDelObjetivo(activa, registro) &&
-          (nombreBebida.includes("cubata") ||
-            nombreBebida.includes("coctel") ||
-            nombreBebida.includes("cocktail") ||
-            nombreBebida.includes("combinado"))
-        ) {
-          bonus += 5;
-        }
-        if (
-          activa.cartaId === "chupito-castigo" &&
-          esPrimerRegistroDelObjetivo(activa, registro) &&
-          (nombreBebida.includes("chupit") ||
-            nombreBebida.includes("shot") ||
-            nombreBebida.includes("tequila") ||
-            nombreBebida.includes("jager"))
-        ) {
-          bonus += 3;
-        }
-      }
-
-      return puntos * multiplicador + bonus;
-    }
-
-    for (const r of registros) {
-      const t = totales.get(r.usuario_id);
-      if (t) {
-        t.bebidas += 1;
-        t.puntos += puntosRegistro(r);
-      }
-    }
-    return [...totales.entries()]
-      .map(([id, t]) => {
-        const j = jugadores.find((x) => x.id === id);
-        return {
-          id,
-          nombre: jugadoresMap.get(id) ?? "???",
-          avatarConfig: j?.avatarConfig ?? parseAvatarConfig(null),
-          ...t,
-        };
-      })
-      .sort((a, b) => b.puntos - a.puntos || b.bebidas - a.bebidas);
-  }, [jugadores, registros, bebidasMap, jugadoresMap, cartasActivas]);
+  const ranking = useMemo(
+    () => calcularRanking(jugadores, registros, jugadoresMap, bebidasMap, cartasActivas),
+    [jugadores, registros, bebidasMap, jugadoresMap, cartasActivas]
+  );
 
   const feed = useMemo(() => [...registros].reverse().slice(0, 20), [registros]);
   const misPuntos =
