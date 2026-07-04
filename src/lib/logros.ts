@@ -12,6 +12,16 @@ export const LOGROS_EN_VIVO = [
   "Sprint",
 ];
 
+/** slug en la base de datos (tabla `logros`) de cada logro en vivo, para
+ * poder persistirlo ya durante la noche con `registrar_logro_en_vivo`. */
+export const SLUG_LOGRO_EN_VIVO: Record<string, string> = {
+  Kamikaze: "kamikaze",
+  Degustador: "degustador",
+  Búho: "buho",
+  Madrugador: "madrugador",
+  Sprint: "sprint",
+};
+
 export const LOGRO_DESCRIPCIONES: Record<string, string> = {
   "Ganador de la noche": "Terminar 1º en puntos de bebida esa noche.",
   "El Fantasma": "Unirte a la noche y no registrar ni una sola bebida.",

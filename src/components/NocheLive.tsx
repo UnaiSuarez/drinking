@@ -13,7 +13,12 @@ import {
   usarCartaEnNoche,
   type CartaActiva,
 } from "@/lib/inventario";
-import { calcularLogrosNoche, LOGROS_EN_VIVO, type LogroNoche } from "@/lib/logros";
+import {
+  calcularLogrosNoche,
+  LOGROS_EN_VIVO,
+  SLUG_LOGRO_EN_VIVO,
+  type LogroNoche,
+} from "@/lib/logros";
 import {
   claseTambaleo,
   estadoPorBebidas,
@@ -115,6 +120,7 @@ export default function NocheLive({
   confirmacionesIniciales,
   penalizacionesTipo,
   penalizacionesIniciales,
+  logrosVistosIniciales,
   userId,
   esAdmin,
 }: {
@@ -127,6 +133,7 @@ export default function NocheLive({
   confirmacionesIniciales: string[];
   penalizacionesTipo: PenalizacionTipo[];
   penalizacionesIniciales: Penalizacion[];
+  logrosVistosIniciales: string[];
   userId: string;
   esAdmin: boolean;
 }) {
@@ -162,10 +169,12 @@ export default function NocheLive({
   const [marcandoPenalizacion, setMarcandoPenalizacion] = useState(false);
   const contadorMasUno = useRef(0);
 
-  // Logros en directo: cola de popups + set de los ya mostrados esta sesión
+  // Logros en directo: cola de popups + set de los ya mostrados/persistidos
+  // esta noche (sembrado con lo que ya está en logros_usuario, para no repetir
+  // el popup cada vez que se recarga la página).
   const [colaLogros, setColaLogros] = useState<LogroNoche[]>([]);
   const [logroActual, setLogroActual] = useState<LogroNoche | null>(null);
-  const logrosVistosRef = useRef<Set<string>>(new Set());
+  const logrosVistosRef = useRef<Set<string>>(new Set(logrosVistosIniciales));
 
   const unido = jugadores.some((j) => j.id === userId);
   const finMs = new Date(noche.fin_programado).getTime();
@@ -442,10 +451,22 @@ export default function NocheLive({
       (l) => !logrosVistosRef.current.has(l.nombre)
     );
     if (nuevos.length > 0) {
-      nuevos.forEach((l) => logrosVistosRef.current.add(l.nombre));
+      nuevos.forEach((l) => {
+        logrosVistosRef.current.add(l.nombre);
+        const slug = SLUG_LOGRO_EN_VIVO[l.nombre];
+        if (slug) {
+          // Se persiste ya durante la noche (el servidor revalida la
+          // condición), así aparece al momento en "desbloqueados" y no vuelve
+          // a saltar el popup si recargas la página.
+          void supabase.rpc("registrar_logro_en_vivo", {
+            p_noche: noche.id,
+            p_slug: slug,
+          });
+        }
+      });
       setColaLogros((prev) => [...prev, ...nuevos]);
     }
-  }, [registros, userId, unido, bebidasMap]);
+  }, [registros, userId, unido, bebidasMap, supabase, noche.id]);
 
   // Saca el siguiente logro de la cola cuando no hay ninguno mostrándose
   useEffect(() => {

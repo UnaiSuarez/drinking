@@ -99,6 +99,16 @@ export default async function NochePage({
     .select("id, usuario_id, penalizacion_id, otorgada_por")
     .eq("noche_id", id);
 
+  const { data: logrosNocheRaw } = await supabase
+    .from("logros_usuario")
+    .select("logros(nombre)")
+    .eq("usuario_id", user!.id)
+    .eq("noche_id", id);
+
+  const logrosVistosIniciales = (logrosNocheRaw ?? [])
+    .map((l) => (l.logros as unknown as { nombre: string } | null)?.nombre)
+    .filter((nombre): nombre is string => !!nombre);
+
   return (
     <NocheLive
       noche={{
@@ -113,6 +123,7 @@ export default async function NochePage({
       confirmacionesIniciales={(confirmaciones ?? []).map((c) => c.usuario_id)}
       penalizacionesTipo={(penalizacionesTipo ?? []) as PenalizacionTipo[]}
       penalizacionesIniciales={(penalizaciones ?? []) as Penalizacion[]}
+      logrosVistosIniciales={logrosVistosIniciales}
       userId={user!.id}
       esAdmin={esAdmin}
     />
