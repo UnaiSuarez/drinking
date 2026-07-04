@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
@@ -70,20 +71,27 @@ function objetoConfig(raw: unknown): Record<string, unknown> {
 export default function PodioReveal({
   resultados,
   salaId,
+  nocheId,
   fecha,
   vistaHistorica,
   votacion,
   premioPodio,
+  esAdmin,
 }: {
   resultados: ResultadoJugador[];
   salaId: string;
+  nocheId: string;
   fecha: string;
   vistaHistorica: boolean;
   votacion: ResultadoVotacion | null;
   premioPodio: PremioPodio | null;
+  esAdmin: boolean;
 }) {
+  const router = useRouter();
   const ordenados = [...resultados].sort((a, b) => a.posicion - b.posicion);
   const total = ordenados.length;
+  const [reabriendo, setReabriendo] = useState(false);
+  const [errorReabrir, setErrorReabrir] = useState<string | null>(null);
 
   // Si es una visita al historial, nos saltamos toda la ceremonia.
   const [fase, setFase] = useState<Fase>(
@@ -245,6 +253,27 @@ export default function PodioReveal({
   }, [premioEstado, premioPodio, terminado]);
 
   const esVisible = (posicion: number) => posicion > total - revelados;
+
+  async function reabrirNoche() {
+    if (reabriendo) return;
+    if (
+      !window.confirm(
+        "¿Reabrir esta noche? Se deshará el XP, las chapas y los PL de liga que dio, y volverá a estar en juego para cerrarla de nuevo."
+      )
+    ) {
+      return;
+    }
+    setReabriendo(true);
+    setErrorReabrir(null);
+    const supabase = createClient();
+    const { error } = await supabase.rpc("reabrir_noche", { p_noche: nocheId });
+    if (error) {
+      setErrorReabrir(error.message);
+      setReabriendo(false);
+      return;
+    }
+    router.push(`/noche/${nocheId}`);
+  }
 
   if (fase === "countdown") {
     return (
@@ -571,6 +600,21 @@ export default function PodioReveal({
                 </li>
               ))}
           </ul>
+        </section>
+      )}
+
+      {terminado && esAdmin && (
+        <section className="subir-podio mb-4">
+          {errorReabrir && (
+            <p className="mb-2 text-center text-sm text-rosa">{errorReabrir}</p>
+          )}
+          <button
+            onClick={reabrirNoche}
+            disabled={reabriendo}
+            className="w-full rounded-2xl border border-rosa/50 py-3 font-titulo text-sm text-rosa active:scale-95 disabled:opacity-50"
+          >
+            {reabriendo ? "Reabriendo..." : "🔓 Reabrir noche"}
+          </button>
         </section>
       )}
 

@@ -9,9 +9,11 @@ import {
   COFRES_TIPOS,
   MONEDA_COFRES,
   REVERSOS_CARTA,
+  type CartaCofre,
   type CartaRareza,
   type CofreTipo,
 } from "@/lib/cofresDesign";
+import CartaDetalleModal from "@/components/CartaDetalleModal";
 import {
   aplicarRecompensas,
   FRAGMENTOS_PERSONAJE_NECESARIOS,
@@ -101,6 +103,7 @@ export default function InventarioClient({
     recompensas: RecompensaCofre[];
     reveladas: boolean[];
   } | null>(null);
+  const [cartaAbierta, setCartaAbierta] = useState<CartaCofre | null>(null);
 
   const inventario = useMemo(() => parseInventarioState(rawConfig), [rawConfig]);
   const tienda = useMemo(() => parseTiendaState(rawConfig), [rawConfig]);
@@ -346,7 +349,16 @@ export default function InventarioClient({
             return (
               <li
                 key={carta.id}
-                className={`relative rounded-2xl border bg-tarjeta p-3 ${
+                role="button"
+                tabIndex={0}
+                onClick={() => setCartaAbierta(carta)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setCartaAbierta(carta);
+                  }
+                }}
+                className={`relative cursor-pointer rounded-2xl border bg-tarjeta p-3 outline-none transition active:scale-95 focus-visible:ring-2 focus-visible:ring-cian ${
                   carta.oculta
                     ? "cofre-card-secret border-purple-400/70"
                     : rareza.borde
@@ -489,6 +501,17 @@ export default function InventarioClient({
             </div>
           </div>
         </div>
+      )}
+
+      {cartaAbierta && (
+        <CartaDetalleModal
+          carta={cartaAbierta}
+          cantidad={inventario.cartas[cartaAbierta.id] ?? 0}
+          bloqueada={
+            !!cartaAbierta.oculta && (inventario.cartas[cartaAbierta.id] ?? 0) <= 0
+          }
+          onClose={() => setCartaAbierta(null)}
+        />
       )}
     </>
   );

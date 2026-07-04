@@ -28,6 +28,17 @@ export default async function PodioPage({
   if (!noche) notFound();
   if (noche.estado !== "cerrada") redirect(`/noche/${id}`);
 
+  let esAdmin = false;
+  if (user) {
+    const { data: miembro } = await supabase
+      .from("sala_miembros")
+      .select("rol")
+      .eq("sala_id", noche.sala_id)
+      .eq("usuario_id", user.id)
+      .maybeSingle();
+    esAdmin = miembro?.rol === "fundador" || miembro?.rol === "admin";
+  }
+
   // Si hace más de un par de minutos que se cerró, asumimos que es una
   // visita al historial: mostramos el resultado directamente, sin repetir
   // la cuenta atrás ni el revelado dramático cada vez que se vuelve a mirar.
@@ -211,10 +222,12 @@ export default async function PodioPage({
     <PodioReveal
       resultados={resultados}
       salaId={noche.sala_id}
+      nocheId={noche.id}
       fecha={noche.inicio}
       vistaHistorica={vistaHistorica}
       votacion={votacion}
       premioPodio={premioPodio}
+      esAdmin={esAdmin}
     />
   );
 }
