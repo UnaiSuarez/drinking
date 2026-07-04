@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Lilita_One, Nunito_Sans } from "next/font/google";
+import AppHeader from "@/components/AppHeader";
 import "./globals.css";
 
 const lilita = Lilita_One({
@@ -40,7 +41,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${lilita.variable} ${nunito.variable}`}>
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <AppHeader />
+        {children}
+      </body>
     </html>
   );
 }

@@ -228,7 +228,7 @@ export default function SalaView({
 
       {/* Liga de la temporada */}
       <section className="mb-8">
-        <div className="mb-3 flex items-baseline justify-between">
+        <div className="mb-1 flex items-baseline justify-between">
           <h2 className="font-titulo text-xl text-texto">🏆 Liga</h2>
           {temporada && (
             <span className="text-xs text-texto2">
@@ -239,6 +239,11 @@ export default function SalaView({
               })}
             </span>
           )}
+        </div>
+        <div className="mb-3">
+          <Link href="/niveles" className="text-xs text-cian underline">
+            📈 Ver niveles
+          </Link>
         </div>
         {liga.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
