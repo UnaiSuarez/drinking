@@ -38,6 +38,7 @@ const DURACIONES = [
 
 export default function SalaView({
   sala,
+  esTemporada,
   miembros,
   miRol,
   userId,
@@ -47,6 +48,7 @@ export default function SalaView({
   liga,
 }: {
   sala: { id: string; nombre: string; codigo: string };
+  esTemporada: boolean;
   miembros: Miembro[];
   miRol: string;
   userId: string;
@@ -57,6 +59,9 @@ export default function SalaView({
 }) {
   const router = useRouter();
   const [eligiendoDuracion, setEligiendoDuracion] = useState(false);
+  const [hastaFecha, setHastaFecha] = useState("");
+  const [minFecha, setMinFecha] = useState("");
+  const [errorFecha, setErrorFecha] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [notifSoportado, setNotifSoportado] = useState(false);
@@ -135,7 +140,14 @@ export default function SalaView({
           ← Tus salas
         </Link>
         <div className="mt-2 flex items-start justify-between">
-          <h1 className="font-titulo text-3xl text-texto">{sala.nombre}</h1>
+          <div>
+            <h1 className="font-titulo text-3xl text-texto">{sala.nombre}</h1>
+            {esTemporada && (
+              <span className="mt-1 inline-block rounded-full border border-ambar/50 bg-ambar/10 px-2 py-0.5 text-xs text-ambar">
+                🗓️ Sala de temporada
+              </span>
+            )}
+          </div>
           <div className="flex gap-2">
             {esAdmin && (
               <Link
@@ -186,24 +198,70 @@ export default function SalaView({
         </Link>
       ) : eligiendoDuracion ? (
         <div className="mb-8 rounded-3xl border border-borde bg-tarjeta p-6">
-          <h3 className="mb-4 font-titulo text-lg text-ambar">
-            ¿Cuánto va a durar la noche?
-          </h3>
-          <div className="grid grid-cols-2 gap-3">
-            {DURACIONES.map((d) => (
+          {esTemporada ? (
+            <>
+              <h3 className="mb-4 font-titulo text-lg text-ambar">
+                ¿Hasta cuándo dura la temporada?
+              </h3>
+              <input
+                type="datetime-local"
+                value={hastaFecha}
+                min={minFecha}
+                onChange={(e) => setHastaFecha(e.target.value)}
+                className="mb-3 w-full rounded-2xl border border-borde bg-fondo px-4 py-3 text-texto outline-none focus:border-ambar"
+              />
+              {errorFecha && (
+                <p className="mb-3 text-sm text-rosa">{errorFecha}</p>
+              )}
               <button
-                key={d.horas}
                 disabled={cargando}
-                onClick={() => iniciarNoche(d.horas)}
-                className="rounded-2xl border-2 border-ambar py-4 font-titulo text-lg text-ambar transition active:scale-95 disabled:opacity-50"
+                onClick={() => {
+                  if (!hastaFecha) {
+                    setErrorFecha("Elige una fecha y hora de fin.");
+                    return;
+                  }
+                  const horas =
+                    (new Date(hastaFecha).getTime() - Date.now()) /
+                    (3600 * 1000);
+                  if (!Number.isFinite(horas) || horas <= 0) {
+                    setErrorFecha("La fecha de fin debe ser posterior a ahora.");
+                    return;
+                  }
+                  setErrorFecha(null);
+                  iniciarNoche(horas);
+                }}
+                className="w-full rounded-2xl border-2 border-ambar py-4 font-titulo text-lg text-ambar transition active:scale-95 disabled:opacity-50"
               >
-                {d.etiqueta}
+                Empezar temporada
               </button>
-            ))}
-          </div>
-          <p className="mt-3 text-center text-xs text-texto2">
-            Se cierra sola al acabar el tiempo, o antes si la cierra un admin.
-          </p>
+              <p className="mt-3 text-center text-xs text-texto2">
+                Se podrán registrar bebidas durante todo ese periodo. Se
+                cierra sola al llegar la fecha, o antes si la cierra un admin.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 className="mb-4 font-titulo text-lg text-ambar">
+                ¿Cuánto va a durar la noche?
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                {DURACIONES.map((d) => (
+                  <button
+                    key={d.horas}
+                    disabled={cargando}
+                    onClick={() => iniciarNoche(d.horas)}
+                    className="rounded-2xl border-2 border-ambar py-4 font-titulo text-lg text-ambar transition active:scale-95 disabled:opacity-50"
+                  >
+                    {d.etiqueta}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-3 text-center text-xs text-texto2">
+                Se cierra sola al acabar el tiempo, o antes si la cierra un
+                admin.
+              </p>
+            </>
+          )}
           <button
             onClick={() => setEligiendoDuracion(false)}
             className="mt-3 w-full rounded-2xl border border-borde py-3 text-texto2 active:scale-95"
@@ -213,10 +271,15 @@ export default function SalaView({
         </div>
       ) : esAdmin ? (
         <button
-          onClick={() => setEligiendoDuracion(true)}
+          onClick={() => {
+            setMinFecha(
+              new Date(Date.now() + 60 * 1000).toISOString().slice(0, 16)
+            );
+            setEligiendoDuracion(true);
+          }}
           className="mb-8 w-full rounded-3xl bg-ambar p-6 font-titulo text-2xl text-fondo transition active:scale-[0.98] glow-ambar"
         >
-          🌙 Iniciar noche
+          {esTemporada ? "🗓️ Iniciar temporada" : "🌙 Iniciar noche"}
         </button>
       ) : (
         <div className="mb-8 rounded-3xl border border-borde bg-tarjeta p-6 text-center">

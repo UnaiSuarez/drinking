@@ -17,6 +17,7 @@ export default function SalasHome({
   const router = useRouter();
   const [modo, setModo] = useState<"ninguno" | "crear" | "unirse">("ninguno");
   const [nombreSala, setNombreSala] = useState("");
+  const [esTemporada, setEsTemporada] = useState(false);
   const [codigo, setCodigo] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +29,7 @@ export default function SalasHome({
     const supabase = createClient();
     const { data, error } = await supabase.rpc("crear_sala", {
       p_nombre: nombreSala.trim(),
+      p_tipo: esTemporada ? "temporada" : "normal",
     });
     setCargando(false);
     if (error || !data) {
@@ -153,6 +155,25 @@ export default function SalasHome({
             placeholder="Nombre del grupo (ej: Los del pueblo)"
             className="mb-4 w-full rounded-2xl border border-borde bg-fondo px-4 py-4 text-texto placeholder-texto2 outline-none focus:border-ambar"
           />
+          <label className="mb-4 flex items-start gap-3 rounded-2xl border border-borde bg-fondo px-4 py-3">
+            <input
+              type="checkbox"
+              checked={esTemporada}
+              onChange={(e) => setEsTemporada(e.target.checked)}
+              className="mt-1 h-4 w-4 accent-ambar"
+            />
+            <span>
+              <span className="block text-sm text-texto">
+                🗓️ Sala de temporada
+              </span>
+              <span className="block text-xs text-texto2">
+                En vez de una noche corta con horas fijas, eliges una fecha de
+                inicio y otra de fin (ej: &quot;Fin de semana con amigos&quot;,
+                &quot;Verano&quot;) y se pueden registrar bebidas durante todo
+                ese periodo.
+              </span>
+            </span>
+          </label>
           {error && <p className="mb-3 text-sm text-rosa">{error}</p>}
           <div className="flex gap-2">
             <button
