@@ -29,6 +29,7 @@ import {
 import { parseTiendaState } from "@/lib/tienda";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
+import CartaDetalleModal from "@/components/CartaDetalleModal";
 
 export type Bebida = {
   id: number;
@@ -324,6 +325,7 @@ export default function NocheLive({
   const [registros, setRegistros] = useState<Registro[]>(registrosIniciales);
   const [bloqueada, setBloqueada] = useState(false);
   const [estadoNoche, setEstadoNoche] = useState<EstadoNoche>(noche.estado);
+  const [finProgramado, setFinProgramado] = useState(noche.fin_programado);
   const [finGracia, setFinGracia] = useState<string | null>(noche.fin_gracia);
   const [categoria, setCategoria] = useState<string | null>(
     noche.votacion_categoria
@@ -335,6 +337,11 @@ export default function NocheLive({
   const [cerrando, setCerrando] = useState(false);
   const [errorCierre, setErrorCierre] = useState<string | null>(null);
   const [confirmandoCierre, setConfirmandoCierre] = useState(false);
+  const [cartaDetalle, setCartaDetalle] = useState<CartaCofre | null>(null);
+  const [panelExtender, setPanelExtender] = useState(false);
+  const [horasExtra, setHorasExtra] = useState("2");
+  const [extendiendo, setExtendiendo] = useState(false);
+  const [errorExtender, setErrorExtender] = useState<string | null>(null);
   const [usandoCarta, setUsandoCarta] = useState<string | null>(null);
   const [objetivosCarta, setObjetivosCarta] = useState<Record<string, string>>({});
   const [mensajeCarta, setMensajeCarta] = useState<string | null>(null);
@@ -358,7 +365,7 @@ export default function NocheLive({
   const logrosVistosRef = useRef<Set<string>>(new Set(logrosVistosIniciales));
 
   const unido = jugadores.some((j) => j.id === userId);
-  const finMs = new Date(noche.fin_programado).getTime();
+  const finMs = new Date(finProgramado).getTime();
   const terminada = ahora >= finMs;
   const graciaMs = finGracia ? new Date(finGracia).getTime() : null;
   const enGracia = estadoNoche === "cerrando";
@@ -525,9 +532,11 @@ export default function NocheLive({
         (payload) => {
           const actualizada = payload.new as {
             estado: EstadoNoche;
+            fin_programado: string;
             fin_gracia: string | null;
             votacion_categoria: string | null;
           };
+          setFinProgramado(actualizada.fin_programado);
           if (actualizada.estado === "cerrada") {
             router.push(`/noche/${noche.id}/podio`);
           } else if (actualizada.estado === "cerrando") {
@@ -828,6 +837,30 @@ export default function NocheLive({
     setRegistros((prev) => prev.filter((r) => r.id !== miUltimo.id));
   }
 
+  /** El admin alarga el tiempo restante de la noche (mientras siga activa). */
+  async function extenderNoche() {
+    const horas = Number(horasExtra);
+    if (!Number.isFinite(horas) || horas <= 0) {
+      setErrorExtender("Pon un número de horas válido.");
+      return;
+    }
+    setExtendiendo(true);
+    setErrorExtender(null);
+    const { error } = await supabase.rpc("extender_noche", {
+      p_noche: noche.id,
+      p_horas: horas,
+    });
+    setExtendiendo(false);
+    if (error) {
+      setErrorExtender(error.message);
+      return;
+    }
+    setFinProgramado(
+      new Date(finMs + horas * 3600 * 1000).toISOString()
+    );
+    setPanelExtender(false);
+  }
+
   /** Inicia el periodo de gracia de 5 minutos (todavía no calcula el podio). */
   async function iniciarCierre() {
     setCerrando(true);
@@ -983,6 +1016,48 @@ export default function NocheLive({
           </div>
         )}
       </header>
+
+      {esAdmin && estadoNoche === "activa" && (
+        <div className="mb-6">
+          {panelExtender ? (
+            <div className="rounded-2xl border border-cian/50 bg-tarjeta p-3">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  value={horasExtra}
+                  onChange={(e) => setHorasExtra(e.target.value)}
+                  className="w-20 rounded-xl border border-borde bg-fondo px-3 py-2 text-center text-sm text-texto"
+                />
+                <span className="text-sm text-texto2">horas más</span>
+                <button
+                  onClick={extenderNoche}
+                  disabled={extendiendo}
+                  className="flex-1 rounded-xl bg-cian py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
+                >
+                  {extendiendo ? "..." : "Añadir"}
+                </button>
+                <button
+                  onClick={() => setPanelExtender(false)}
+                  className="rounded-xl border border-borde px-3 py-2 text-sm text-texto2 active:scale-95"
+                >
+                  ✕
+                </button>
+              </div>
+              {errorExtender && (
+                <p className="mt-2 text-xs text-rosa">{errorExtender}</p>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setPanelExtender(true)}
+              className="rounded-xl border border-cian/50 px-3 py-2 text-xs text-cian active:scale-95"
+            >
+              ⏱️ Extender tiempo
+            </button>
+          )}
+        </div>
+      )}
 
       {!enGracia && !terminada && finMs - ahora <= 5 * 60 * 1000 && (
         <div className="pulso-neon mb-6 rounded-3xl border-2 border-rosa bg-tarjeta p-4 text-center">
@@ -1214,6 +1289,9 @@ export default function NocheLive({
                 <span className="mt-1 font-titulo text-sm text-texto">
                   {b.nombre}
                 </span>
+                <span className="mt-0.5 text-[11px] text-texto2">
+                  {b.puntos} {b.puntos === 1 ? "punto" : "puntos"}
+                </span>
               </button>
             ))}
           </div>
@@ -1253,7 +1331,11 @@ export default function NocheLive({
                       key={carta.id}
                       className="rounded-2xl border border-borde bg-fondo/60 p-3"
                     >
-                      <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setCartaDetalle(carta)}
+                        className="flex w-full gap-3 text-left outline-none"
+                      >
                         <Image
                           src={carta.imagen}
                           alt={carta.nombre}
@@ -1275,7 +1357,7 @@ export default function NocheLive({
                             {carta.efecto}
                           </p>
                         </div>
-                      </div>
+                      </button>
 
                       {requiereObjetivo && (
                         <select
@@ -1523,6 +1605,15 @@ export default function NocheLive({
             </p>
           )}
         </div>
+      )}
+
+      {cartaDetalle && (
+        <CartaDetalleModal
+          carta={cartaDetalle}
+          cantidad={miInventario.cartas[cartaDetalle.id] ?? 0}
+          bloqueada={false}
+          onClose={() => setCartaDetalle(null)}
+        />
       )}
     </main>
   );

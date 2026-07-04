@@ -20,11 +20,14 @@ export default async function SalaPage({
 
   const { data: sala } = await supabase
     .from("salas")
-    .select("id, nombre, codigo")
+    .select("id, nombre, codigo, config")
     .eq("id", id)
     .single();
 
   if (!sala) notFound();
+
+  const configSala = (sala.config ?? {}) as Record<string, unknown>;
+  const esTemporada = configSala.tipo === "temporada";
 
   const { data: miembrosRaw } = await supabase
     .from("sala_miembros")
@@ -106,6 +109,7 @@ export default async function SalaPage({
   return (
     <SalaView
       sala={sala}
+      esTemporada={esTemporada}
       miembros={miembros}
       miRol={miRol}
       userId={user!.id}
