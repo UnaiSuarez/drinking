@@ -51,7 +51,7 @@ export default async function SalaPage({
     .from("noches")
     .select("id, inicio, fin_programado")
     .eq("sala_id", id)
-    .eq("estado", "activa")
+    .in("estado", ["activa", "cerrando"])
     .maybeSingle();
 
   const { data: nochesCerradasRaw } = await supabase
