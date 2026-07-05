@@ -8,6 +8,13 @@ import { parseAvatarConfig } from "@/lib/avatar";
 import { cofrePorPodio } from "@/lib/cofresDesign";
 import { parseInventarioState } from "@/lib/inventario";
 
+const XP_POR_RAREZA: Record<string, number> = {
+  comun: 25,
+  rara: 75,
+  epica: 200,
+  legendaria: 500,
+};
+
 export default async function PodioPage({
   params,
 }: {
@@ -21,7 +28,7 @@ export default async function PodioPage({
 
   const { data: noche } = await supabase
     .from("noches")
-    .select("id, sala_id, estado, inicio, fin_real, votacion_categoria")
+    .select("id, sala_id, estado, inicio, fin_real, votacion_categoria, temporada_id")
     .eq("id", id)
     .single();
 
@@ -48,7 +55,7 @@ export default async function PodioPage({
 
   const { data: jugadoresRaw } = await supabase
     .from("noche_jugadores")
-    .select("usuario_id, posicion_final, pl_ganados, perfiles(nombre, avatar_config)")
+    .select("usuario_id, posicion_final, pl_ganados, perfiles(nombre, avatar_config, xp)")
     .eq("noche_id", id)
     .order("posicion_final");
 
@@ -57,6 +64,7 @@ export default async function PodioPage({
   );
   const perfilActual = jugadorActual?.perfiles as unknown as {
     avatar_config: unknown;
+    xp: number;
   } | null;
   const cofrePodio = cofrePorPodio(jugadorActual?.posicion_final ?? 99);
   const inventarioActual = parseInventarioState(perfilActual?.avatar_config);
@@ -218,6 +226,77 @@ export default async function PodioPage({
     };
   }
 
+  // Desglose de XP ganada esta noche por el jugador que mira el podio (solo
+  // para el propio usuario: es un recap personal, no de todos).
+  let miXp: {
+    ganada: number;
+    antes: number;
+    despues: number;
+    desglose: { concepto: string; xp: number }[];
+  } | null = null;
+  if (user && jugadorActual && perfilActual) {
+    const misLogros = [...(logrosPorUsuario.get(user.id)?.values() ?? [])];
+    const xpLogros = misLogros.reduce(
+      (acc, l) => acc + (XP_POR_RAREZA[l.rareza] ?? 0) * l.n,
+      0
+    );
+    const misBebidas = totales.get(user.id)?.bebidas ?? 0;
+    const gano = jugadorActual.posicion_final === 1 && misBebidas > 0;
+    const desglose = [
+      { concepto: "Por participar en la noche", xp: 20 },
+      ...(misBebidas > 0
+        ? [{ concepto: `${misBebidas} bebida${misBebidas === 1 ? "" : "s"} registrada${misBebidas === 1 ? "" : "s"}`, xp: misBebidas * 5 }]
+        : []),
+      ...(gano ? [{ concepto: "🥇 Ganaste la noche", xp: 100 }] : []),
+      ...(misLogros.length > 0
+        ? [{ concepto: `${misLogros.length} logro${misLogros.length === 1 ? "" : "s"} conseguido${misLogros.length === 1 ? "" : "s"}`, xp: xpLogros }]
+        : []),
+    ];
+    const ganada = desglose.reduce((acc, d) => acc + d.xp, 0);
+    const despues = perfilActual.xp ?? 0;
+    miXp = { ganada, antes: despues - ganada, despues, desglose };
+  }
+
+  // Progreso de liga: comparamos el PL actual (ya con el de esta noche
+  // sumado) contra el que había antes de cerrarla, incluyendo el cambio de
+  // posición/división que eso supone dentro de la clasificación.
+  let miLiga: {
+    pl: number;
+    antes: number;
+    despues: number;
+    posicionDespues: number;
+    totalLiga: number;
+    esTop1Antes: boolean;
+    esTop1Despues: boolean;
+  } | null = null;
+  if (user && jugadorActual && noche.temporada_id) {
+    const { data: ligaRaw } = await supabase
+      .from("liga")
+      .select("usuario_id, pl")
+      .eq("temporada_id", noche.temporada_id)
+      .order("pl", { ascending: false });
+    const lista = ligaRaw ?? [];
+    const idxDespues = lista.findIndex((e) => e.usuario_id === user.id);
+    if (idxDespues !== -1) {
+      const plDespues = lista[idxDespues].pl;
+      const plGanado = jugadorActual.pl_ganados ?? 0;
+      const plAntes = plDespues - plGanado;
+      const listaAntes = lista
+        .map((e) => (e.usuario_id === user.id ? { ...e, pl: plAntes } : e))
+        .sort((a, b) => b.pl - a.pl);
+      const idxAntes = listaAntes.findIndex((e) => e.usuario_id === user.id);
+      miLiga = {
+        pl: plGanado,
+        antes: plAntes,
+        despues: plDespues,
+        posicionDespues: idxDespues + 1,
+        totalLiga: lista.length,
+        esTop1Antes: idxAntes === 0,
+        esTop1Despues: idxDespues === 0,
+      };
+    }
+  }
+
   return (
     <PodioReveal
       resultados={resultados}
@@ -228,6 +307,9 @@ export default async function PodioPage({
       votacion={votacion}
       premioPodio={premioPodio}
       esAdmin={esAdmin}
+      miXp={miXp}
+      miLiga={miLiga}
+      userId={user?.id ?? null}
     />
   );
 }

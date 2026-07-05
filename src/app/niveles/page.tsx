@@ -3,11 +3,17 @@ import BackButton from "@/components/BackButton";
 import AvatarFrame from "@/components/AvatarFrame";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
-import { MARCO_INFO, marcoPorNivel } from "@/lib/marcos";
+import { MARCO_INFO, marcoPorNivel, marcoPorLiga } from "@/lib/marcos";
+import { calcularDivision } from "@/lib/liga";
 
 const HITOS = [1, 5, 10, 25, 50];
 
-export default async function NivelesPage() {
+export default async function NivelesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sala?: string }>;
+}) {
+  const { sala: salaId } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,6 +34,46 @@ export default async function NivelesPage() {
   }
 
   const miNivel = xpActual !== null ? progresoNivel(xpActual) : null;
+
+  let ligaInfo: {
+    nombreTemporada: string;
+    pl: number;
+    posicion: number;
+    total: number;
+    esTop1: boolean;
+  } | null = null;
+
+  if (user && salaId) {
+    const { data: temporada } = await supabase
+      .from("temporadas")
+      .select("id, nombre, fin")
+      .eq("sala_id", salaId)
+      .eq("estado", "activa")
+      .gt("fin", new Date().toISOString())
+      .maybeSingle();
+
+    if (temporada) {
+      const { data: ligaRaw } = await supabase
+        .from("liga")
+        .select("usuario_id, pl")
+        .eq("temporada_id", temporada.id)
+        .order("pl", { ascending: false });
+      const lista = ligaRaw ?? [];
+      const idx = lista.findIndex((e) => e.usuario_id === user.id);
+      if (idx !== -1) {
+        ligaInfo = {
+          nombreTemporada: temporada.nombre,
+          pl: lista[idx].pl,
+          posicion: idx + 1,
+          total: lista.length,
+          esTop1: idx === 0,
+        };
+      }
+    }
+  }
+
+  const division = ligaInfo ? calcularDivision(ligaInfo.pl, ligaInfo.esTop1) : null;
+  const marcoLiga = ligaInfo ? marcoPorLiga(ligaInfo.pl, ligaInfo.esTop1) : null;
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-16 pt-6">
@@ -50,6 +96,33 @@ export default async function NivelesPage() {
           </p>
         )}
       </header>
+
+      {ligaInfo && division && marcoLiga && (
+        <section className="mb-8 rounded-2xl border border-oro/50 bg-gradient-to-br from-tarjeta to-oro/10 p-5">
+          <p className="mb-3 font-titulo text-lg text-texto">
+            🏆 Tu liga esta temporada
+          </p>
+          <div className="flex items-center gap-4">
+            <AvatarFrame
+              config={avatarConfig}
+              marco={marcoLiga}
+              className="h-16 w-16"
+              imageSizes="64px"
+            />
+            <div className="min-w-0 flex-1">
+              <p className={`font-titulo text-base ${division.color}`}>
+                {division.icono} {division.nombre}
+              </p>
+              <p className="text-xs text-texto2">{ligaInfo.nombreTemporada}</p>
+              <p className="mt-1 text-sm text-texto">
+                <span className="font-titulo text-lima">{ligaInfo.pl} PL</span>
+                {" · "}
+                {ligaInfo.posicion}º de {ligaInfo.total}
+              </p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <ul className="space-y-3">
         {HITOS.map((nivel) => {
