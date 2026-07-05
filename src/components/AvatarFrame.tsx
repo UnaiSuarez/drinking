@@ -11,7 +11,21 @@ const MARCO_CLASES: Record<
     metal: string;
     gema: string;
     arte?: string;
-    animacion?: "shine" | "spark" | "rayos" | "fuego" | "glitch" | "aura";
+    animacion?:
+      | "shine"
+      | "fuego"
+      | "fuego-intenso"
+      | "rayos"
+      | "tormenta"
+      | "disco"
+      | "orbita"
+      | "prisma"
+      | "corona"
+      | "cristal"
+      | "halo"
+      | "portal"
+      | "polvo"
+      | "glitch";
   }
 > = {
   madera: {
@@ -75,7 +89,7 @@ const MARCO_CLASES: Record<
     inner: "from-[#7f42ff] via-[#0d0e1a] to-[#2de2e6]",
     metal: "#a78bfa",
     gema: "#ffffff",
-    animacion: "spark",
+    animacion: "orbita",
   },
   cobre: {
     base: "avatar-frame-cobre",
@@ -100,14 +114,14 @@ const MARCO_CLASES: Record<
     inner: "from-[#2de2e6] via-[#f5f1e8] to-[#ff2e93]",
     metal: "#c7ccdb",
     gema: "#ff2e93",
-    animacion: "shine",
+    animacion: "disco",
   },
   prisma: {
     base: "avatar-frame-prisma",
     inner: "from-[#2de2e6] via-[#7c3aed] to-[#ff2e93]",
     metal: "#a78bfa",
     gema: "#ffffff",
-    animacion: "spark",
+    animacion: "prisma",
   },
   glitch: {
     base: "avatar-frame-glitch",
@@ -121,14 +135,14 @@ const MARCO_CLASES: Record<
     inner: "from-[#ffd54a] via-[#ff5b1a] to-[#3b1020]",
     metal: "#ff8a1f",
     gema: "#ffd54a",
-    animacion: "fuego",
+    animacion: "fuego-intenso",
   },
   aureola: {
     base: "avatar-frame-aureola",
     inner: "from-[#fff6b8] via-[#f5f1e8] to-[#8a8fa8]",
     metal: "#ffd54a",
     gema: "#ffffff",
-    animacion: "aura",
+    animacion: "halo",
   },
   trono: {
     base: "avatar-frame-trono",
@@ -136,7 +150,7 @@ const MARCO_CLASES: Record<
     metal: "#ffd54a",
     gema: "#ff2e93",
     arte: "/frames/ai/items/trono.webp",
-    animacion: "spark",
+    animacion: "corona",
   },
   portal: {
     base: "avatar-frame-portal",
@@ -144,7 +158,7 @@ const MARCO_CLASES: Record<
     metal: "#a78bfa",
     gema: "#ffffff",
     arte: "/frames/ai/items/portal.webp",
-    animacion: "aura",
+    animacion: "portal",
   },
   tormenta: {
     base: "avatar-frame-tormenta",
@@ -152,7 +166,7 @@ const MARCO_CLASES: Record<
     metal: "#b8f7ff",
     gema: "#2de2e6",
     arte: "/frames/ai/items/tormenta.webp",
-    animacion: "rayos",
+    animacion: "tormenta",
   },
   reliquia: {
     base: "avatar-frame-reliquia",
@@ -160,7 +174,7 @@ const MARCO_CLASES: Record<
     metal: "#c7ccdb",
     gema: "#a78bfa",
     arte: "/frames/ai/items/reliquia.webp",
-    animacion: "aura",
+    animacion: "polvo",
   },
   "liga-bronce": {
     base: "avatar-frame-liga-bronce",
@@ -191,7 +205,7 @@ const MARCO_CLASES: Record<
     metal: "#2de2e6",
     gema: "#ffffff",
     arte: "/frames/ai/items/liga-diamante.webp",
-    animacion: "spark",
+    animacion: "cristal",
   },
   "liga-maestro": {
     base: "avatar-frame-liga-maestro",
@@ -199,7 +213,7 @@ const MARCO_CLASES: Record<
     metal: "#ff8a1f",
     gema: "#ffd54a",
     arte: "/frames/ai/items/liga-maestro.webp",
-    animacion: "fuego",
+    animacion: "fuego-intenso",
   },
   "liga-challenger": {
     base: "avatar-frame-liga-challenger",
@@ -207,7 +221,7 @@ const MARCO_CLASES: Record<
     metal: "#ffd54a",
     gema: "#ffffff",
     arte: "/frames/ai/items/liga-challenger.webp",
-    animacion: "rayos",
+    animacion: "tormenta",
   },
 };
 
@@ -252,18 +266,53 @@ export default function AvatarFrame({
       {avatarAnimado && (
         <span className={`avatar-aura avatar-aura-${config.avatarAnimacion}`} />
       )}
-      {(marco === "challenger" || marco === "liga-challenger") && (
+      {(marcoInfo.animacion === "rayos" || marcoInfo.animacion === "tormenta") && (
+        <span
+          className={`avatar-frame-rayos-fx ${
+            marcoInfo.animacion === "tormenta" ? "avatar-frame-tormenta-fx" : ""
+          }`}
+        />
+      )}
+      {marcoInfo.animacion === "disco" && (
         <>
-          <span className="avatar-frame-spark spark-a" />
-          <span className="avatar-frame-spark spark-b" />
-          <span className="avatar-frame-spark spark-c" />
+          <span className="avatar-frame-disco-fx" />
+          <span className="avatar-frame-spark disco-glint-a" />
+          <span className="avatar-frame-spark disco-glint-b" />
         </>
       )}
-      {(marcoInfo.animacion === "spark" || marcoInfo.animacion === "aura") && (
+      {marcoInfo.animacion === "orbita" && (
+        <span className="avatar-frame-orbit-wrap">
+          <span className="avatar-frame-orbit-dot" />
+          <span className="avatar-frame-orbit-dot orbit-dot-2" />
+        </span>
+      )}
+      {marcoInfo.animacion === "prisma" && <span className="avatar-frame-prisma-fx" />}
+      {marcoInfo.animacion === "corona" && (
         <>
-          <span className="avatar-frame-spark spark-a" />
-          <span className="avatar-frame-spark spark-b" />
-          <span className="avatar-frame-spark spark-c" />
+          <span className="avatar-frame-gem-glint gem-glint-a" />
+          <span className="avatar-frame-gem-glint gem-glint-b" />
+          <span className="avatar-frame-gem-glint gem-glint-c" />
+        </>
+      )}
+      {marcoInfo.animacion === "cristal" && (
+        <>
+          <span className="avatar-frame-cristal-fx" />
+          <span className="avatar-frame-gem-glint gem-glint-a cristal-glint" />
+        </>
+      )}
+      {marcoInfo.animacion === "halo" && <span className="avatar-frame-halo-fx" />}
+      {marcoInfo.animacion === "portal" && <span className="avatar-frame-portal-fx" />}
+      {marcoInfo.animacion === "polvo" && (
+        <>
+          <span className="avatar-frame-dust dust-a" />
+          <span className="avatar-frame-dust dust-b" />
+          <span className="avatar-frame-dust dust-c" />
+        </>
+      )}
+      {marcoInfo.animacion === "fuego-intenso" && (
+        <>
+          <span className="avatar-frame-ember ember-a" />
+          <span className="avatar-frame-ember ember-b" />
         </>
       )}
       {marcoInfo.animacion === "glitch" && (
@@ -434,7 +483,7 @@ export default function AvatarFrame({
             />
           </>
         )}
-        {(marco === "llamas" || marcoInfo.animacion === "fuego") && (
+        {(marco === "llamas" || marcoInfo.animacion === "fuego" || marcoInfo.animacion === "fuego-intenso") && (
           <path
             className="avatar-frame-flame"
             d="M80 14 Q92 29 82 45 Q79 36 70 32 Q76 25 80 14Z"
@@ -442,7 +491,7 @@ export default function AvatarFrame({
             opacity="0.88"
           />
         )}
-        {(marco === "cosmico" || marcoInfo.animacion === "aura") && (
+        {(marco === "cosmico" || marcoInfo.animacion === "halo") && (
           <>
             <circle cx="21" cy="31" r="3" fill="#ffffff" opacity="0.86" />
             <circle cx="80" cy="66" r="2.5" fill="#2de2e6" opacity="0.9" />
@@ -456,17 +505,6 @@ export default function AvatarFrame({
               opacity="0.75"
             />
           </>
-        )}
-        {marcoInfo.animacion === "rayos" && marco !== "challenger" && marco !== "liga-challenger" && (
-          <path
-            className="avatar-frame-ray"
-            d="M84 6 L72 34 H84 L66 66"
-            fill="none"
-            stroke="#ffffff"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="4"
-          />
         )}
         </svg>
       )}

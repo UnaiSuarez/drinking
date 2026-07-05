@@ -7,7 +7,11 @@ import AvatarFramePreview from "@/components/AvatarFramePreview";
 import { createClient } from "@/lib/supabase/client";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { COFRES_TIPOS } from "@/lib/cofresDesign";
-import { parseInventarioState, type InventarioState } from "@/lib/inventario";
+import {
+  FRAGMENTOS_PERSONAJE_NECESARIOS,
+  parseInventarioState,
+  type InventarioState,
+} from "@/lib/inventario";
 import {
   PERSONAJES_OCULTOS,
   TIENDA_AVATARES,
@@ -167,6 +171,24 @@ export default function TiendaClient({
     };
     const ok = await guardarConfig(nextConfig);
     if (ok) setMensaje(yaComprado ? "Avatar equipado." : "Avatar comprado y equipado.");
+    setComprando(null);
+  }
+
+  async function equiparPersonaje(id: string, imagen: string, config: unknown) {
+    setComprando(id);
+    setMensaje(null);
+    const nextTienda: TiendaState = {
+      ...tienda,
+      avatarEquipado: id,
+    };
+    const nextConfig = {
+      ...objetoConfig(rawConfig),
+      ...objetoConfig(config),
+      avatarImagen: imagen,
+      tienda: nextTienda,
+    };
+    const ok = await guardarConfig(nextConfig);
+    if (ok) setMensaje("Personaje equipado.");
     setComprando(null);
   }
 
@@ -396,20 +418,31 @@ export default function TiendaClient({
               Personajes ocultos
             </h2>
             <p className="text-xs text-texto2">
-              Reservados para cofres. Por ahora solo se puede ver su silueta.
+              Se desbloquean juntando fragmentos en cofres. Cada uno tiene una
+              habilidad oculta propia.
             </p>
           </div>
           <span className="rounded-full border border-oro/40 bg-oro/10 px-3 py-1 font-titulo text-xs text-oro">
-            Próximamente
+            {
+              PERSONAJES_OCULTOS.filter((item) =>
+                inventario.personajesOcultos.includes(item.id)
+              ).length
+            }
+            /{PERSONAJES_OCULTOS.length}
           </span>
         </div>
         <ul className="grid grid-cols-2 gap-3">
           {PERSONAJES_OCULTOS.map((item) => {
             const rareza = RAREZA_ESTILO[item.rareza];
-            const lockedConfig = {
-              ...item.config,
-              avatarImagen: item.placeholderImagen,
-            };
+            const desbloqueado = inventario.personajesOcultos.includes(item.id);
+            const fragmentos = Math.min(
+              FRAGMENTOS_PERSONAJE_NECESARIOS,
+              inventario.personajeFragmentos[item.id] ?? 0
+            );
+            const equipado = tienda.avatarEquipado === item.id;
+            const previewConfig = desbloqueado
+              ? item.config
+              : { ...item.config, avatarImagen: item.placeholderImagen };
 
             return (
               <li
@@ -418,16 +451,22 @@ export default function TiendaClient({
               >
                 <div className="mb-3 flex justify-center rounded-2xl bg-fondo/60 p-2">
                   <AvatarFramePreview
-                    config={lockedConfig}
+                    config={previewConfig}
                     marco="portal"
-                    titulo={item.nombre}
-                    subtitulo={`${rareza.etiqueta} · ${item.desbloqueo}`}
+                    titulo={desbloqueado ? item.nombre : "???"}
+                    subtitulo={
+                      desbloqueado
+                        ? `${rareza.etiqueta} · Desbloqueado`
+                        : `${rareza.etiqueta} · ${item.desbloqueo}`
+                    }
                     triggerClassName="h-24 w-24"
                     previewClassName="h-72 w-72"
                   />
                 </div>
                 <div className="mb-1 flex items-center justify-between gap-2">
-                  <p className="font-titulo text-texto">{item.nombre}</p>
+                  <p className="font-titulo text-texto">
+                    {desbloqueado ? item.nombre : "???"}
+                  </p>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${rareza.fondo} ${rareza.texto}`}
                   >
@@ -435,18 +474,39 @@ export default function TiendaClient({
                   </span>
                 </div>
                 <p className="mb-2 min-h-12 text-xs text-texto2">
-                  {item.descripcion}
+                  {desbloqueado ? item.descripcion : item.desbloqueo}
                 </p>
                 <p className="mb-3 min-h-10 text-[11px] text-oro">
-                  {item.desbloqueo}
+                  {item.habilidad}
                 </p>
-                <button
-                  type="button"
-                  disabled
-                  className={`w-full rounded-xl px-3 py-2 font-titulo text-sm opacity-70 ${rareza.boton}`}
-                >
-                  Próximamente en cofres
-                </button>
+                {desbloqueado ? (
+                  <button
+                    type="button"
+                    disabled={comprando === item.id || equipado}
+                    onClick={() => equiparPersonaje(item.id, item.imagen, item.config)}
+                    className={`w-full rounded-xl px-3 py-2 font-titulo text-sm active:scale-95 disabled:opacity-50 ${rareza.boton}`}
+                  >
+                    {equipado ? "Equipado" : "Equipar"}
+                  </button>
+                ) : (
+                  <>
+                    <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-fondo">
+                      <div
+                        className="h-full rounded-full bg-oro"
+                        style={{
+                          width: `${(fragmentos / FRAGMENTOS_PERSONAJE_NECESARIOS) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled
+                      className={`w-full rounded-xl px-3 py-2 font-titulo text-sm opacity-70 ${rareza.boton}`}
+                    >
+                      {fragmentos}/{FRAGMENTOS_PERSONAJE_NECESARIOS} fragmentos
+                    </button>
+                  </>
+                )}
               </li>
             );
           })}

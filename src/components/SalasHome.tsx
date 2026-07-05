@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
-type SalaResumen = { id: string; nombre: string; codigo: string; rol: string };
+type SalaResumen = {
+  id: string;
+  nombre: string;
+  codigo: string;
+  rol: string;
+  nocheActivaId: string | null;
+};
 
 export default function SalasHome({
   nombreUsuario,
@@ -106,11 +112,21 @@ export default function SalasHome({
               <li key={sala.id}>
                 <Link
                   href={`/sala/${sala.id}`}
-                  className="flex items-center justify-between rounded-3xl border border-borde bg-tarjeta p-5 transition active:scale-[0.98]"
+                  className={`flex items-center justify-between rounded-3xl border p-5 transition active:scale-[0.98] ${
+                    sala.nocheActivaId
+                      ? "border-ambar/70 bg-gradient-to-br from-tarjeta to-ambar/10"
+                      : "border-borde bg-tarjeta"
+                  }`}
                 >
                   <div>
-                    <span className="font-titulo text-xl text-texto">
+                    <span className="flex items-center gap-2 font-titulo text-xl text-texto">
                       {sala.nombre}
+                      {sala.nocheActivaId && (
+                        <span className="flex items-center gap-1 rounded-full bg-ambar/20 px-2 py-0.5 text-[11px] font-semibold text-ambar">
+                          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ambar" />
+                          EN VIVO
+                        </span>
+                      )}
                     </span>
                     <p className="text-xs text-texto2">
                       Código: <span className="text-cian">{sala.codigo}</span>
@@ -123,6 +139,14 @@ export default function SalasHome({
                   </div>
                   <span className="text-2xl">🍺</span>
                 </Link>
+                {sala.nocheActivaId && (
+                  <Link
+                    href={`/noche/${sala.nocheActivaId}`}
+                    className="mt-2 flex items-center justify-center gap-2 rounded-2xl bg-ambar px-4 py-3 text-center font-titulo text-sm text-fondo transition active:scale-[0.98] pulso-neon"
+                  >
+                    🎉 Unirse rápido a la noche de {sala.nombre}
+                  </Link>
+                )}
               </li>
             ))}
           </ul>

@@ -351,7 +351,10 @@ export default function SalaView({
           )}
         </div>
         <div className="mb-3">
-          <Link href="/niveles" className="text-xs text-cian underline">
+          <Link
+            href={`/niveles?sala=${sala.id}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-cian/50 bg-cian/10 px-3 py-1.5 text-xs font-semibold text-cian transition active:scale-95"
+          >
             📈 Ver niveles
           </Link>
         </div>

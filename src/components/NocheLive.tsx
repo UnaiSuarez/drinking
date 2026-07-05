@@ -50,6 +50,10 @@ export type Registro = {
   ts: string;
   retroactivo?: boolean;
 };
+type FeedItem =
+  | { kind: "registro"; ts: number; registro: Registro }
+  | { kind: "carta"; ts: number; carta: CartaActiva };
+
 export type Voto = { votante_id: string; votado_id: string };
 export type PenalizacionTipo = {
   id: number;
@@ -184,7 +188,9 @@ function tipoDistintoDelAnterior(registro: Registro, registros: Registro[]) {
   return !anterior || anterior.bebida_tipo_id !== registro.bebida_tipo_id;
 }
 
-function puntosRegistro(
+export type DetalleBono = { cartaId: string; nombre: string; delta: number };
+
+function desglosePuntosRegistro(
   registro: Registro,
   registros: Registro[],
   bebidasMap: Map<number, Bebida>,
@@ -194,25 +200,33 @@ function puntosRegistro(
   const nombreBebida = normalizar(`${bebida?.nombre ?? ""} ${bebida?.icono ?? ""}`);
   const puntos = puntosBaseRegistro(registro, bebidasMap);
   let multiplicador = 1;
-  let bonus = 0;
+  const detalles: DetalleBono[] = [];
+  const nombreCarta = (id: string) => cartaPorId(id)?.nombre ?? id;
 
   for (const activa of cartasActivas) {
     if (!enVentana(activa, registro)) continue;
-    if (activa.cartaId === "noche-x10") multiplicador = Math.max(multiplicador, 10);
-    if (activa.cartaId === "ultimo-aviso") bonus += 1;
+    if (activa.cartaId === "noche-x10" && multiplicador < 10) {
+      multiplicador = 10;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: puntos * 9 });
+    }
+    if (activa.cartaId === "ultimo-aviso") {
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 1 });
+    }
     if (
       (activa.cartaId === "happy-hour-salvaje" ||
         activa.cartaId === "ronda-relampago") &&
       esPrimerRegistroEnVentana(activa, registro, registros)
     ) {
-      bonus += 2;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 2 });
     }
     if (
       activa.cartaId === "doble-o-nada" &&
       activa.usuarioId === registro.usuario_id &&
-      esPrimerRegistroEnVentana(activa, registro, registros)
+      esPrimerRegistroEnVentana(activa, registro, registros) &&
+      multiplicador < 2
     ) {
-      multiplicador = Math.max(multiplicador, 2);
+      multiplicador = 2;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: puntos });
     }
     if (
       activa.cartaId === "cubata-obligatorio" &&
@@ -222,7 +236,7 @@ function puntosRegistro(
         nombreBebida.includes("cocktail") ||
         nombreBebida.includes("combinado"))
     ) {
-      bonus += 5;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 5 });
     }
     if (
       activa.cartaId === "chupito-castigo" &&
@@ -232,7 +246,7 @@ function puntosRegistro(
         nombreBebida.includes("tequila") ||
         nombreBebida.includes("jager"))
     ) {
-      bonus += 3;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 3 });
     }
     if (
       activa.cartaId === "pirata-del-hielo" &&
@@ -240,7 +254,7 @@ function puntosRegistro(
       esPrimerRegistroEnVentana(activa, registro, registros) &&
       puntos === 0
     ) {
-      bonus += 1;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 1 });
     }
     if (
       activa.cartaId === "ticket-barra-libre" &&
@@ -248,7 +262,7 @@ function puntosRegistro(
       esPrimerRegistroEnVentana(activa, registro, registros) &&
       tipoDistintoDelAnterior(registro, registros)
     ) {
-      bonus += 4;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 4 });
     }
     if (
       activa.cartaId === "triple-amenaza" &&
@@ -256,13 +270,13 @@ function puntosRegistro(
       rangoPropioEnVentana(activa, registro, registros) <= 3 &&
       tipoDistintoDelAnterior(registro, registros)
     ) {
-      bonus += 3;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 3 });
     }
     if (
       activa.cartaId === "luna-llena" &&
       (nombreBebida.includes("chupit") || nombreBebida.includes("shot"))
     ) {
-      bonus += 4;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 4 });
     }
     if (
       activa.cartaId === "remontada-imposible" &&
@@ -270,11 +284,21 @@ function puntosRegistro(
       activa.condicionCumplida &&
       rangoPropioEnVentana(activa, registro, registros) <= 2
     ) {
-      bonus += 6;
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 6 });
     }
   }
 
-  return puntos * multiplicador + bonus;
+  const bonus = detalles.reduce((acc, d) => acc + d.delta, 0);
+  return { puntos: puntos * multiplicador + bonus, base: puntos, detalles };
+}
+
+function puntosRegistro(
+  registro: Registro,
+  registros: Registro[],
+  bebidasMap: Map<number, Bebida>,
+  cartasActivas: CartaActiva[]
+) {
+  return desglosePuntosRegistro(registro, registros, bebidasMap, cartasActivas).puntos;
 }
 
 function calcularRanking(
@@ -1100,7 +1124,23 @@ export default function NocheLive({
     [jugadores, registros, bebidasMap, jugadoresMap, cartasActivas]
   );
 
-  const feed = useMemo(() => [...registros].reverse().slice(0, 20), [registros]);
+  // Todas las cartas jugadas esta noche (a diferencia de `cartasActivas`, no
+  // se filtran por ventana ya expirada: el feed es un registro histórico).
+  const todasCartasNoche = useMemo(
+    () =>
+      jugadores
+        .flatMap((j) => parseInventarioState(j.avatarConfigRaw).cartasActivas)
+        .filter((c) => c.nocheId === noche.id),
+    [jugadores, noche.id]
+  );
+
+  const feed = useMemo(() => {
+    const items: FeedItem[] = [
+      ...registros.map((r): FeedItem => ({ kind: "registro", ts: new Date(r.ts).getTime(), registro: r })),
+      ...todasCartasNoche.map((c): FeedItem => ({ kind: "carta", ts: new Date(c.usadaEn).getTime(), carta: c })),
+    ];
+    return items.sort((a, b) => b.ts - a.ts).slice(0, 25);
+  }, [registros, todasCartasNoche]);
   const misPuntos =
     ranking.find((r) => r.id === userId) ?? { bebidas: 0, puntos: 0 };
 
@@ -1701,8 +1741,38 @@ export default function NocheLive({
           </p>
         ) : (
           <ul className="space-y-1.5">
-            {feed.map((r) => {
+            {feed.map((item) => {
+              if (item.kind === "carta") {
+                const c = item.carta;
+                const info = cartaPorId(c.cartaId);
+                return (
+                  <li
+                    key={`carta-${c.id}`}
+                    className="flex items-center justify-between rounded-xl border border-[#7c3aed]/40 bg-[#7c3aed]/10 px-4 py-2 text-sm"
+                  >
+                    <span className="text-texto">
+                      🃏 <span className="text-[#a78bfa]">{c.usuarioNombre}</span> jugó{" "}
+                      <span className="font-semibold">{info?.nombre ?? c.cartaId}</span>
+                      {c.objetivoNombre && (
+                        <>
+                          {" "}
+                          → <span className="text-cian">{c.objetivoNombre}</span>
+                        </>
+                      )}
+                    </span>
+                    <span className="text-xs text-texto2">
+                      {new Date(c.usadaEn).toLocaleTimeString("es-ES", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </li>
+                );
+              }
+
+              const r = item.registro;
               const b = bebidasMap.get(r.bebida_tipo_id);
+              const desglose = desglosePuntosRegistro(r, registros, bebidasMap, cartasActivas);
               return (
                 <li
                   key={r.id}
@@ -1718,8 +1788,28 @@ export default function NocheLive({
                         🕐
                       </span>
                     )}
+                    {desglose.detalles.length > 0 && (
+                      <span className="ml-1.5 inline-flex flex-wrap gap-1">
+                        {desglose.detalles.map((d, i) => (
+                          <span
+                            key={i}
+                            title={d.nombre}
+                            className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                              d.delta >= 0 ? "bg-lima/20 text-lima" : "bg-rosa/20 text-rosa"
+                            }`}
+                          >
+                            {d.delta >= 0 ? `+${d.delta}` : d.delta} {d.nombre}
+                          </span>
+                        ))}
+                      </span>
+                    )}
                   </span>
-                  <span className="text-xs text-texto2">
+                  <span className="flex items-center gap-2 text-xs text-texto2">
+                    {desglose.detalles.length > 0 && (
+                      <span className="font-semibold text-oro">
+                        {desglose.puntos} pts
+                      </span>
+                    )}
                     {new Date(r.ts).toLocaleTimeString("es-ES", {
                       hour: "2-digit",
                       minute: "2-digit",

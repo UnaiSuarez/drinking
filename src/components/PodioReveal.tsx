@@ -11,6 +11,7 @@ import { COFRES_TIPOS, type CofreTipo } from "@/lib/cofresDesign";
 import { parseInventarioState } from "@/lib/inventario";
 import { type MarcoPerfil } from "@/lib/marcos";
 import { createClient } from "@/lib/supabase/client";
+import { RevealXp, RevealLiga } from "@/components/RevealProgreso";
 
 export type ResultadoJugador = {
   id: string;
@@ -68,6 +69,23 @@ function objetoConfig(raw: unknown): Record<string, unknown> {
   return raw as Record<string, unknown>;
 }
 
+export type MiXpNoche = {
+  ganada: number;
+  antes: number;
+  despues: number;
+  desglose: { concepto: string; xp: number }[];
+};
+
+export type MiLigaNoche = {
+  pl: number;
+  antes: number;
+  despues: number;
+  posicionDespues: number;
+  totalLiga: number;
+  esTop1Antes: boolean;
+  esTop1Despues: boolean;
+};
+
 export default function PodioReveal({
   resultados,
   salaId,
@@ -77,6 +95,9 @@ export default function PodioReveal({
   votacion,
   premioPodio,
   esAdmin,
+  miXp,
+  miLiga,
+  userId,
 }: {
   resultados: ResultadoJugador[];
   salaId: string;
@@ -86,6 +107,9 @@ export default function PodioReveal({
   votacion: ResultadoVotacion | null;
   premioPodio: PremioPodio | null;
   esAdmin: boolean;
+  miXp: MiXpNoche | null;
+  miLiga: MiLigaNoche | null;
+  userId: string | null;
 }) {
   const router = useRouter();
   const ordenados = [...resultados].sort((a, b) => a.posicion - b.posicion);
@@ -111,6 +135,13 @@ export default function PodioReveal({
   const [premioEstado, setPremioEstado] = useState<
     "idle" | "guardando" | "entregado" | "error"
   >("idle");
+  // Tras el podio: recap personal de XP → recap de liga → el resto del
+  // detalle (puntos de todos, logros, penalizaciones, compartir...). En
+  // vistas históricas nos saltamos la ceremonia y vamos directo al detalle.
+  const [postFase, setPostFase] = useState<"pendiente" | "xp" | "liga" | "detalle">(
+    vistaHistorica ? "detalle" : "pendiente"
+  );
+  const miResultado = userId ? resultados.find((r) => r.id === userId) ?? null : null;
 
   async function compartirImagen() {
     setGenerandoImagen(true);
@@ -341,6 +372,27 @@ export default function PodioReveal({
     );
   }
 
+  function avanzarPostFase() {
+    if (postFase === "pendiente") {
+      setPostFase(miXp ? "xp" : miLiga ? "liga" : "detalle");
+    } else if (postFase === "xp") {
+      setPostFase(miLiga ? "liga" : "detalle");
+    } else {
+      setPostFase("detalle");
+    }
+  }
+
+  if (terminado && postFase === "xp" && miXp && miResultado) {
+    return (
+      <RevealXp avatarConfig={miResultado.avatarConfig} xp={miXp} onSiguiente={avanzarPostFase} />
+    );
+  }
+  if (terminado && postFase === "liga" && miLiga && miResultado) {
+    return (
+      <RevealLiga avatarConfig={miResultado.avatarConfig} liga={miLiga} onSiguiente={avanzarPostFase} />
+    );
+  }
+
   const podio = ordenados.filter((j) => j.posicion <= 3);
   const resto = ordenados.filter((j) => j.posicion > 3);
   const ganador = ordenados.find((j) => j.posicion === 1);
@@ -499,8 +551,17 @@ export default function PodioReveal({
         </section>
       )}
 
+      {terminado && postFase === "pendiente" && (
+        <button
+          onClick={avanzarPostFase}
+          className="subir-podio mb-8 w-full rounded-2xl bg-ambar py-4 font-titulo text-lg text-fondo active:scale-95"
+        >
+          Siguiente ▶
+        </button>
+      )}
+
       {/* Puntos de Liga ganados */}
-      {terminado && (
+      {terminado && postFase === "detalle" && (
         <section className="subir-podio mb-8">
           <h2 className="mb-3 font-titulo text-lg text-texto">
             📈 Puntos de Liga de la noche
@@ -524,7 +585,7 @@ export default function PodioReveal({
         </section>
       )}
 
-      {terminado && (
+      {terminado && postFase === "detalle" && (
         <section className="subir-podio mb-8">
           <h2 className="mb-3 font-titulo text-lg text-texto">
             🍹 Quién bebió qué
@@ -558,7 +619,7 @@ export default function PodioReveal({
         </section>
       )}
 
-      {terminado && ordenados.some((j) => j.logros.length > 0) && (
+      {terminado && postFase === "detalle" && ordenados.some((j) => j.logros.length > 0) && (
         <section className="subir-podio mb-8">
           <h2 className="mb-3 font-titulo text-lg text-texto">
             🏅 Logros de la noche
@@ -599,7 +660,7 @@ export default function PodioReveal({
         </section>
       )}
 
-      {terminado && ordenados.some((j) => j.penalizaciones.length > 0) && (
+      {terminado && postFase === "detalle" && ordenados.some((j) => j.penalizaciones.length > 0) && (
         <section className="subir-podio mb-8">
           <h2 className="mb-3 font-titulo text-lg text-texto">
             🚨 Cosas que pasaron
@@ -629,7 +690,7 @@ export default function PodioReveal({
         </section>
       )}
 
-      {terminado && esAdmin && (
+      {terminado && postFase === "detalle" && esAdmin && (
         <section className="subir-podio mb-4">
           {errorReabrir && (
             <p className="mb-2 text-center text-sm text-rosa">{errorReabrir}</p>
@@ -644,7 +705,7 @@ export default function PodioReveal({
         </section>
       )}
 
-      {terminado && (
+      {terminado && postFase === "detalle" && (
         <div className="subir-podio mt-auto space-y-2">
           <button
             onClick={compartirResumen}
