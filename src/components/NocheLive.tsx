@@ -104,6 +104,18 @@ const RETOS_NOCHE = [
   },
 ] as const;
 
+// Ruleta del Bar se gasta a si misma y activa al azar una de estas cartas
+// comunes/raras ya implementadas, reutilizando su efecto real.
+const RULETA_OPCIONES = ["ronda-relampago", "ultimo-aviso", "confeti-caos"];
+
+function elegirRuletaBar(random: () => number = Math.random): string {
+  return RULETA_OPCIONES[Math.floor(random() * RULETA_OPCIONES.length)];
+}
+
+// Cartas que mutan el inventario de OTRO jugador: se resuelven siempre en el
+// servidor (RPC) para que no se puedan falsificar desde el cliente.
+const CARTAS_RPC_CRUZADAS = new Set(["mano-larga", "cambio-de-vaso"]);
+
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
@@ -368,6 +380,7 @@ export default function NocheLive({
   const [errorExtender, setErrorExtender] = useState<string | null>(null);
   const [usandoCarta, setUsandoCarta] = useState<string | null>(null);
   const [objetivosCarta, setObjetivosCarta] = useState<Record<string, string>>({});
+  const [cartaADuplicar, setCartaADuplicar] = useState("");
   const [mensajeCarta, setMensajeCarta] = useState<string | null>(null);
   const [confirmaciones, setConfirmaciones] = useState<string[]>(
     confirmacionesIniciales
@@ -726,12 +739,25 @@ export default function NocheLive({
 
   async function registrarBebida(bebida: Bebida) {
     if (!puedeRegistrar) return;
+    // Si alguien te ha lanzado Selfie Obligatoria y sigue activa, se pide un
+    // comentario rápido; si se deja en blanco, finalizar_noche penaliza esta
+    // bebida con -2 PL.
+    const selfieActiva = cartasActivas.find(
+      (activa) =>
+        activa.cartaId === "selfie-obligatoria" && activa.objetivoId === userId
+    );
+    const comentario = selfieActiva
+      ? window.prompt(
+          "Alguien te ha lanzado Selfie Obligatoria. Añade un comentario a esta bebida (o perderás 2 PL):"
+        )
+      : null;
     const { data, error } = await supabase
       .from("registros")
       .insert({
         noche_id: noche.id,
         usuario_id: userId,
         bebida_tipo_id: bebida.id,
+        ...(comentario ? { comentario } : {}),
       })
       .select("id, usuario_id, bebida_tipo_id, ts, retroactivo")
       .single();
@@ -764,12 +790,54 @@ export default function NocheLive({
       setMensajeCarta("Elige a quién va dirigida la carta.");
       return;
     }
+    if (carta.id === "copia-de-seguridad" && !cartaADuplicar) {
+      setMensajeCarta("Elige qué carta quieres duplicar.");
+      return;
+    }
 
     setUsandoCarta(carta.id);
     setMensajeCarta(null);
 
+    // Mano Larga y Cambio de Vaso mutan el inventario de OTRO jugador: se
+    // resuelven siempre vía RPC (no se puede falsificar el robo/cambio
+    // escribiendo directamente en tu propio avatar_config).
+    if (CARTAS_RPC_CRUZADAS.has(carta.id) && objetivo) {
+      const rpc = carta.id === "mano-larga" ? "usar_mano_larga" : "usar_cambio_de_vaso";
+      const { data, error } = await supabase.rpc(rpc, {
+        p_noche: noche.id,
+        p_objetivo: objetivo.id,
+      });
+      setUsandoCarta(null);
+      if (error) {
+        setMensajeCarta(error.message);
+        return;
+      }
+      setMensajeCarta(
+        carta.id === "mano-larga"
+          ? `Le robaste "${cartaPorId(data?.carta)?.nombre ?? data?.carta}" a ${objetivo.nombre}.`
+          : `Le cambiaste la carta activa a ${objetivo.nombre}.`
+      );
+      router.refresh();
+      return;
+    }
+
+    if (carta.id === "meteorito-de-caos") {
+      const { error } = await supabase.rpc("usar_meteorito_caos", {
+        p_noche: noche.id,
+      });
+      setUsandoCarta(null);
+      if (error) {
+        setMensajeCarta(error.message);
+        return;
+      }
+      setMensajeCarta("¡Meteorito de Caos! Todos los bonus activos han desaparecido.");
+      router.refresh();
+      return;
+    }
+
     // Se recalcula el ranking al vuelo (en vez de leer el memoizado más
-    // abajo) para que Remontada Imposible y las cartas de chapas usen la
+    // abajo) para que las condiciones "en vivo" (Remontada Imposible,
+    // Coronación Secreta, Sombra del After) y las cartas de chapas usen la
     // posición justo en el momento de usar la carta.
     const rankingActual = calcularRanking(
       jugadores,
@@ -778,19 +846,30 @@ export default function NocheLive({
       bebidasMap,
       cartasActivas
     );
+    const miPosicionAhora = rankingActual.findIndex((r) => r.id === userId) + 1;
+    const enPodioAhora = miPosicionAhora >= 1 && miPosicionAhora <= 3;
+    const posicionMediana = Math.ceil(rankingActual.length / 2);
 
-    // Remontada Imposible solo cuenta si vas último justo al usarla; se
-    // comprueba aquí (en vivo) y se guarda, el cierre de la noche ya no lo
-    // recalcula.
     const condicionCumplida =
       carta.id === "remontada-imposible"
         ? rankingActual.length > 0 &&
           rankingActual[rankingActual.length - 1]?.id === userId
-        : undefined;
+        : carta.id === "coronacion-secreta"
+          ? !enPodioAhora
+          : carta.id === "sombra-del-after"
+            ? miPosicionAhora > posicionMediana
+            : undefined;
+
+    // Ruleta del Bar se gasta ella misma pero lo que queda activo (y lo que
+    // procesará finalizar_noche) es una de estas tres cartas ya
+    // implementadas, sorteada al azar.
+    const cartaIdEfectiva =
+      carta.id === "ruleta-del-bar" ? elegirRuletaBar() : carta.id;
 
     const resultado = usarCartaEnNoche({
       inventario: miInventario,
       cartaId: carta.id,
+      cartaIdEfectiva,
       nocheId: noche.id,
       usuarioId: userId,
       usuarioNombre: miJugador.nombre,
@@ -815,11 +894,26 @@ export default function NocheLive({
     // al abrir un cofre (no dependen del cierre de la noche).
     if (carta.id === "jackpot-siete" || carta.id === "lluvia-de-chapas") {
       const tienda = parseTiendaState(configActual);
-      const miPosicion = rankingActual.findIndex((r) => r.id === userId) + 1;
-      const chapas = chapasPorCartaEconomia(carta.id, miPosicion);
+      const chapas = chapasPorCartaEconomia(carta.id, miPosicionAhora);
       nextConfig = {
         ...nextConfig,
         tienda: { ...tienda, bonus: tienda.bonus + chapas },
+      };
+    }
+
+    // Copia de Seguridad: duplica en el propio inventario la carta elegida
+    // (solo toca tu propio avatar_config, seguro de resolver en el cliente).
+    if (carta.id === "copia-de-seguridad" && cartaADuplicar) {
+      const inv = resultado.inventario;
+      nextConfig = {
+        ...nextConfig,
+        inventario: {
+          ...inv,
+          cartas: {
+            ...inv.cartas,
+            [cartaADuplicar]: (inv.cartas[cartaADuplicar] ?? 0) + 1,
+          },
+        },
       };
     }
 
@@ -843,10 +937,13 @@ export default function NocheLive({
         )
       );
       setMensajeCarta(
-        objetivo
-          ? `${carta.nombre} enviada a ${objetivo.nombre}.`
-          : `${carta.nombre} activada.`
+        carta.id === "ruleta-del-bar"
+          ? `¡La ruleta eligió: ${cartaPorId(cartaIdEfectiva)?.nombre ?? cartaIdEfectiva}!`
+          : objetivo
+            ? `${carta.nombre} enviada a ${objetivo.nombre}.`
+            : `${carta.nombre} activada.`
       );
+      if (carta.id === "copia-de-seguridad") setCartaADuplicar("");
       if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
     }
     setUsandoCarta(null);
@@ -1456,11 +1553,32 @@ export default function NocheLive({
                         </select>
                       )}
 
+                      {carta.id === "copia-de-seguridad" && (
+                        <select
+                          value={cartaADuplicar}
+                          onChange={(event) => setCartaADuplicar(event.target.value)}
+                          className="mt-3 w-full rounded-xl border border-borde bg-tarjeta px-3 py-2 text-sm text-texto"
+                        >
+                          <option value="">Elegir carta a duplicar</option>
+                          {CARTAS_COFRES.filter(
+                            (c) =>
+                              c.id !== "copia-de-seguridad" &&
+                              (c.rareza === "comun" || c.rareza === "rara") &&
+                              (miInventario.cartas[c.id] ?? 0) > 0
+                          ).map((c) => (
+                            <option key={c.id} value={c.id}>
+                              {c.nombre} (x{miInventario.cartas[c.id] ?? 0})
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
                       <button
                         type="button"
                         disabled={
                           usandoCarta === carta.id ||
-                          (requiereObjetivo && !objetivosCarta[carta.id])
+                          (requiereObjetivo && !objetivosCarta[carta.id]) ||
+                          (carta.id === "copia-de-seguridad" && !cartaADuplicar)
                         }
                         onClick={() => usarCarta(carta)}
                         className="mt-3 w-full rounded-xl bg-cian py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-45"

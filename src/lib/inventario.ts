@@ -380,12 +380,25 @@ function duracionCartaMs(cartaId: string) {
   if (cartaId === "brindis-forzado") return 10 * 60 * 1000;
   if (cartaId === "confeti-caos") return 60 * 1000;
   if (cartaId === "salpicon-puntos") return 60 * 1000;
+  if (cartaId === "escudo-resaca") return 20 * 60 * 1000;
+  if (cartaId === "candado-de-barra") return 15 * 60 * 1000;
+  if (cartaId === "inmunidad-vip") return 30 * 60 * 1000;
+  if (cartaId === "espejo-borracho") return 20 * 60 * 1000;
+  if (cartaId === "maldicion-del-lider") return 20 * 60 * 1000;
+  if (cartaId === "selfie-obligatoria") return 15 * 60 * 1000;
+  if (cartaId === "todos-al-bar") return 20 * 60 * 1000;
+  if (cartaId === "tormenta-challenger") return 10 * 60 * 1000;
   return 30 * 60 * 1000;
 }
 
 export function usarCartaEnNoche(params: {
   inventario: InventarioState;
   cartaId: string;
+  /** Ruleta del Bar se gasta a si misma pero activa otra carta al azar; esto
+   * permite que se consuma "ruleta-del-bar" del inventario mientras lo que
+   * queda activo (y lo que lee finalizar_noche) es la carta realmente
+   * sorteada. Por defecto es la misma que cartaId. */
+  cartaIdEfectiva?: string;
   nocheId: string;
   usuarioId: string;
   usuarioNombre: string;
@@ -398,11 +411,12 @@ export function usarCartaEnNoche(params: {
   if (!carta) return null;
   if ((params.inventario.cartas[params.cartaId] ?? 0) <= 0) return null;
 
+  const cartaIdEfectiva = params.cartaIdEfectiva ?? params.cartaId;
   const ahora = params.ahora ?? new Date();
-  const expiraEn = new Date(ahora.getTime() + duracionCartaMs(params.cartaId));
+  const expiraEn = new Date(ahora.getTime() + duracionCartaMs(cartaIdEfectiva));
   const activa: CartaActiva = {
     id: crypto.randomUUID(),
-    cartaId: params.cartaId,
+    cartaId: cartaIdEfectiva,
     nocheId: params.nocheId,
     usuarioId: params.usuarioId,
     usuarioNombre: params.usuarioNombre,
