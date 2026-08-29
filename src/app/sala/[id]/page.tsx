@@ -28,6 +28,15 @@ export default async function SalaPage({
 
   const configSala = (sala.config ?? {}) as Record<string, unknown>;
   const esTemporada = configSala.tipo === "temporada";
+  const esPermanente = configSala.tipo === "permanente";
+
+  const { data: bebidasSueltas } = esPermanente
+    ? await supabase
+        .from("bebidas_tipo")
+        .select("id, nombre, icono")
+        .or(`sala_id.is.null,sala_id.eq.${id}`)
+        .order("orden")
+    : { data: null };
 
   const { data: miembrosRaw } = await supabase
     .from("sala_miembros")
@@ -52,9 +61,9 @@ export default async function SalaPage({
 
   const { data: nocheActiva } = await supabase
     .from("noches")
-    .select("id, inicio, fin_programado")
+    .select("id, inicio, fin_programado, estado")
     .eq("sala_id", id)
-    .in("estado", ["activa", "cerrando"])
+    .in("estado", ["activa", "cerrando", "pendiente"])
     .maybeSingle();
 
   const { data: nochesCerradasRaw } = await supabase
@@ -110,10 +119,16 @@ export default async function SalaPage({
     <SalaView
       sala={sala}
       esTemporada={esTemporada}
+      esPermanente={esPermanente}
+      bebidasSueltas={bebidasSueltas ?? []}
       miembros={miembros}
       miRol={miRol}
       userId={user!.id}
-      nocheActiva={nocheActiva}
+      nocheActiva={
+        nocheActiva as
+          | { id: string; estado: "activa" | "cerrando" | "pendiente" }
+          | null
+      }
       nochesCerradas={nochesCerradas}
       temporada={temporada}
       liga={liga}
