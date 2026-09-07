@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import NochePendiente from "@/components/NochePendiente";
 import NocheLive, {
   type Bebida,
   type Jugador,
@@ -47,6 +48,36 @@ export default async function NochePage({
 
   if (!miembro) notFound();
   const esAdmin = miembro.rol === "fundador" || miembro.rol === "admin";
+
+  if (noche.estado === "pendiente") {
+    const { data: jugadoresPendienteRaw } = await supabase
+      .from("noche_jugadores")
+      .select("usuario_id, perfiles(nombre, avatar_config)")
+      .eq("noche_id", id);
+
+    const jugadoresPendiente = (jugadoresPendienteRaw ?? []).map((j) => {
+      const p = j.perfiles as unknown as {
+        nombre: string;
+        avatar_config: unknown;
+      } | null;
+      return {
+        id: j.usuario_id,
+        nombre: p?.nombre ?? "???",
+        avatarConfig: parseAvatarConfig(p?.avatar_config),
+      };
+    });
+
+    return (
+      <NochePendiente
+        nocheId={id}
+        salaId={noche.sala_id}
+        salaNombre={sala?.nombre ?? ""}
+        jugadoresIniciales={jugadoresPendiente}
+        userId={user!.id}
+        esAdmin={esAdmin}
+      />
+    );
+  }
 
   const { data: bebidas } = await supabase
     .from("bebidas_tipo")

@@ -9,6 +9,9 @@ import { marcoPorLiga } from "@/lib/marcos";
 import { activarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
 import { type AvatarConfig } from "@/lib/avatar";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import BebidaSueltaLogger, {
+  type BebidaTipo,
+} from "@/components/BebidaSueltaLogger";
 
 export type Miembro = {
   id: string;
@@ -39,6 +42,8 @@ const DURACIONES = [
 export default function SalaView({
   sala,
   esTemporada,
+  esPermanente,
+  bebidasSueltas,
   miembros,
   miRol,
   userId,
@@ -49,10 +54,12 @@ export default function SalaView({
 }: {
   sala: { id: string; nombre: string; codigo: string };
   esTemporada: boolean;
+  esPermanente: boolean;
+  bebidasSueltas: BebidaTipo[];
   miembros: Miembro[];
   miRol: string;
   userId: string;
-  nocheActiva: { id: string } | null;
+  nocheActiva: { id: string; estado: "activa" | "cerrando" | "pendiente" } | null;
   nochesCerradas: NocheResumen[];
   temporada: { id: string; nombre: string; fin: string } | null;
   liga: EntradaLiga[];
@@ -177,6 +184,11 @@ export default function SalaView({
                 🗓️ Sala de temporada
               </span>
             )}
+            {esPermanente && (
+              <span className="mt-1 inline-block rounded-full border border-cian/50 bg-cian/10 px-2 py-0.5 text-xs text-cian">
+                ♾️ Sala permanente
+              </span>
+            )}
           </div>
           <div className="flex gap-2">
             {esAdmin && (
@@ -231,7 +243,23 @@ export default function SalaView({
         </div>
       )}
 
-      {nocheActiva ? (
+      {esPermanente && (
+        <BebidaSueltaLogger salaId={sala.id} bebidas={bebidasSueltas} />
+      )}
+
+      {nocheActiva && nocheActiva.estado === "pendiente" ? (
+        <Link
+          href={`/noche/${nocheActiva.id}`}
+          className="mb-8 block rounded-3xl border-2 border-ambar bg-tarjeta p-6 text-center transition active:scale-[0.98]"
+        >
+          <span className="font-titulo text-2xl text-ambar">
+            ⏳ NOCHE PENDIENTE
+          </span>
+          <p className="text-sm text-texto2">
+            Esperando a que se una alguien más para arrancar
+          </p>
+        </Link>
+      ) : nocheActiva ? (
         <Link
           href={`/noche/${nocheActiva.id}`}
           className="mb-8 block rounded-3xl bg-ambar p-6 text-center transition active:scale-[0.98] pulso-neon"
@@ -304,9 +332,17 @@ export default function SalaView({
                 ))}
               </div>
               <p className="mt-3 text-center text-xs text-texto2">
-                Se cierra sola al acabar el tiempo, o antes si la cierra un
-                admin.
+                {esPermanente
+                  ? "Se cierra sola al acabar el tiempo (que empieza a contar cuando arranque de verdad), o antes si la cierra un admin."
+                  : "Se cierra sola al acabar el tiempo, o antes si la cierra un admin."}
               </p>
+              {esPermanente && (
+                <p className="mt-2 text-center text-xs text-cian">
+                  ⏳ Con 2 o más miembros en la sala, la noche se queda
+                  pendiente hasta que se una una segunda persona. Si sois solo
+                  tú, arranca al momento.
+                </p>
+              )}
             </>
           )}
           <button
@@ -350,12 +386,18 @@ export default function SalaView({
             </span>
           )}
         </div>
-        <div className="mb-3">
+        <div className="mb-3 flex flex-wrap gap-2">
           <Link
             href={`/niveles?sala=${sala.id}`}
             className="inline-flex items-center gap-1.5 rounded-full border border-cian/50 bg-cian/10 px-3 py-1.5 text-xs font-semibold text-cian transition active:scale-95"
           >
             📈 Ver niveles
+          </Link>
+          <Link
+            href={`/sala/${sala.id}/estadisticas`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-lima/50 bg-lima/10 px-3 py-1.5 text-xs font-semibold text-lima transition active:scale-95"
+          >
+            📊 Estadísticas
           </Link>
         </div>
         {liga.length === 0 ? (

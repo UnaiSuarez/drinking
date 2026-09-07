@@ -23,7 +23,9 @@ export default function SalasHome({
   const router = useRouter();
   const [modo, setModo] = useState<"ninguno" | "crear" | "unirse">("ninguno");
   const [nombreSala, setNombreSala] = useState("");
-  const [esTemporada, setEsTemporada] = useState(false);
+  const [tipoSala, setTipoSala] = useState<"normal" | "temporada" | "permanente">(
+    "normal"
+  );
   const [codigo, setCodigo] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +37,7 @@ export default function SalasHome({
     const supabase = createClient();
     const { data, error } = await supabase.rpc("crear_sala", {
       p_nombre: nombreSala.trim(),
-      p_tipo: esTemporada ? "temporada" : "normal",
+      p_tipo: tipoSala,
     });
     setCargando(false);
     if (error || !data) {
@@ -185,25 +187,64 @@ export default function SalasHome({
             placeholder="Nombre del grupo (ej: Los del pueblo)"
             className="mb-4 w-full rounded-2xl border border-borde bg-fondo px-4 py-4 text-texto placeholder-texto2 outline-none focus:border-ambar"
           />
-          <label className="mb-4 flex items-start gap-3 rounded-2xl border border-borde bg-fondo px-4 py-3">
-            <input
-              type="checkbox"
-              checked={esTemporada}
-              onChange={(e) => setEsTemporada(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-ambar"
-            />
-            <span>
-              <span className="block text-sm text-texto">
-                🗓️ Sala de temporada
+          <div className="mb-4 space-y-2">
+            <label className="flex items-start gap-3 rounded-2xl border border-borde bg-fondo px-4 py-3 has-[:checked]:border-ambar">
+              <input
+                type="radio"
+                name="tipoSala"
+                checked={tipoSala === "normal"}
+                onChange={() => setTipoSala("normal")}
+                className="mt-1 h-4 w-4 accent-ambar"
+              />
+              <span>
+                <span className="block text-sm text-texto">🌙 Sala normal</span>
+                <span className="block text-xs text-texto2">
+                  Noches sueltas de unas horas fijas (4, 6, 8 o 12h).
+                </span>
               </span>
-              <span className="block text-xs text-texto2">
-                En vez de una noche corta con horas fijas, eliges una fecha de
-                inicio y otra de fin (ej: &quot;Fin de semana con amigos&quot;,
-                &quot;Verano&quot;) y se pueden registrar bebidas durante todo
-                ese periodo.
+            </label>
+            <label className="flex items-start gap-3 rounded-2xl border border-borde bg-fondo px-4 py-3 has-[:checked]:border-ambar">
+              <input
+                type="radio"
+                name="tipoSala"
+                checked={tipoSala === "temporada"}
+                onChange={() => setTipoSala("temporada")}
+                className="mt-1 h-4 w-4 accent-ambar"
+              />
+              <span>
+                <span className="block text-sm text-texto">
+                  🗓️ Sala de temporada
+                </span>
+                <span className="block text-xs text-texto2">
+                  En vez de una noche corta con horas fijas, eliges una fecha de
+                  inicio y otra de fin (ej: &quot;Fin de semana con amigos&quot;,
+                  &quot;Verano&quot;) y se pueden registrar bebidas durante todo
+                  ese periodo.
+                </span>
               </span>
-            </span>
-          </label>
+            </label>
+            <label className="flex items-start gap-3 rounded-2xl border border-borde bg-fondo px-4 py-3 has-[:checked]:border-ambar">
+              <input
+                type="radio"
+                name="tipoSala"
+                checked={tipoSala === "permanente"}
+                onChange={() => setTipoSala("permanente")}
+                className="mt-1 h-4 w-4 accent-ambar"
+              />
+              <span>
+                <span className="block text-sm text-texto">
+                  ♾️ Sala permanente
+                </span>
+                <span className="block text-xs text-texto2">
+                  Sin fecha de fin. Podéis registrar bebidas sueltas cuando
+                  queráis (suman solo a vuestro nivel general, no a la liga) y
+                  además iniciar noches normales cuando os junteéis: la noche
+                  se queda pendiente hasta que se una una segunda persona
+                  (si sois solo tú en la sala, arranca al momento).
+                </span>
+              </span>
+            </label>
+          </div>
           {error && <p className="mb-3 text-sm text-rosa">{error}</p>}
           <div className="flex gap-2">
             <button
