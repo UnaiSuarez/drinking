@@ -44,6 +44,7 @@ export default function SalaView({
   esTemporada,
   esPermanente,
   bebidasSueltas,
+  racha,
   miembros,
   miRol,
   userId,
@@ -56,6 +57,7 @@ export default function SalaView({
   esTemporada: boolean;
   esPermanente: boolean;
   bebidasSueltas: BebidaTipo[];
+  racha: { actual: number; mejor: number };
   miembros: Miembro[];
   miRol: string;
   userId: string;
@@ -240,6 +242,28 @@ export default function SalaView({
           {resultadoPrueba && (
             <p className="mt-2 text-xs text-texto2">{resultadoPrueba}</p>
           )}
+        </div>
+      )}
+
+      {esPermanente && racha.actual > 0 && (
+        <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl border border-ambar/50 bg-ambar/10 px-4 py-3 text-center">
+          <span className="text-2xl">🔥</span>
+          <span className="text-sm text-texto">
+            <span className="font-titulo text-ambar">
+              {racha.actual} día{racha.actual === 1 ? "" : "s"}
+            </span>{" "}
+            seguidos registrando algo
+            {racha.mejor > racha.actual && (
+              <span className="text-texto2"> · récord: {racha.mejor}</span>
+            )}
+          </span>
+        </div>
+      )}
+      {esPermanente && racha.actual === 0 && racha.mejor > 0 && (
+        <div className="mb-4 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-center text-sm text-texto2">
+          Se te apagó la racha (llegaste a {racha.mejor} día
+          {racha.mejor === 1 ? "" : "s"}). Registra algo hoy para empezar otra
+          🔥
         </div>
       )}
 
