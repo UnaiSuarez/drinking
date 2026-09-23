@@ -100,7 +100,17 @@ export default function SalasHome({
       </header>
 
       <section className="mb-8">
-        <h2 className="mb-3 font-titulo text-xl text-texto">Tus salas</h2>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-titulo text-xl text-texto">Tus salas</h2>
+          {salas.length > 0 && (
+            <Link
+              href="/estadisticas"
+              className="inline-flex items-center gap-1.5 rounded-full border border-lima/50 bg-lima/10 px-3 py-1.5 text-xs font-semibold text-lima transition active:scale-95"
+            >
+              📊 Comparativa
+            </Link>
+          )}
+        </div>
         {salas.length === 0 ? (
           <div className="rounded-3xl border border-borde bg-tarjeta p-8 text-center">
             <div className="mb-2 text-5xl">🏚️</div>

@@ -6,6 +6,7 @@ import SalaView, {
   type NocheResumen,
 } from "@/components/SalaView";
 import { parseAvatarConfig } from "@/lib/avatar";
+import { calcularRacha } from "@/lib/racha";
 
 export default async function SalaPage({
   params,
@@ -37,6 +38,17 @@ export default async function SalaPage({
         .or(`sala_id.is.null,sala_id.eq.${id}`)
         .order("orden")
     : { data: null };
+
+  let racha = { actual: 0, mejor: 0 };
+  if (esPermanente) {
+    const { data: misRegistros } = await supabase
+      .from("registros_sala")
+      .select("ts")
+      .eq("sala_id", id)
+      .eq("usuario_id", user!.id)
+      .eq("anulado", false);
+    racha = calcularRacha((misRegistros ?? []).map((r) => r.ts));
+  }
 
   const { data: miembrosRaw } = await supabase
     .from("sala_miembros")
@@ -121,6 +133,7 @@ export default async function SalaPage({
       esTemporada={esTemporada}
       esPermanente={esPermanente}
       bebidasSueltas={bebidasSueltas ?? []}
+      racha={racha}
       miembros={miembros}
       miRol={miRol}
       userId={user!.id}

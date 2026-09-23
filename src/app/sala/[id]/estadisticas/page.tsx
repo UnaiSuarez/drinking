@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { calcularRacha } from "@/lib/racha";
 
 const COLORES = ["bg-ambar", "bg-cian", "bg-rosa", "bg-lima", "bg-oro"] as const;
 
@@ -30,12 +31,79 @@ function BarraLista({
   );
 }
 
+type Rango = "semana" | "mes" | "temporada" | "total";
+
+const RANGOS: { valor: Rango; etiqueta: string }[] = [
+  { valor: "semana", etiqueta: "7 días" },
+  { valor: "mes", etiqueta: "30 días" },
+  { valor: "temporada", etiqueta: "Temporada" },
+  { valor: "total", etiqueta: "Total" },
+];
+
+/** Agrupa timestamps en como mucho ~12 barras: por día, semana o mes según
+ * cuánto abarque el rango elegido, para que la gráfica siempre sea legible. */
+function evolucion(fechas: Date[], desde: Date, hasta: Date) {
+  const spanDias = Math.max(1, (hasta.getTime() - desde.getTime()) / 86400000);
+  const modo: "dia" | "semana" | "mes" =
+    spanDias <= 14 ? "dia" : spanDias <= 90 ? "semana" : "mes";
+
+  function claveDe(d: Date): { clave: string; etiqueta: string; orden: number } {
+    if (modo === "dia") {
+      const clave = d.toISOString().slice(0, 10);
+      return {
+        clave,
+        etiqueta: d.toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
+        orden: d.getTime(),
+      };
+    }
+    if (modo === "semana") {
+      const lunes = new Date(d);
+      const diaSemana = (lunes.getUTCDay() + 6) % 7; // 0 = lunes
+      lunes.setUTCDate(lunes.getUTCDate() - diaSemana);
+      const clave = lunes.toISOString().slice(0, 10);
+      return {
+        clave,
+        etiqueta: lunes.toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
+        orden: lunes.getTime(),
+      };
+    }
+    const clave = `${d.getUTCFullYear()}-${d.getUTCMonth()}`;
+    return {
+      clave,
+      etiqueta: d.toLocaleDateString("es-ES", { month: "short", year: "2-digit" }),
+      orden: new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1)).getTime(),
+    };
+  }
+
+  const conteo = new Map<string, { etiqueta: string; orden: number; valor: number }>();
+  for (const f of fechas) {
+    const { clave, etiqueta, orden } = claveDe(f);
+    const actual = conteo.get(clave);
+    if (actual) actual.valor++;
+    else conteo.set(clave, { etiqueta, orden, valor: 1 });
+  }
+
+  return [...conteo.entries()]
+    .sort((a, b) => a[1].orden - b[1].orden)
+    .slice(-12)
+    .map(([clave, v]) => ({ clave, etiqueta: v.etiqueta, valor: v.valor }));
+}
+
 export default async function EstadisticasSalaPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ rango?: string }>;
 }) {
   const { id } = await params;
+  const { rango: rangoParam } = await searchParams;
+  const rango: Rango = (["semana", "mes", "temporada", "total"] as const).includes(
+    rangoParam as Rango
+  )
+    ? (rangoParam as Rango)
+    : "total";
+
   const supabase = await createClient();
   const {
     data: { user },
@@ -50,6 +118,13 @@ export default async function EstadisticasSalaPage({
 
   const esPermanente = (sala.config as Record<string, unknown> | null)?.tipo === "permanente";
 
+  const { data: temporada } = await supabase
+    .from("temporadas")
+    .select("id, nombre, inicio")
+    .eq("sala_id", id)
+    .eq("estado", "activa")
+    .maybeSingle();
+
   const { data: bebidasTipo } = await supabase
     .from("bebidas_tipo")
     .select("id, nombre, icono")
@@ -59,7 +134,7 @@ export default async function EstadisticasSalaPage({
     .from("sala_miembros")
     .select("usuario_id, perfiles(nombre)");
 
-  const { data: registros } = await supabase
+  const { data: registrosTodos } = await supabase
     .from("registros_sala")
     .select("usuario_id, bebida_tipo_id, ts, noche_id")
     .eq("sala_id", id)
@@ -75,7 +150,21 @@ export default async function EstadisticasSalaPage({
     })
   );
 
-  const regs = registros ?? [];
+  const todos = registrosTodos ?? [];
+
+  // Racha: siempre sobre el historial completo del usuario, no del filtro.
+  const racha = calcularRacha(
+    todos.filter((r) => r.usuario_id === user!.id).map((r) => r.ts)
+  );
+
+  const ahora = new Date();
+  let desde: Date | null = null;
+  if (rango === "semana") desde = new Date(ahora.getTime() - 7 * 86400000);
+  else if (rango === "mes") desde = new Date(ahora.getTime() - 30 * 86400000);
+  else if (rango === "temporada" && temporada) desde = new Date(temporada.inicio);
+
+  const regs = desde ? todos.filter((r) => new Date(r.ts) >= desde!) : todos;
+
   const total = regs.length;
   const enNoches = regs.filter((r) => r.noche_id !== null).length;
   const sueltas = total - enNoches;
@@ -130,6 +219,15 @@ export default async function EstadisticasSalaPage({
     valor: porDia[i],
   }));
 
+  const primerRegistro = regs.reduce<Date | null>((min, r) => {
+    const d = new Date(r.ts);
+    return !min || d < min ? d : min;
+  }, null);
+  const filasEvolucion =
+    total > 0
+      ? evolucion(regs.map((r) => new Date(r.ts)), desde ?? primerRegistro!, ahora)
+      : [];
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
       <Link href={`/sala/${id}`} className="text-sm text-texto2">
@@ -138,13 +236,42 @@ export default async function EstadisticasSalaPage({
       <h1 className="mb-2 mt-2 font-titulo text-3xl text-texto">
         📊 Estadísticas
       </h1>
-      <p className="mb-6 text-sm text-texto2">
-        De toda la historia de {sala.nombre}, dentro y fuera de las noches.
+      <p className="mb-4 text-sm text-texto2">
+        {rango === "total"
+          ? `De toda la historia de ${sala.nombre}, dentro y fuera de las noches.`
+          : `De ${sala.nombre} en el periodo elegido.`}
       </p>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        {RANGOS.filter((r) => r.valor !== "temporada" || temporada).map((r) => (
+          <Link
+            key={r.valor}
+            href={`/sala/${id}/estadisticas${r.valor === "total" ? "" : `?rango=${r.valor}`}`}
+            className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition active:scale-95 ${
+              rango === r.valor
+                ? "border-ambar bg-ambar/10 text-ambar"
+                : "border-borde text-texto2"
+            }`}
+          >
+            {r.etiqueta}
+          </Link>
+        ))}
+      </div>
+
+      {esPermanente && (racha.actual > 0 || racha.mejor > 0) && (
+        <section className="mb-6 flex items-center justify-center gap-2 rounded-2xl border border-ambar/50 bg-ambar/10 px-4 py-3 text-center text-sm text-texto">
+          <span className="text-2xl">🔥</span>
+          <span>
+            <span className="font-titulo text-ambar">{racha.actual}</span> día
+            {racha.actual === 1 ? "" : "s"} de racha actual · récord{" "}
+            <span className="font-titulo text-ambar">{racha.mejor}</span>
+          </span>
+        </section>
+      )}
 
       <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-6 text-center">
         <p className="font-titulo text-6xl text-ambar">{total}</p>
-        <p className="text-sm text-texto2">bebidas registradas en total</p>
+        <p className="text-sm text-texto2">bebidas registradas</p>
         {esPermanente && total > 0 && (
           <p className="mt-2 text-xs text-texto2">
             {enNoches} en noches · {sueltas} sueltas
@@ -158,6 +285,15 @@ export default async function EstadisticasSalaPage({
         </p>
       ) : (
         <>
+          {filasEvolucion.length > 1 && (
+            <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
+              <h2 className="mb-4 font-titulo text-xl text-texto">
+                📈 Evolución
+              </h2>
+              <BarraLista filas={filasEvolucion} />
+            </section>
+          )}
+
           <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
             <h2 className="mb-4 font-titulo text-xl text-texto">
               🥤 Qué se bebe por aquí
@@ -170,7 +306,7 @@ export default async function EstadisticasSalaPage({
               🏅 Más bebidas en total
             </h2>
             <p className="mb-4 text-xs text-texto2">
-              Contando todo lo registrado siempre, no solo esta liga.
+              Contando todo lo registrado en el periodo elegido.
             </p>
             <BarraLista filas={rankingTotal} />
           </section>
