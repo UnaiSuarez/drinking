@@ -378,6 +378,12 @@ export default async function PerfilPage({
             >
               🎴 Inventario
             </Link>
+            <Link
+              href="/mapa"
+              className="rounded-xl border border-rosa px-4 py-2 text-xs text-rosa active:scale-95"
+            >
+              🗺️ Mapa de sitios
+            </Link>
           </>}
           <Link
             href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import MedalIcon from "@/components/MedalIcon";
+import SitioPicker from "@/components/SitioPicker";
 
 export type BebidaTipo = {
   id: number;
@@ -379,6 +380,8 @@ export default function BebidaSueltaLogger({
           </form>
         </div>
       )}
+
+      {ultimo && <SitioPicker key={ultimo.id} registroId={ultimo.id} />}
 
       {puedoDeshacer && (
         <button
