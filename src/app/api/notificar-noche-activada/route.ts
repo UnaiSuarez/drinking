@@ -24,6 +24,10 @@ type AvisoNoche = {
  * se excluye del aviso es a la persona autenticada, no a un `userId` de la
  * petición. Los clientes anteriores siguen enviando `salaId`/`salaNombre`/
  * `userId`; se ignoran.
+ *
+ * Un solo intento: el aviso se reclama en la base ANTES de enviar el push. Si
+ * el envío falla no hay reintento (la reclamación ya consta y las llamadas
+ * posteriores reciben 0 filas); ver supabase/README.md.
  */
 export async function POST(request: NextRequest) {
   const cuerpo = await request.json().catch(() => null);

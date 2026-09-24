@@ -13,13 +13,17 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924112310` | `logros_lifetime_bebidas_sueltas` | Ya aplicada, idéntica. Logros nuevos y las funciones `otorgar_logros_lifetime`, `registrar_bebida_suelta` y `anular_bebida_suelta`. **Contiene el fallo corregido por `20260924120100`.** |
 | `20260924112446` | `seed_bebidas_catalogo_global` | Ya aplicada, idéntica. Catálogo inicial (35 bebidas). Es idempotente: no vuelve a insertar las que ya existen. |
 | `20260924113054` | `elimina_overload_viejo_registrar_bebida_suelta` | Ya aplicada, idéntica. |
-| `20260924120000` | `registrar_bebida_suelta_compatible` | **Nueva, sin aplicar.** Respuesta compatible con clientes anteriores y posteriores al PR #15. |
-| `20260924120100` | `otorgar_logros_lifetime_correccion` | **Nueva, sin aplicar.** Corrige el fallo que hace fallar todo registro de bebida suelta, retira el permiso a los roles de la API y serializa por usuario. |
-| `20260924120200` | `avisos_push_verificados` | **Nueva, sin aplicar.** Tabla `avisos_push` y las funciones que verifican y reclaman los avisos push. |
+| `20260924120000` | `registrar_bebida_suelta_compatible` | **Aplicada el 24/09/2026 (12:27 UTC).** Respuesta compatible con clientes anteriores y posteriores al PR #15. |
+| `20260924120100` | `otorgar_logros_lifetime_correccion` | **Aplicada el 24/09/2026 (12:27 UTC).** Corrige el fallo que hacía fallar todo registro de bebida suelta, retira el permiso a los roles de la API y serializa por usuario. |
+| `20260924120200` | `avisos_push_verificados` | **Aplicada el 24/09/2026 (12:28 UTC).** Tabla `avisos_push` y las funciones que verifican y reclaman los avisos push. |
 
-Las cuatro primeras conservan la versión con la que se aplicaron para que
-`supabase migration list` las reconozca como ya aplicadas. No se editan: el
-historial es lo que ocurrió; las correcciones van en migraciones nuevas.
+Las siete conservan en el historial de Supabase la versión de su fichero y el
+contenido idéntico byte a byte (mismo md5). Las tres últimas se aplicaron con
+`apply_migration`, que registra la hora de aplicación como versión
+(`20260924122703`, `…122732`, `…122759`); se renombraron esas tres filas del
+historial a la versión de su fichero para que `supabase migration list` las
+reconozca. No se editan una vez aplicadas: el historial es lo que ocurrió; las
+correcciones van en migraciones nuevas.
 
 ## Cómo aplicar
 
@@ -32,6 +36,23 @@ misma base. El catálogo inicial no se duplica al reaplicarlo.
 Entre la segunda y la cuarta hay un intervalo en el que coexisten dos
 sobrecargas de `registrar_bebida_suelta`; aplicarlas seguidas, sin exponer la
 base a clientes entre medias.
+
+## Avisos push: un solo intento
+
+`reclamar_aviso_logro` y `reclamar_aviso_noche_activada` **reclaman** el aviso
+(fila en `avisos_push`, clave única) antes de que el servidor intente enviar el
+push: es un mecanismo *como máximo una vez*. Si el aviso se reclama y el envío
+falla (VAPID sin configurar, suscripción caducada, error del servicio push,
+caída del servidor entre la reclamación y el envío), **no hay reintento**: la
+fila ya existe, cualquier llamada posterior recibe 0 filas y no se vuelve a
+enviar. Es deliberado, para no duplicar avisos, y hay una segunda limitación:
+las funciones solo aceptan hechos recientes (logros de menos de 5 minutos,
+activación de menos de 10), así que un aviso perdido tampoco se puede recuperar
+pasada esa ventana.
+
+Reintentar exigiría guardar el estado de entrega (por ejemplo `enviado_at` e
+intentos) y reclamar en dos fases: reservar, enviar y confirmar, liberando la
+reserva si el envío falla. No forma parte de este arreglo.
 
 ## Lo que todavía no está en el repositorio
 

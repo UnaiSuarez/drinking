@@ -26,6 +26,10 @@ type AvisoLogro = {
  * y no se envía nada. Los textos (sala, logro, nombre de la persona) salen
  * de la base, no del cuerpo de la petición. Los clientes anteriores siguen
  * enviando además `salaNombre`/`logroNombre`/`logroIcono`; se ignoran.
+ *
+ * Un solo intento: el aviso se reclama en la base ANTES de enviar el push. Si
+ * el envío falla no hay reintento (la reclamación ya consta y las llamadas
+ * posteriores reciben 0 filas); ver supabase/README.md.
  */
 export async function POST(request: NextRequest) {
   const cuerpo = await request.json().catch(() => null);
