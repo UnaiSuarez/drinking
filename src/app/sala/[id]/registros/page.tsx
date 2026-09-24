@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import RegistrosSalaClient, {
+  type DesgloseItem,
   type MiembroRanking,
   type RegistroSala,
 } from "@/components/RegistrosSalaClient";
@@ -104,6 +105,33 @@ export default async function RegistrosSalaPage({
     })
   );
 
+  const { data: desgloseRaw } = await supabase.rpc("desglose_bebidas_sala", {
+    p_sala: id,
+  });
+  const desglose: DesgloseItem[] = (
+    (desgloseRaw ?? []) as {
+      usuario_id: string;
+      bebida_tipo_id: number;
+      bebida_tipo_nombre: string;
+      bebida_tipo_icono: string;
+      bebida_catalogo_id: string | null;
+      bebida_catalogo_nombre: string | null;
+      rareza: string | null;
+      cantidad: number;
+    }[]
+  ).map((f) => ({
+    usuarioId: f.usuario_id,
+    bebidaTipoNombre: f.bebida_tipo_nombre,
+    bebidaTipoIcono: f.bebida_tipo_icono,
+    bebidaCatalogoNombre: f.bebida_catalogo_id ? f.bebida_catalogo_nombre : null,
+    rareza: f.bebida_catalogo_id ? f.rareza : null,
+    cantidad: Number(f.cantidad),
+  }));
+
+  const miembros = Object.entries(nombrePorUsuario)
+    .map(([usuarioId, nombre]) => ({ usuarioId, nombre }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
       <Link href={`/sala/${id}`} className="text-sm text-texto2">
@@ -121,6 +149,8 @@ export default async function RegistrosSalaPage({
         registrosIniciales={registros}
         hayMasInicial={(registrosRaw?.length ?? 0) === PAGINA_REGISTROS}
         ranking={ranking}
+        desglose={desglose}
+        miembros={miembros}
         userId={user.id}
         esAdmin={esAdmin}
         nombrePorUsuario={nombrePorUsuario}

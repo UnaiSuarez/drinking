@@ -11,13 +11,22 @@ type Fase = "inicial" | "buscando" | "eligiendo" | "nuevo" | "confirmado" | "omi
 const ICONOS = ["📍", "🍺", "🍷", "🍸", "🥃", "🎉", "🏠", "⛺", "🌳", "🏖️"];
 
 /**
- * Ofrece marcar el sitio de un registro de bebida suelta recién creado
- * (solo tiene sentido en sala permanente: registrar_bebida_suelta exige
- * sala de tipo "permanente", así que este registroId siempre lo cumple).
- * El padre lo renderiza con `key={registroId}`, así que un registro nuevo
- * lo remonta entero con estado limpio (no hace falta reiniciarlo aquí).
+ * Ofrece marcar el sitio de un registro (bebida suelta o SOJA) recién
+ * creado — solo tiene sentido fuera de una noche: registrar_bebida_suelta
+ * exige sala de tipo "permanente", y registrar_soja exige lo mismo cuando
+ * no se le pasa una noche, así que este registroId siempre lo cumple. El
+ * padre lo renderiza con `key={registroId}`, así que un registro nuevo lo
+ * remonta entero con estado limpio (no hace falta reiniciarlo aquí).
  */
-export default function SitioPicker({ registroId }: { registroId: string }) {
+export default function SitioPicker({
+  registroId,
+  tipo = "bebida",
+}: {
+  registroId: string;
+  tipo?: "bebida" | "soja";
+}) {
+  const rpcMarcar =
+    tipo === "soja" ? "marcar_sitio_de_soja" : "marcar_sitio_de_registro";
   const supabase = createClient();
   const [fase, setFase] = useState<Fase>("inicial");
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +80,7 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
   async function elegirExistente(sitio: SitioCercano) {
     setGuardando(true);
     setError(null);
-    const { error } = await supabase.rpc("marcar_sitio_de_registro", {
+    const { error } = await supabase.rpc(rpcMarcar, {
       p_registro_id: registroId,
       p_sitio_id: sitio.id,
     });
@@ -101,7 +110,7 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
       setError(errorCrear?.message ?? "No se pudo crear el sitio.");
       return;
     }
-    const { error: errorMarcar } = await supabase.rpc("marcar_sitio_de_registro", {
+    const { error: errorMarcar } = await supabase.rpc(rpcMarcar, {
       p_registro_id: registroId,
       p_sitio_id: sitio.id,
     });
