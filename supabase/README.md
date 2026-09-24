@@ -27,6 +27,7 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924233500` | `sitios_icono_y_borrado` | **Aplicada el 24/09/2026 (23:11 UTC).** `sitios.icono`, `crear_sitio` acepta icono, `eliminar_sitio` (solo quien lo descubrió) y `mis_sitios_mapa` expone icono y descubridor; ver «Mapa de sitios» más abajo. |
 | `20260924235000` | `ranking_bebidas_sala` | **Aplicada el 24/09/2026 (23:32 UTC).** Nueva RPC para el ranking de `/sala/[id]/registros`, que deja de tener que cargar todo el historial solo para sumarlo; ver «Bebidas de la sala: listado y borrado» más abajo. |
 | `20260925001500` | `sojas_en_el_mapa_y_desglose_sala` | **Aplicada el 24/09/2026 (23:44 UTC).** Las SOJAS también se pueden marcar en el mapa (`sojas_registros.sitio_id`, `marcar_sitio_de_soja`), `mis_sitios_mapa`/`detalle_sitio` combinan ambas fuentes, y nueva RPC `desglose_bebidas_sala` para el desglose por jugador; ver «Mapa de sitios» y «Bebidas de la sala: listado y borrado» más abajo. |
+| `20260925003000` | `amplia_catalogo_bebidas_de_nuevo` | **Aplicada el 24/09/2026 (23:57 UTC).** Segunda ampliación del catálogo global (134 → 195 entradas), sobre todo «Pinta» (0 → 10); ver «Catálogo ampliado y rareza fija al añadir» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). El resto se aplicaron con
@@ -150,6 +151,17 @@ integer, text)`) antes de crear la de 3, para no dejar las dos coexistiendo
 El buscador del catálogo (input de texto que filtra por nombre, en la vista
 «Bebida concreta» de la sala permanente) ya existía desde antes de esta
 migración; sigue funcionando igual con las 134 entradas.
+
+`20260925003000` la amplía otra vez, de 134 a 195 entradas, mismo patrón
+idempotente (`insert ... where not exists`, sin tocar `crear_bebida_catalogo`).
+Se centra en «Pinta», la única categoría que se había quedado sin ninguna
+bebida concreta desde que existe como `bebidas_tipo` (0 → 10), y refuerza
+Kalimotxo (3 → 8) y Shot especial (6 → 14), además de sumar variedad al
+resto: Cerveza 48 → 58, Chupito 24 → 32, Cubata 32 → 44, Vino 21 → 29. Sin
+migración de test propia (igual que el seed inicial y la ampliación
+anterior): es solo un `insert` de datos, no cambia ninguna función ni
+comportamiento que verificar más allá de la propia unicidad, que ya impone
+el índice `bebidas_catalogo_nombre_unico`.
 
 ## Cuatro cartas que ya funcionaban sin estar documentadas
 
