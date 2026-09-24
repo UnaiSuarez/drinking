@@ -26,6 +26,7 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924232000` | `borrar_registro_bebida_suelta` | **Aplicada el 24/09/2026 (23:09 UTC).** Nueva RPC para borrar un registro de bebida suelta (propio, o de cualquiera si eres admin/fundador), sin el límite de 30s de `anular_bebida_suelta`; ver «Bebidas de la sala: listado y borrado» más abajo. |
 | `20260924233500` | `sitios_icono_y_borrado` | **Aplicada el 24/09/2026 (23:11 UTC).** `sitios.icono`, `crear_sitio` acepta icono, `eliminar_sitio` (solo quien lo descubrió) y `mis_sitios_mapa` expone icono y descubridor; ver «Mapa de sitios» más abajo. |
 | `20260924235000` | `ranking_bebidas_sala` | **Aplicada el 24/09/2026 (23:32 UTC).** Nueva RPC para el ranking de `/sala/[id]/registros`, que deja de tener que cargar todo el historial solo para sumarlo; ver «Bebidas de la sala: listado y borrado» más abajo. |
+| `20260925001500` | `sojas_en_el_mapa_y_desglose_sala` | **Aplicada el 24/09/2026 (23:44 UTC).** Las SOJAS también se pueden marcar en el mapa (`sojas_registros.sitio_id`, `marcar_sitio_de_soja`), `mis_sitios_mapa`/`detalle_sitio` combinan ambas fuentes, y nueva RPC `desglose_bebidas_sala` para el desglose por jugador; ver «Mapa de sitios» y «Bebidas de la sala: listado y borrado» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). El resto se aplicaron con
@@ -322,6 +323,29 @@ que solo el descubridor puede borrar un sitio (otro miembro lo tiene
 prohibido) y que borrar un sitio no se lleva por delante el registro que lo
 tenía marcado.
 
+Las SOJAS (sin alcohol) también se pueden marcar en el mapa, con la misma
+restricción de siempre. `sojas_registros.sala_id` es NOT NULL siempre (a
+diferencia de `registros`), así que el discriminador de "no es una noche"
+ahí es `noche_id is null`, no `sala_id is not null` — pero es la misma
+garantía: `registrar_soja` ya exige sala permanente cuando no se le pasa una
+noche. `20260925001500` añade `sojas_registros.sitio_id` y
+`marcar_sitio_de_soja(p_registro_id, p_sitio_id)` (exige `noche_id is null`,
+igual que `marcar_sitio_de_registro` exige `sala_id is not null`).
+`mis_sitios_mapa()` y `detalle_sitio()` combinan ambas fuentes (unión de
+`registros` y `sojas_registros`); en `detalle_sitio`, una fila de SOJAS sale
+con `bebida_tipo_id` a `null` porque no pertenece al catálogo alcohólico —
+su nombre e icono se resuelven a mano por el valor de `sojas_registros.bebida`
+(`agua`/`refresco`/`cerveza_0`/`coctel_0`/`zumo`). `SitioPicker.tsx` ahora
+acepta un prop `tipo` ("bebida" o "soja") para llamar a la RPC que toque;
+`SojasLogger.tsx` lo renderiza tras registrar una SOJA, solo cuando no se le
+pasó `nocheId` (nunca dentro de una noche).
+
+`supabase/tests/sojas_en_el_mapa_y_desglose_sala.sql` verifica que una SOJA
+sin noche se puede marcar, que una de una noche se rechaza siempre, que
+`mis_sitios_mapa` ve el sitio como `'ambos'` cuando lo marcaron con una
+bebida y con una SOJA distintas personas, y que `detalle_sitio` devuelve
+ambas filas correctamente resueltas.
+
 ## Bebidas de la sala: listado y borrado
 
 `20260924232000` añade `borrar_registro_bebida_suelta(p_registro_id)`: la
@@ -362,6 +386,21 @@ un botón "Ver más" que pide la siguiente tanda de 20 directamente a
 `supabase/tests/ranking_bebidas_sala.sql` verifica que suma bien por
 usuario, que ordena de mayor a menor, que un registro de una noche no cuenta,
 y que alguien que no es miembro de la sala no ve nada al llamarla.
+
+`20260925001500` añade además `desglose_bebidas_sala(p_sala)`: por jugador,
+cuántas ha bebido de cada una, distinguiendo una bebida concreta del
+catálogo (con su nombre y rareza) de un registro "rápido" sin especificar
+(solo el tipo genérico, sin `bebida_catalogo_id`) — igual que
+`ranking_bebidas_sala`, agrupado en Postgres para no cargar el historial
+completo. `RegistrosSalaClient` lo muestra en una sección "Desglose por
+jugador" con un `<details>` desplegable por persona y un selector para
+filtrar a un jugador concreto (o ver a todos), útil para comparar entre
+jugadores.
+
+`supabase/tests/sojas_en_el_mapa_y_desglose_sala.sql` también verifica esta
+RPC: distingue bien una bebida concreta de una genérica, suma las
+cantidades correctamente por jugador, y no devuelve nada para quien no ha
+registrado nada en esa sala.
 
 ## Pruebas SQL
 
