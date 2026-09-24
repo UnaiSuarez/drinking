@@ -18,22 +18,67 @@ export type MiembroRanking = {
   total: number;
 };
 
+const PAGINA = 20;
+
 export default function RegistrosSalaClient({
+  salaId,
   registrosIniciales,
+  hayMasInicial,
   ranking: rankingInicial,
   userId,
   esAdmin,
+  nombrePorUsuario,
+  tipoPorId,
+  nombrePorCatalogo,
 }: {
+  salaId: string;
   registrosIniciales: RegistroSala[];
+  hayMasInicial: boolean;
   ranking: MiembroRanking[];
   userId: string;
   esAdmin: boolean;
+  nombrePorUsuario: Record<string, string>;
+  tipoPorId: Record<number, { nombre: string; icono: string }>;
+  nombrePorCatalogo: Record<string, string>;
 }) {
   const supabase = createClient();
   const [registros, setRegistros] = useState(registrosIniciales);
   const [ranking, setRanking] = useState(rankingInicial);
+  const [hayMas, setHayMas] = useState(hayMasInicial);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [borrandoId, setBorrandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function cargarMas() {
+    setCargandoMas(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("registros")
+      .select("id, usuario_id, bebida_tipo_id, bebida_catalogo_id, ts")
+      .eq("sala_id", salaId)
+      .order("ts", { ascending: false })
+      .range(registros.length, registros.length + PAGINA - 1);
+    setCargandoMas(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    const nuevos: RegistroSala[] = (data ?? []).map((r) => {
+      const tipo = tipoPorId[r.bebida_tipo_id];
+      return {
+        id: r.id,
+        usuarioId: r.usuario_id,
+        nombre: nombrePorUsuario[r.usuario_id] ?? "???",
+        bebidaNombre: r.bebida_catalogo_id
+          ? nombrePorCatalogo[r.bebida_catalogo_id] ?? tipo?.nombre ?? "???"
+          : tipo?.nombre ?? "???",
+        icono: tipo?.icono ?? "🥤",
+        ts: r.ts,
+      };
+    });
+    setRegistros((prev) => [...prev, ...nuevos]);
+    setHayMas(nuevos.length === PAGINA);
+  }
 
   async function borrar(registro: RegistroSala) {
     setBorrandoId(registro.id);
@@ -98,43 +143,54 @@ export default function RegistrosSalaClient({
             Nada por aquí todavía.
           </p>
         ) : (
-          <ul className="space-y-2">
-            {registros.map((r) => {
-              const puedeBorrar = r.usuarioId === userId || esAdmin;
-              return (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
-                >
-                  <div className="flex items-center gap-2 text-sm text-texto">
-                    <span className="text-lg">{r.icono}</span>
-                    <div>
-                      <p>{r.bebidaNombre}</p>
-                      <p className="text-xs text-texto2">
-                        {r.nombre}
-                        {r.usuarioId === userId && " (tú)"} ·{" "}
-                        {new Date(r.ts).toLocaleString("es-ES", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
+          <>
+            <ul className="space-y-2">
+              {registros.map((r) => {
+                const puedeBorrar = r.usuarioId === userId || esAdmin;
+                return (
+                  <li
+                    key={r.id}
+                    className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
+                  >
+                    <div className="flex items-center gap-2 text-sm text-texto">
+                      <span className="text-lg">{r.icono}</span>
+                      <div>
+                        <p>{r.bebidaNombre}</p>
+                        <p className="text-xs text-texto2">
+                          {r.nombre}
+                          {r.usuarioId === userId && " (tú)"} ·{" "}
+                          {new Date(r.ts).toLocaleString("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  {puedeBorrar && (
-                    <button
-                      onClick={() => borrar(r)}
-                      disabled={borrandoId === r.id}
-                      className="px-2 text-sm text-rosa disabled:opacity-50"
-                    >
-                      {borrandoId === r.id ? "…" : "🗑️"}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                    {puedeBorrar && (
+                      <button
+                        onClick={() => borrar(r)}
+                        disabled={borrandoId === r.id}
+                        className="px-2 text-sm text-rosa disabled:opacity-50"
+                      >
+                        {borrandoId === r.id ? "…" : "🗑️"}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {hayMas && (
+              <button
+                onClick={cargarMas}
+                disabled={cargandoMas}
+                className="mt-3 w-full rounded-xl border border-borde py-2 text-sm text-texto2 disabled:opacity-50"
+              >
+                {cargandoMas ? "Cargando…" : "Ver más"}
+              </button>
+            )}
+          </>
         )}
       </section>
     </div>
