@@ -62,7 +62,7 @@ export default function CofresCartasGrid({
           const secreta = carta.oculta
             ? "cofre-card-secret border-purple-400/70"
             : rareza.borde;
-          const imagen = bloqueada ? REVERSOS_CARTA.legendaria : carta.imagen;
+          const imagen = bloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
           const titulo = bloqueada ? "???" : carta.nombre;
           const descripcion = bloqueada
             ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."
@@ -87,7 +87,7 @@ export default function CofresCartasGrid({
               >
                 <div className="cofre-card-face cofre-card-back-face rounded-2xl bg-tarjeta p-3">
                   <Image
-                    src={carta.oculta ? REVERSOS_CARTA.legendaria : rareza.reverso}
+                    src={carta.oculta ? REVERSOS_CARTA.exclusiva : rareza.reverso}
                     alt={`Reverso de ${carta.nombre}`}
                     width={768}
                     height={768}

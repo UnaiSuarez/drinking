@@ -3,6 +3,7 @@
 import { useEffect, type CSSProperties } from "react";
 import Image from "next/image";
 import type { CartaCofre, CartaRareza } from "@/lib/cofresDesign";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 const RAREZA_COLOR: Record<CartaRareza, string> = {
   comun: "#aeb4c8",
@@ -35,6 +36,7 @@ export default function CartaUsoCelebracion({
   detalle?: string;
   onClose: () => void;
 }) {
+  useModalScrollLock(true);
   useEffect(() => {
     const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const timer = window.setTimeout(onClose, sinMovimiento ? 900 : 2300);

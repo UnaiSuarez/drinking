@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 type SalaResumen = {
   id: string;
@@ -11,6 +12,7 @@ type SalaResumen = {
   codigo: string;
   rol: string;
   nocheActivaId: string | null;
+  archivadaAt: string | null;
 };
 
 export default function SalasHome({
@@ -29,6 +31,45 @@ export default function SalasHome({
   const [codigo, setCodigo] = useState("");
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorSala, setErrorSala] = useState<string | null>(null);
+  const [restaurando, setRestaurando] = useState<string | null>(null);
+  const [salaAEliminar, setSalaAEliminar] = useState<SalaResumen | null>(null);
+  const [nombreConfirmacion, setNombreConfirmacion] = useState("");
+  const [eliminando, setEliminando] = useState(false);
+  useModalScrollLock(Boolean(salaAEliminar));
+  const salasActivas = salas.filter((sala) => !sala.archivadaAt);
+  const salasArchivadas = salas.filter((sala) => sala.archivadaAt && sala.rol === "fundador");
+
+  async function restaurarSala(id: string) {
+    setRestaurando(id);
+    setErrorSala(null);
+    const { error: fallo } = await createClient().rpc("restaurar_sala", { p_sala: id });
+    setRestaurando(null);
+    if (fallo) {
+      setErrorSala(fallo.message);
+      return;
+    }
+    router.refresh();
+  }
+
+  async function eliminarSala(e: React.FormEvent) {
+    e.preventDefault();
+    if (!salaAEliminar || nombreConfirmacion !== salaAEliminar.nombre || eliminando) return;
+    setEliminando(true);
+    setErrorSala(null);
+    const { error: fallo } = await createClient().rpc("eliminar_sala_definitivamente", {
+      p_sala: salaAEliminar.id,
+      p_nombre: nombreConfirmacion,
+    });
+    setEliminando(false);
+    if (fallo) {
+      setErrorSala(fallo.message);
+      return;
+    }
+    setSalaAEliminar(null);
+    setNombreConfirmacion("");
+    router.refresh();
+  }
 
   async function crearSala(e: React.FormEvent) {
     e.preventDefault();
@@ -102,7 +143,7 @@ export default function SalasHome({
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="font-titulo text-xl text-texto">Tus salas</h2>
-          {salas.length > 0 && (
+          {salasActivas.length > 0 && (
             <Link
               href="/estadisticas"
               className="inline-flex items-center gap-1.5 rounded-full border border-lima/50 bg-lima/10 px-3 py-1.5 text-xs font-semibold text-lima transition active:scale-95"
@@ -111,7 +152,7 @@ export default function SalasHome({
             </Link>
           )}
         </div>
-        {salas.length === 0 ? (
+        {salasActivas.length === 0 ? (
           <div className="rounded-3xl border border-borde bg-tarjeta p-8 text-center">
             <div className="mb-2 text-5xl">🏚️</div>
             <p className="text-texto2">
@@ -120,7 +161,7 @@ export default function SalasHome({
           </div>
         ) : (
           <ul className="space-y-3">
-            {salas.map((sala) => (
+            {salasActivas.map((sala) => (
               <li key={sala.id}>
                 <Link
                   href={`/sala/${sala.id}`}
@@ -164,6 +205,45 @@ export default function SalasHome({
           </ul>
         )}
       </section>
+
+      {salasArchivadas.length > 0 && (
+        <section className="mb-8 border-t border-borde pt-5">
+          <h2 className="mb-3 font-titulo text-sm text-texto2">Salas archivadas</h2>
+          {errorSala && <p role="alert" className="mb-3 text-sm text-rosa">{errorSala}</p>}
+          <ul className="space-y-2">
+            {salasArchivadas.map((sala) => (
+              <li key={sala.id} className="flex items-center justify-between gap-3 py-2">
+                <span className="min-w-0 truncate text-sm text-texto2">{sala.nombre}</span>
+                <button
+                  type="button"
+                  onClick={() => void restaurarSala(sala.id)}
+                  disabled={restaurando === sala.id}
+                  className="shrink-0 rounded-lg border border-borde px-3 py-2 text-xs text-cian disabled:opacity-40"
+                >
+                  {restaurando === sala.id ? "Restaurando…" : "Restaurar"}
+                </button>
+                <button type="button" onClick={() => { setSalaAEliminar(sala); setNombreConfirmacion(""); setErrorSala(null); }} className="shrink-0 rounded-lg border border-rosa/50 px-3 py-2 text-xs text-rosa">
+                  Eliminar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {salaAEliminar && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget && !eliminando) setSalaAEliminar(null); }}>
+        <form onSubmit={(e) => void eliminarSala(e)} role="dialog" aria-modal="true" aria-labelledby="titulo-eliminar-sala" className="w-full max-w-sm rounded-lg border border-rosa/60 bg-tarjeta p-5">
+          <h2 id="titulo-eliminar-sala" className="font-titulo text-xl text-rosa">Eliminar {salaAEliminar.nombre}</h2>
+          <p className="mt-2 text-sm text-texto2">Se borrarán definitivamente la sala, sus noches, bebidas, clasificaciones y medallas de esa sala para todos sus miembros. Esta acción no se puede deshacer. El XP y los cosméticos ya obtenidos de cada cuenta se conservarán.</p>
+          <label htmlFor="nombre-eliminar-sala" className="mt-5 block text-sm text-texto">Escribe {salaAEliminar.nombre} para confirmar</label>
+          <input id="nombre-eliminar-sala" autoFocus value={nombreConfirmacion} onChange={(e) => setNombreConfirmacion(e.target.value)} className="mt-2 w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-texto outline-none focus:border-rosa" />
+          {errorSala && <p role="alert" className="mt-3 text-sm text-rosa">{errorSala}</p>}
+          <div className="mt-5 flex justify-end gap-2">
+            <button type="button" onClick={() => setSalaAEliminar(null)} disabled={eliminando} className="rounded-lg border border-borde px-3 py-2 text-sm text-texto2">Cancelar</button>
+            <button type="submit" disabled={nombreConfirmacion !== salaAEliminar.nombre || eliminando} className="rounded-lg bg-rosa px-3 py-2 text-sm font-semibold text-fondo disabled:opacity-40">{eliminando ? "Eliminando…" : "Eliminar definitivamente"}</button>
+          </div>
+        </form>
+      </div>}
 
       {modo === "ninguno" && (
         <div className="grid grid-cols-2 gap-3">

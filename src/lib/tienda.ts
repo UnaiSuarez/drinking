@@ -35,7 +35,6 @@ export type TiendaAvatar = {
 };
 
 export type PersonajeOculto = TiendaAvatar & {
-  desbloqueo: string;
   placeholderImagen: string;
   /** Habilidad pasiva que se activa mientras llevas este personaje
    * equipado. Se resuelve en finalizar_noche (ver tmp_personaje_equipado). */
@@ -304,7 +303,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "ultimo-ronda",
     nombre: "El Rubio de la Última Ronda",
     descripcion: "Personaje único, sonrisa peligrosa y croquetas de emergencia.",
-    desbloqueo: "Llegará en cofres con un logro secreto de última ronda.",
     habilidad: "Habilidad oculta: tus bebidas en los últimos 10 minutos antes del cierre dan +2 PL extra.",
     precio: 0,
     rareza: "unica",
@@ -316,7 +314,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "jefe-after",
     nombre: "El Jefe del After",
     descripcion: "Personaje único, shaker en mano y mirada de reservado cerrado.",
-    desbloqueo: "Llegará en cofres con una cadena de noches épicas.",
     habilidad: "Habilidad oculta: si tú inicias la noche, todos los que beban ganan +1 PL extra.",
     precio: 0,
     rareza: "unica",
@@ -328,7 +325,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "narrador-noche",
     nombre: "El Narrador de la Noche",
     descripcion: "Personaje único, móvil arriba y prueba gráfica de todo.",
-    desbloqueo: "Llegará en cofres con logros sociales especiales.",
     habilidad: "Habilidad oculta: cada bebida que registres con comentario da +1 PL extra.",
     precio: 0,
     rareza: "unica",
@@ -340,7 +336,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "silencioso-letal",
     nombre: "El Silencioso Letal",
     descripcion: "Personaje único, refresco azul y subida discreta en la tabla.",
-    desbloqueo: "Llegará en cofres con un logro oculto de remontada.",
     habilidad: "Habilidad oculta: tus refrescos y aguas dan siempre +1 PL.",
     precio: 0,
     rareza: "unica",
@@ -352,7 +347,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "guardian-cubata",
     nombre: "El Guardián del Cubata",
     descripcion: "Personaje único, vaso brillante y aura de no-me-lo-toques.",
-    desbloqueo: "Llegará en cofres con logros de resistencia y temporada.",
     habilidad: "Habilidad oculta: eres inmune a las cartas de objetivo que te lancen.",
     precio: 0,
     rareza: "unica",
@@ -364,6 +358,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
 
 const MARCOS_COMPRABLES = new Set(TIENDA_MARCOS.map((marco) => marco.id));
 const AVATARES_COMPRABLES = new Set(TIENDA_AVATARES.map((avatar) => avatar.id));
+const PERSONAJES_DESBLOQUEABLES = new Set(PERSONAJES_OCULTOS.map((personaje) => personaje.id));
 
 export function calcularChapasGanadas(params: {
   xp: number;
@@ -394,12 +389,17 @@ export function parseTiendaState(raw: unknown): TiendaState {
   const avatares = (tienda.avatares ?? []).filter((avatar): avatar is string =>
     AVATARES_COMPRABLES.has(avatar)
   );
+  const inventario = (raw ?? {}) as { inventario?: { personajesOcultos?: string[] } };
+  const personajes = (inventario.inventario?.personajesOcultos ?? []).filter((id) =>
+    PERSONAJES_DESBLOQUEABLES.has(id)
+  );
   const marcoEquipado =
     tienda.marcoEquipado && marcos.includes(tienda.marcoEquipado)
       ? tienda.marcoEquipado
       : null;
   const avatarEquipado =
-    tienda.avatarEquipado && avatares.includes(tienda.avatarEquipado)
+    tienda.avatarEquipado &&
+    (avatares.includes(tienda.avatarEquipado) || personajes.includes(tienda.avatarEquipado))
       ? tienda.avatarEquipado
       : null;
 

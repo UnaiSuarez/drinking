@@ -4,6 +4,7 @@ import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { REVERSOS_CARTA, type CartaCofre, type CartaRareza } from "@/lib/cofresDesign";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 const RAREZA_ETIQUETA: Record<CartaRareza, string> = {
   comun: "Comun",
@@ -24,6 +25,7 @@ export default function CartaDetalleModal({
   onClose: () => void;
 }) {
   const tituloId = useId();
+  useModalScrollLock(true);
 
   useEffect(() => {
     function cerrarConEscape(event: KeyboardEvent) {
@@ -35,7 +37,7 @@ export default function CartaDetalleModal({
 
   if (typeof document === "undefined") return null;
 
-  const imagen = bloqueada ? REVERSOS_CARTA.legendaria : carta.imagen;
+  const imagen = bloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
   const titulo = bloqueada ? "???" : carta.nombre;
   const descripcion = bloqueada
     ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."

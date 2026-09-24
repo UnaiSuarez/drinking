@@ -12,6 +12,7 @@ import { parseInventarioState } from "@/lib/inventario";
 import { type MarcoPerfil } from "@/lib/marcos";
 import { createClient } from "@/lib/supabase/client";
 import { RevealXp, RevealLiga } from "@/components/RevealProgreso";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 export type ResultadoJugador = {
   id: string;
@@ -129,6 +130,7 @@ export default function PodioReveal({
     descripcion: string;
     rareza: string;
   } | null>(null);
+  useModalScrollLock(Boolean(logroInfo));
   const [compartido, setCompartido] = useState(false);
   const [generandoImagen, setGenerandoImagen] = useState(false);
   const [errorImagen, setErrorImagen] = useState<string | null>(null);

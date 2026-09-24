@@ -6,6 +6,7 @@ import confetti from "canvas-confetti";
 import { REVERSOS_CARTA, type CartaRareza, type CofreTipo } from "@/lib/cofresDesign";
 import type { RecompensaCofre } from "@/lib/inventario";
 import { prepararAudioCofre, sonarCofre } from "@/lib/cofreAudio";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 type FaseCarta = "oculta" | "girando" | "revelada";
 type EtapaApertura = "sellado" | "abierto" | "saliendo" | "lista";
@@ -24,16 +25,27 @@ const COFRE_COLOR: Record<CofreTipo["id"], string> = {
   legendario: "#ffd54a",
 };
 
-function reversoPorRareza(rareza: CartaRareza | "unica") {
-  if (rareza === "legendaria" || rareza === "unica") return REVERSOS_CARTA.legendaria;
+function reversoPorRecompensa(recompensa: RecompensaCofre) {
+  if (recompensa.tipo === "fragmentoPersonaje") return REVERSOS_CARTA.personaje;
+  if (recompensa.tipo === "carta" && recompensa.oculta) return REVERSOS_CARTA.exclusiva;
+  const rareza = recompensa.rareza;
+  if (rareza === "legendaria") return REVERSOS_CARTA.legendaria;
   if (rareza === "epica") return REVERSOS_CARTA.epica;
   return REVERSOS_CARTA.comun;
 }
 
 function etiquetaRecompensa(recompensa: RecompensaCofre) {
   if (recompensa.tipo === "monedas") return `${recompensa.cantidad} chapas`;
-  if (recompensa.tipo === "fragmentoPersonaje") return "Fragmento unico";
-  return recompensa.oculta ? "Carta oculta" : "Carta";
+  if (recompensa.tipo === "fragmentoPersonaje") return "Personaje · fragmento";
+  if (recompensa.oculta) return "Carta exclusiva";
+  return `Carta ${recompensa.rareza}`;
+}
+
+function categoriaRecompensa(recompensa: RecompensaCofre) {
+  if (recompensa.tipo === "fragmentoPersonaje") return "PERSONAJE";
+  if (recompensa.tipo === "carta" && recompensa.oculta) return "EXCLUSIVA";
+  if (recompensa.tipo === "monedas") return "CHAPAS";
+  return ({ comun: "COMÚN", rara: "RARA", epica: "ÉPICA", legendaria: "LEGENDARIA" } as const)[recompensa.rareza];
 }
 
 export default function CofreAperturaModal({
@@ -54,6 +66,7 @@ export default function CofreAperturaModal({
   } | null>(null);
   const timersRevelado = useRef<number[]>([]);
   const botonPremio = useRef<HTMLButtonElement>(null);
+  useModalScrollLock(true);
 
   useEffect(() => {
     if (etapa === "lista") return;
@@ -213,6 +226,7 @@ export default function CofreAperturaModal({
                 aria-label={fase === "revelada" ? recompensa.nombre : `Revelar recompensa ${index + 1}`}
                 className={`cofre-reward-slot gacha-scene fase-${fase}`}
                 data-rarity={rareza}
+                data-kind={recompensa.tipo === "fragmentoPersonaje" ? "personaje" : secreta ? "exclusiva" : rareza}
                 style={
                   {
                     "--reward-color": RAREZA_COLOR[rareza][0],
@@ -230,10 +244,11 @@ export default function CofreAperturaModal({
                 )}
                 <span className={`gacha-card relative block aspect-[3/4] ${secreta ? "cofre-reveal-secret" : ""}`}>
                   <span className="cofre-reveal-face absolute inset-0">
-                    <Image src={reversoPorRareza(rareza)} alt="Carta boca abajo" fill className="object-contain" sizes="120px" />
+                    <Image src={reversoPorRecompensa(recompensa)} alt="Carta boca abajo" fill className="object-contain" sizes="120px" />
                     {rareza !== "legendaria" && rareza !== "unica" && (
                       <span className="absolute inset-0 flex items-center justify-center font-titulo text-3xl text-oro drop-shadow-lg">?</span>
                     )}
+                    <span className="cofre-card-category">{categoriaRecompensa(recompensa)}</span>
                   </span>
                   <span className="cofre-reveal-face cofre-reveal-front absolute inset-0" aria-hidden={fase !== "revelada"}>
                     {secreta && <span className="cofre-reward-aura" />}

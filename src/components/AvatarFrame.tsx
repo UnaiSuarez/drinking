@@ -251,7 +251,7 @@ export default function AvatarFrame({
       aria-label={`Avatar con marco ${marco}`}
     >
       <span
-        className={`absolute inset-0 bg-gradient-to-br ${marcoInfo.inner}`}
+        className={marcoInfo.arte ? "absolute inset-0 bg-tarjeta" : `absolute inset-0 bg-gradient-to-br ${marcoInfo.inner}`}
       />
       {marcoInfo.arte && (
         <Image

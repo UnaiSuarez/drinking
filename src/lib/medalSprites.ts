@@ -89,6 +89,16 @@ const SPRITES = new Map(
   ])
 );
 
+// Phase III/IV reuse water-themed art until their dedicated illustrations are ready.
+for (const [slug, src] of [
+  ["sojas-i", "/medals/ai/items-main/sojas-i.webp"],
+  ["sojas-ii", "/medals/ai/items-main/sojas-ii.webp"],
+  ["sojas-iii", "/medals/ai/items-main/hidratado.webp"],
+  ["sojas-iv", "/medals/ai/items-main/sobrio-designado.webp"],
+] as const) {
+  SPRITES.set(slug, { sheet: 0, row: 0, col: 0, src });
+}
+
 const ALIASES: Record<string, string> = {
   "ganador-de-la-noche": "campeon-de-temporada",
   ganador: "campeon-de-temporada",
@@ -104,6 +114,7 @@ const ALIASES: Record<string, string> = {
   centurion: "centurion-i",
   coctelero: "coctelero-i",
   veterano: "veterano-i",
+  sojas: "sojas-i",
 };
 
 function normalizar(valor: string): string {

@@ -7,6 +7,7 @@ type SalaResumen = {
   codigo: string;
   rol: string;
   nocheActivaId: string | null;
+  archivadaAt: string | null;
 };
 
 export default async function HomePage() {
@@ -23,12 +24,12 @@ export default async function HomePage() {
 
   const { data: membresias } = await supabase
     .from("sala_miembros")
-    .select("rol, salas(id, nombre, codigo)")
+    .select("rol, salas(id, nombre, codigo, archivada_at)")
     .eq("usuario_id", user!.id);
 
-  const salaIds = (membresias ?? []).map((m) => {
-    const sala = m.salas as unknown as { id: string };
-    return sala.id;
+  const salaIds = (membresias ?? []).flatMap((m) => {
+    const sala = m.salas as unknown as { id: string; archivada_at: string | null } | null;
+    return sala && !sala.archivada_at ? [sala.id] : [];
   });
 
   const { data: nochesActivas } =
@@ -44,19 +45,22 @@ export default async function HomePage() {
     (nochesActivas ?? []).map((n) => [n.sala_id, n.id])
   );
 
-  const salas: SalaResumen[] = (membresias ?? []).map((m) => {
+  const salas: SalaResumen[] = (membresias ?? []).flatMap((m) => {
     const sala = m.salas as unknown as {
       id: string;
       nombre: string;
       codigo: string;
-    };
-    return {
+      archivada_at: string | null;
+    } | null;
+    if (!sala) return [];
+    return [{
       id: sala.id,
       nombre: sala.nombre,
       codigo: sala.codigo,
       rol: m.rol,
       nocheActivaId: nocheActivaPorSala.get(sala.id) ?? null,
-    };
+      archivadaAt: sala.archivada_at,
+    }];
   });
 
   return (

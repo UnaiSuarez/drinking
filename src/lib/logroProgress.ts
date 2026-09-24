@@ -4,7 +4,7 @@ export type LogroFamiliaEscalonada = {
   aliases?: string[];
   descripcion: string;
   unidad: string;
-  stat: "cervezas" | "chupitos" | "cubatas" | "racha" | "noches";
+  stat: "cervezas" | "chupitos" | "cubatas" | "racha" | "noches" | "sojas";
   fases: {
     slug: string;
     etiqueta: string;
@@ -13,6 +13,19 @@ export type LogroFamiliaEscalonada = {
 };
 
 export const LOGRO_FAMILIAS_ESCALONADAS: LogroFamiliaEscalonada[] = [
+  {
+    id: "sojas",
+    titulo: "SOJAS",
+    descripcion: "Registra bebidas sin alcohol en tus salas. No suman PL.",
+    unidad: "bebidas sin alcohol",
+    stat: "sojas",
+    fases: [
+      { slug: "sojas-i", etiqueta: "I", umbral: 5 },
+      { slug: "sojas-ii", etiqueta: "II", umbral: 20 },
+      { slug: "sojas-iii", etiqueta: "III", umbral: 50 },
+      { slug: "sojas-iv", etiqueta: "IV", umbral: 100 },
+    ],
+  },
   {
     id: "cervecero",
     titulo: "Cervecero",

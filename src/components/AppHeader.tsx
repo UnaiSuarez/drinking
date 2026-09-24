@@ -4,6 +4,7 @@ import AvatarFrame from "@/components/AvatarFrame";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel } from "@/lib/niveles";
 import { marcoPorNivel } from "@/lib/marcos";
+import { parseTiendaState } from "@/lib/tienda";
 
 const ADMIN_EMAIL = "unaisucar64535@gmail.com";
 
@@ -25,7 +26,7 @@ export default async function AppHeader() {
 
   const avatarConfig = parseAvatarConfig(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
-  const marco = marcoPorNivel(nivel.nivel);
+  const marco = parseTiendaState(perfil.avatar_config).marcoEquipado ?? marcoPorNivel(nivel.nivel);
 
   return (
     <header className="sticky top-0 z-40 flex items-center justify-between border-b border-borde bg-fondo/95 px-4 py-2 backdrop-blur">

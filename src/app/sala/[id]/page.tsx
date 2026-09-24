@@ -21,8 +21,9 @@ export default async function SalaPage({
 
   const { data: sala } = await supabase
     .from("salas")
-    .select("id, nombre, codigo, config")
+    .select("id, nombre, codigo, config, archivada_at")
     .eq("id", id)
+    .is("archivada_at", null)
     .single();
 
   if (!sala) notFound();

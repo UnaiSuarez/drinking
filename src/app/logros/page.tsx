@@ -109,6 +109,7 @@ function iconoPorFamilia(familiaId: string) {
   if (familiaId === "coctelero") return "🍹";
   if (familiaId === "en-racha") return "🔥";
   if (familiaId === "veterano") return "🎖️";
+  if (familiaId === "sojas") return "💧";
   return "🏅";
 }
 
@@ -189,7 +190,7 @@ function calcularRachaMaxima(
 function crearProgresosEscalonados(params: {
   logros: LogroCatalogo[];
   conteo: Map<number, number>;
-  stats: Record<"cervezas" | "chupitos" | "cubatas" | "racha" | "noches", number>;
+  stats: Record<"cervezas" | "chupitos" | "cubatas" | "racha" | "noches" | "sojas", number>;
 }): LogroProgreso[] {
   const porSlug = new Map(params.logros.map((logro) => [logro.slug, logro]));
 
@@ -212,7 +213,7 @@ function crearProgresosEscalonados(params: {
             icono: iconoPorFamilia(familia.id),
             descripcion: `${familia.descripcion} Objetivo: ${fase.umbral} ${familia.unidad}.`,
             rareza,
-            pl: plPorRareza(rareza),
+            pl: familia.id === "sojas" ? 0 : plPorRareza(rareza),
             secreto: false,
             n: 0,
           } satisfies LogroCatalogo);
@@ -270,7 +271,7 @@ export default async function LogrosPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [{ data: catalogo }, { data: mios }, { data: registrosRaw }, { data: participacionesRaw }] =
+  const [{ data: catalogo }, { data: mios }, { data: registrosRaw }, { data: participacionesRaw }, { count: sojas }] =
     await Promise.all([
       supabase
         .from("logros")
@@ -290,6 +291,10 @@ export default async function LogrosPage() {
         .select("noche_id, noches!inner(id, sala_id, estado, inicio)")
         .eq("usuario_id", user!.id)
         .eq("noches.estado", "cerrada"),
+      supabase
+        .from("sojas_registros")
+        .select("id", { count: "exact", head: true })
+        .eq("usuario_id", user!.id),
     ]);
 
   const conteo = new Map<number, number>();
@@ -340,6 +345,7 @@ export default async function LogrosPage() {
     ...bebidaStats,
     noches: new Set(participaciones.map((p) => p.noche_id)).size,
     racha: calcularRachaMaxima(participaciones, nochesCerradas),
+    sojas: sojas ?? 0,
   };
   const progresos = crearProgresosEscalonados({
     logros: logrosCatalogoCompleto,

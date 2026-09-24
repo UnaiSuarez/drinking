@@ -452,12 +452,12 @@ export default function TiendaClient({
                 <div className="mb-3 flex justify-center rounded-2xl bg-fondo/60 p-2">
                   <AvatarFramePreview
                     config={previewConfig}
-                    marco="portal"
+                    portraitOnly
                     titulo={desbloqueado ? item.nombre : "???"}
                     subtitulo={
                       desbloqueado
-                        ? `${rareza.etiqueta} · Desbloqueado`
-                        : `${rareza.etiqueta} · ${item.desbloqueo}`
+                        ? `${rareza.etiqueta} · ${item.descripcion}`
+                        : `${rareza.etiqueta} · Reúne ${FRAGMENTOS_PERSONAJE_NECESARIOS} fragmentos en cofres (${fragmentos}/${FRAGMENTOS_PERSONAJE_NECESARIOS})`
                     }
                     triggerClassName="h-24 w-24"
                     previewClassName="h-72 w-72"
@@ -474,10 +474,10 @@ export default function TiendaClient({
                   </span>
                 </div>
                 <p className="mb-2 min-h-12 text-xs text-texto2">
-                  {desbloqueado ? item.descripcion : item.desbloqueo}
+                  {desbloqueado ? item.descripcion : "Sus fragmentos pueden aparecer en cualquier cofre."}
                 </p>
                 <p className="mb-3 min-h-10 text-[11px] text-oro">
-                  {item.habilidad}
+                  {desbloqueado ? item.habilidad : "La identidad se revela al completar sus fragmentos."}
                 </p>
                 {desbloqueado ? (
                   <button
