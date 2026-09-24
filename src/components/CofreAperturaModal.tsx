@@ -24,14 +24,6 @@ const COFRE_COLOR: Record<CofreTipo["id"], string> = {
   legendario: "#ffd54a",
 };
 
-const RAREZA_BORDE: Record<CartaRareza | "unica", string> = {
-  comun: "border-borde",
-  rara: "border-cian/60",
-  epica: "border-rosa/70",
-  legendaria: "border-oro",
-  unica: "border-purple-300",
-};
-
 function reversoPorRareza(rareza: CartaRareza | "unica") {
   if (rareza === "legendaria" || rareza === "unica") return REVERSOS_CARTA.legendaria;
   if (rareza === "epica") return REVERSOS_CARTA.epica;
@@ -61,7 +53,7 @@ export default function CofreAperturaModal({
     rareza: "legendaria" | "unica";
   } | null>(null);
   const timersRevelado = useRef<number[]>([]);
-  const timerEspecial = useRef<number | null>(null);
+  const botonPremio = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (etapa === "lista") return;
@@ -81,6 +73,10 @@ export default function CofreAperturaModal({
   }, [etapa, sonidoActivo]);
 
   useEffect(() => {
+    if (premioEspecial) botonPremio.current?.focus();
+  }, [premioEspecial]);
+
+  useEffect(() => {
     const timers = timersRevelado.current;
     const cerrarConEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -89,7 +85,6 @@ export default function CofreAperturaModal({
     return () => {
       window.removeEventListener("keydown", cerrarConEscape);
       timers.forEach(clearTimeout);
-      if (timerEspecial.current !== null) clearTimeout(timerEspecial.current);
     };
   }, [onClose]);
 
@@ -102,18 +97,20 @@ export default function CofreAperturaModal({
     const rareza = secreta ? "unica" : recompensa.rareza;
     const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setFases((actual) => actual.map((fase, i) => i === index ? (sinMovimiento ? "revelada" : "girando") : fase));
-    if (sinMovimiento) return;
-    if (sonidoActivo) sonarCofre("revelar");
+    if (sinMovimiento) {
+      if (rareza === "legendaria" || rareza === "unica") setPremioEspecial({ recompensa, rareza });
+      if (sonidoActivo) sonarCofre(rareza === "legendaria" || rareza === "unica" ? rareza : "revelar");
+      return;
+    }
+    if (sonidoActivo && rareza !== "legendaria" && rareza !== "unica") sonarCofre("revelar");
     if (navigator.vibrate) navigator.vibrate(15);
 
     const timer = window.setTimeout(() => {
       setFases((actual) => actual.map((fase, i) => i === index ? "revelada" : fase));
       if (rareza === "legendaria" || rareza === "unica") {
-        if (timerEspecial.current !== null) clearTimeout(timerEspecial.current);
         setPremioEspecial({ recompensa, rareza });
-        timerEspecial.current = window.setTimeout(() => setPremioEspecial(null), 1900);
       }
-      if (sonidoActivo) sonarCofre(rareza === "legendaria" || rareza === "unica" ? rareza : "revelar");
+      if (sonidoActivo && (rareza === "legendaria" || rareza === "unica")) sonarCofre(rareza);
       if (navigator.vibrate) {
         navigator.vibrate(
           rareza === "legendaria" || rareza === "unica"
@@ -231,14 +228,16 @@ export default function CofreAperturaModal({
                     style={{ background: `radial-gradient(circle, ${RAREZA_COLOR[rareza][0]}, transparent 65%)` }}
                   />
                 )}
-                <span className={`gacha-card relative block aspect-[3/4] rounded-lg border bg-fondo ${RAREZA_BORDE[rareza]} ${secreta ? "cofre-reveal-secret" : ""}`}>
-                  <span className="cofre-reveal-face absolute inset-0 overflow-hidden rounded-lg">
-                    <Image src={reversoPorRareza(rareza)} alt="Carta boca abajo" fill className="object-cover" sizes="120px" />
-                    <span className="absolute inset-0 flex items-center justify-center font-titulo text-4xl text-oro">?</span>
+                <span className={`gacha-card relative block aspect-[3/4] ${secreta ? "cofre-reveal-secret" : ""}`}>
+                  <span className="cofre-reveal-face absolute inset-0">
+                    <Image src={reversoPorRareza(rareza)} alt="Carta boca abajo" fill className="object-contain" sizes="120px" />
+                    {rareza !== "legendaria" && rareza !== "unica" && (
+                      <span className="absolute inset-0 flex items-center justify-center font-titulo text-3xl text-oro drop-shadow-lg">?</span>
+                    )}
                   </span>
-                  <span className="cofre-reveal-face cofre-reveal-front absolute inset-0 overflow-hidden rounded-lg bg-tarjeta p-1.5 sm:p-2" aria-hidden={fase !== "revelada"}>
+                  <span className="cofre-reveal-face cofre-reveal-front absolute inset-0" aria-hidden={fase !== "revelada"}>
                     {secreta && <span className="cofre-reward-aura" />}
-                    <Image src={recompensa.imagen} alt={recompensa.nombre} width={768} height={768} className="relative z-10 aspect-square w-full rounded-md object-cover" sizes="120px" />
+                    <Image src={recompensa.imagen} alt={recompensa.nombre} width={768} height={768} className="relative z-10 aspect-square w-full rounded-md object-contain" sizes="120px" />
                     <span className="relative z-10 mt-1 block font-titulo text-[10px] leading-tight text-texto sm:text-[11px]">{recompensa.nombre}</span>
                     <span className="relative z-10 block text-[9px] text-texto2">{etiquetaRecompensa(recompensa)}</span>
                   </span>
@@ -249,11 +248,24 @@ export default function CofreAperturaModal({
         </div>
       </div>
       {premioEspecial && (
-        <div className="cofre-grand-reveal" data-rarity={premioEspecial.rareza} aria-live="polite">
+        <button
+          ref={botonPremio}
+          type="button"
+          className="cofre-grand-reveal"
+          data-rarity={premioEspecial.rareza}
+          aria-label={`Cerrar premio ${premioEspecial.recompensa.nombre}`}
+          onClick={() => setPremioEspecial(null)}
+          onKeyDown={(event) => {
+            if (event.key === "Escape") {
+              event.stopPropagation();
+              setPremioEspecial(null);
+            }
+          }}
+        >
           <span className="cofre-grand-reveal__beam" aria-hidden="true" />
           <span className="cofre-grand-reveal__impact" aria-hidden="true" />
           <span className="cofre-grand-reveal__rays" aria-hidden="true" />
-          <div className="cofre-grand-reveal__prize">
+          <span className="cofre-grand-reveal__prize">
             <Image
               src={premioEspecial.recompensa.imagen}
               alt=""
@@ -266,8 +278,9 @@ export default function CofreAperturaModal({
             <span className="cofre-grand-reveal__tier">
               {premioEspecial.rareza === "unica" ? "Recompensa unica" : "Legendaria"}
             </span>
-          </div>
-        </div>
+            <span className="cofre-grand-reveal__continue">Continuar</span>
+          </span>
+        </button>
       )}
     </div>
   );

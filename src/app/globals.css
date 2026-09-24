@@ -668,7 +668,7 @@ body {
 }
 .cofre-opening {
   position: relative;
-  height: clamp(180px, 26dvh, 230px);
+  height: clamp(230px, 30dvh, 270px);
   overflow: hidden;
   border-radius: 8px;
   isolation: isolate;
@@ -689,9 +689,9 @@ body {
 .cofre-opening__chest {
   position: absolute;
   z-index: 2;
-  bottom: -13px;
+  bottom: 12px;
   left: 50%;
-  width: min(62%, 210px);
+  width: min(58%, 200px);
   aspect-ratio: 1;
   transform: translateX(-50%);
 }
@@ -749,10 +749,8 @@ body {
 .cofre-reveal-front {
   transform: rotateY(180deg);
 }
-.cofre-reveal-secret {
-  box-shadow:
-    0 0 26px rgba(167, 139, 250, 0.34),
-    0 0 48px rgba(255, 46, 147, 0.22);
+.cofre-reveal-secret .cofre-reveal-face img {
+  filter: drop-shadow(0 0 16px rgba(167, 139, 250, 0.6));
 }
 
 .gacha-scene {
@@ -763,6 +761,12 @@ body {
   z-index: 1;
   transform-style: preserve-3d;
   transform: rotateY(0deg);
+}
+.cofre-reveal-face img {
+  filter: drop-shadow(0 0 12px var(--reward-color));
+}
+.cofre-reveal-front img {
+  mask-image: radial-gradient(circle, #000 45%, transparent 74%);
 }
 .cofre-reward-slot {
   position: relative;
@@ -808,6 +812,9 @@ body {
 .fase-revelada .gacha-card {
   transform: rotateY(180deg);
 }
+.fase-revelada .gacha-card > .cofre-reveal-face:first-child {
+  visibility: hidden;
+}
 
 @keyframes gacha-estallido {
   0% { opacity: 0; transform: scale(0.4); }
@@ -833,9 +840,11 @@ body {
   display: grid;
   place-items: center;
   overflow: hidden;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(5, 7, 17, 0.68) 12%, rgba(5, 7, 17, 0.9) 78%);
-  animation: cofre-grand-veil 1.9s ease-in-out both;
+  cursor: pointer;
+  border: 0;
+  color: inherit;
+  background: radial-gradient(circle, rgba(5, 7, 17, 0.9) 12%, rgba(5, 7, 17, 0.97) 78%);
+  animation: cofre-grand-veil 0.28s ease-out both;
 }
 .cofre-grand-reveal[data-rarity="unica"] { --grand-color: #bd7bff; }
 .cofre-grand-reveal__beam {
@@ -881,13 +890,13 @@ body {
   position: relative;
   z-index: 1;
   display: flex;
-  width: min(60vw, 250px);
+  width: min(84vw, 320px);
   flex-direction: column;
   align-items: center;
   text-align: center;
   isolation: isolate;
   filter: drop-shadow(0 0 22px var(--grand-color));
-  animation: cofre-grand-fall 1.9s cubic-bezier(0.15, 0.8, 0.25, 1) both;
+  animation: cofre-grand-fall 0.95s cubic-bezier(0.15, 0.8, 0.25, 1) both;
 }
 .cofre-grand-reveal[data-rarity="unica"] .cofre-grand-reveal__prize::before {
   content: "";
@@ -901,13 +910,14 @@ body {
   animation: cofre-unique-portal 1.1s linear infinite;
 }
 .cofre-grand-reveal__image {
-  width: 100%;
+  width: min(64vw, 260px);
   aspect-ratio: 1;
   object-fit: contain;
-  border-radius: 8px;
+  mask-image: radial-gradient(circle, #000 53%, transparent 75%);
 }
 .cofre-grand-reveal__name {
-  margin-top: 8px;
+  margin-top: 16px;
+  max-width: 100%;
   color: white;
   font: 900 clamp(1.2rem, 4vw, 1.8rem)/1.15 var(--font-titulo), sans-serif;
   text-shadow: 0 0 18px var(--grand-color);
@@ -919,10 +929,15 @@ body {
   font-weight: 800;
   text-transform: uppercase;
 }
+.cofre-grand-reveal__continue {
+  margin-top: 28px;
+  color: #c5c8d5;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
 @keyframes cofre-grand-veil {
   0% { opacity: 0; }
-  20%, 78% { opacity: 1; }
-  100% { opacity: 0; }
+  100% { opacity: 1; }
 }
 @keyframes cofre-grand-beam {
   0% { opacity: 0; }
@@ -944,8 +959,7 @@ body {
   34% { opacity: 1; }
   47% { transform: translateY(12px) rotate(4deg) scale(1.18); }
   62% { transform: translateY(-12px) rotate(-2deg) scale(0.98); }
-  78% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
-  100% { opacity: 0; transform: translateY(25px) rotate(0) scale(0.92); }
+  100% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
 }
 @keyframes cofre-unique-portal {
   from { transform: rotate(0deg) scale(1); }
@@ -972,6 +986,14 @@ body {
     transform: rotateY(180deg);
   }
   .gacha-estallido { display: none; }
+  .cofre-grand-reveal,
+  .cofre-grand-reveal__prize,
+  .cofre-grand-reveal[data-rarity="unica"] .cofre-grand-reveal__prize::before {
+    animation: none;
+  }
+  .cofre-grand-reveal__beam,
+  .cofre-grand-reveal__impact,
+  .cofre-grand-reveal__rays { display: none; }
 }
 
 .carta-uso { isolation: isolate; }

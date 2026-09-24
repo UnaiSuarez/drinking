@@ -12,13 +12,20 @@ export function prepararAudioCofre() {
   }
 }
 
-function nota(frecuencia: number, inicio: number, duracion: number, volumen: number) {
+function nota(
+  frecuencia: number,
+  inicio: number,
+  duracion: number,
+  volumen: number,
+  forma: OscillatorType = "sine",
+  deslizamiento = 1.28
+) {
   if (!audioContext || audioContext.state !== "running") return;
   const oscilador = audioContext.createOscillator();
   const ganancia = audioContext.createGain();
-  oscilador.type = "sine";
+  oscilador.type = forma;
   oscilador.frequency.setValueAtTime(frecuencia, inicio);
-  oscilador.frequency.exponentialRampToValueAtTime(frecuencia * 1.28, inicio + duracion);
+  oscilador.frequency.exponentialRampToValueAtTime(frecuencia * deslizamiento, inicio + duracion);
   ganancia.gain.setValueAtTime(0.0001, inicio);
   ganancia.gain.exponentialRampToValueAtTime(volumen, inicio + 0.025);
   ganancia.gain.exponentialRampToValueAtTime(0.0001, inicio + duracion);
@@ -38,10 +45,14 @@ export function sonarCofre(tipo: SonidoCofre) {
   } else if (tipo === "revelar") {
     nota(470, ahora, 0.13, 0.035);
     nota(700, ahora + 0.08, 0.2, 0.04);
+  } else if (tipo === "legendaria") {
+    nota(135, ahora, 0.52, 0.075, "triangle", 0.58);
+    [392, 494, 587, 784].forEach((frecuencia, index) => {
+      nota(frecuencia, ahora + 0.15 + index * 0.065, 0.9, 0.037, "sine", 1);
+    });
   } else {
-    const frecuencias = tipo === "unica" ? [330, 440, 554, 740, 988] : [392, 494, 587, 784];
-    frecuencias.forEach((frecuencia, index) => {
-      nota(frecuencia, ahora + index * 0.1, 0.48, tipo === "unica" ? 0.052 : 0.047);
+    [330, 440, 554, 740, 988].forEach((frecuencia, index) => {
+      nota(frecuencia, ahora + index * 0.1, 0.48, 0.052);
     });
   }
 }

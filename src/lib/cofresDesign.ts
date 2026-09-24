@@ -25,9 +25,9 @@ export type CofreTipo = {
 };
 
 export const REVERSOS_CARTA = {
-  comun: "/chests/ai/items/card-back-comun.webp",
-  epica: "/chests/ai/items/card-back-epica.webp",
-  legendaria: "/chests/ai/items/card-back-legendaria.webp",
+  comun: "/chests/ai/items/card-back-comun-alpha.webp",
+  epica: "/chests/ai/items/card-back-epica-alpha.webp",
+  legendaria: "/chests/ai/items/card-back-legendaria-alpha.webp",
 };
 
 export const MONEDA_COFRES = {
