@@ -39,6 +39,19 @@ export default async function SalaPage({
         .order("orden")
     : { data: null };
 
+  const { data: catalogoRaw } = esPermanente
+    ? await supabase
+        .from("bebidas_catalogo")
+        .select("id, nombre, rareza, categoria_id")
+        .or(`sala_id.is.null,sala_id.eq.${id}`)
+    : { data: null };
+  const catalogo = (catalogoRaw ?? []).map((c) => ({
+    id: c.id,
+    nombre: c.nombre,
+    rareza: c.rareza,
+    categoriaId: c.categoria_id,
+  }));
+
   let racha = { actual: 0, mejor: 0 };
   if (esPermanente) {
     const { data: misRegistros } = await supabase
@@ -133,6 +146,7 @@ export default async function SalaPage({
       esTemporada={esTemporada}
       esPermanente={esPermanente}
       bebidasSueltas={bebidasSueltas ?? []}
+      catalogoBebidas={catalogo}
       racha={racha}
       miembros={miembros}
       miRol={miRol}

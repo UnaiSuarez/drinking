@@ -130,18 +130,37 @@ export default async function EstadisticasSalaPage({
     .select("id, nombre, icono")
     .or(`sala_id.is.null,sala_id.eq.${id}`);
 
+  const { data: catalogo } = esPermanente
+    ? await supabase
+        .from("bebidas_catalogo")
+        .select("id, nombre, rareza")
+        .or(`sala_id.is.null,sala_id.eq.${id}`)
+    : { data: null };
+
   const { data: miembros } = await supabase
     .from("sala_miembros")
     .select("usuario_id, perfiles(nombre)");
 
   const { data: registrosTodos } = await supabase
     .from("registros_sala")
-    .select("usuario_id, bebida_tipo_id, ts, noche_id")
+    .select("usuario_id, bebida_tipo_id, bebida_catalogo_id, ts, noche_id")
     .eq("sala_id", id)
     .eq("anulado", false);
 
   const bebidasMap = new Map(
     (bebidasTipo ?? []).map((b) => [b.id, { nombre: b.nombre, icono: b.icono }])
+  );
+  const RAREZA_ETIQUETA: Record<string, string> = {
+    comun: "",
+    rara: " 🔷",
+    epica: " 💗",
+    legendaria: " 👑",
+  };
+  const catalogoMap = new Map(
+    (catalogo ?? []).map((c) => [
+      c.id,
+      `${c.nombre}${RAREZA_ETIQUETA[c.rareza] ?? ""}`,
+    ])
   );
   const nombreMap = new Map(
     (miembros ?? []).map((m) => {
@@ -170,12 +189,19 @@ export default async function EstadisticasSalaPage({
   const sueltas = total - enNoches;
 
   const porTipo = new Map<number, number>();
+  const porCatalogo = new Map<string, number>();
   const porUsuarioTotal = new Map<string, number>();
   const porUsuarioTipos = new Map<string, Set<number>>();
   const porDia = [0, 0, 0, 0, 0, 0, 0]; // domingo..sábado
 
   for (const r of regs) {
     porTipo.set(r.bebida_tipo_id, (porTipo.get(r.bebida_tipo_id) ?? 0) + 1);
+    if (r.bebida_catalogo_id) {
+      porCatalogo.set(
+        r.bebida_catalogo_id,
+        (porCatalogo.get(r.bebida_catalogo_id) ?? 0) + 1
+      );
+    }
     porUsuarioTotal.set(r.usuario_id, (porUsuarioTotal.get(r.usuario_id) ?? 0) + 1);
     if (!porUsuarioTipos.has(r.usuario_id)) porUsuarioTipos.set(r.usuario_id, new Set());
     porUsuarioTipos.get(r.usuario_id)!.add(r.bebida_tipo_id);
@@ -192,6 +218,15 @@ export default async function EstadisticasSalaPage({
         valor,
       };
     });
+
+  const filasCatalogo = [...porCatalogo.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([catalogoId, valor]) => ({
+      clave: catalogoId,
+      etiqueta: catalogoMap.get(catalogoId) ?? "???",
+      valor,
+    }));
 
   const rankingTotal = [...porUsuarioTotal.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -300,6 +335,18 @@ export default async function EstadisticasSalaPage({
             </h2>
             <BarraLista filas={filasTipo} />
           </section>
+
+          {filasCatalogo.length > 0 && (
+            <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
+              <h2 className="mb-1 font-titulo text-xl text-texto">
+                🏷️ Bebidas concretas
+              </h2>
+              <p className="mb-4 text-xs text-texto2">
+                🔷 rara · 💗 épica · 👑 legendaria
+              </p>
+              <BarraLista filas={filasCatalogo} />
+            </section>
+          )}
 
           <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
             <h2 className="mb-1 font-titulo text-xl text-texto">

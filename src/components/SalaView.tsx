@@ -11,6 +11,7 @@ import { type AvatarConfig } from "@/lib/avatar";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import BebidaSueltaLogger, {
   type BebidaTipo,
+  type BebidaCatalogo,
 } from "@/components/BebidaSueltaLogger";
 
 export type Miembro = {
@@ -44,6 +45,7 @@ export default function SalaView({
   esTemporada,
   esPermanente,
   bebidasSueltas,
+  catalogoBebidas,
   racha,
   miembros,
   miRol,
@@ -57,6 +59,7 @@ export default function SalaView({
   esTemporada: boolean;
   esPermanente: boolean;
   bebidasSueltas: BebidaTipo[];
+  catalogoBebidas: BebidaCatalogo[];
   racha: { actual: number; mejor: number };
   miembros: Miembro[];
   miRol: string;
@@ -268,7 +271,12 @@ export default function SalaView({
       )}
 
       {esPermanente && (
-        <BebidaSueltaLogger salaId={sala.id} bebidas={bebidasSueltas} />
+        <BebidaSueltaLogger
+          salaId={sala.id}
+          salaNombre={sala.nombre}
+          bebidas={bebidasSueltas}
+          catalogo={catalogoBebidas}
+        />
       )}
 
       {nocheActiva && nocheActiva.estado === "pendiente" ? (
