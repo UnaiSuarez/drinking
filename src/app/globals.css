@@ -224,6 +224,50 @@ body {
     drop-shadow(0 0 24px rgba(255, 213, 74, 0.72))
     drop-shadow(0 0 14px rgba(45, 226, 230, 0.48));
 }
+@keyframes marco-corona-viva {
+  0%, 100% { opacity: 0.18; transform: rotate(-8deg) scale(0.94); }
+  50% { opacity: 0.52; transform: rotate(8deg) scale(1.04); }
+}
+@keyframes marco-portal-vivo {
+  from { opacity: 0.22; transform: rotate(0deg); }
+  to { opacity: 0.22; transform: rotate(360deg); }
+}
+@keyframes marco-relampago-vivo {
+  0%, 72%, 100% { opacity: 0; }
+  74% { opacity: 0.8; }
+  76% { opacity: 0.06; }
+  79% { opacity: 0.65; }
+  82% { opacity: 0; }
+}
+.avatar-frame-trono::after,
+.avatar-frame-portal::after,
+.avatar-frame-tormenta::after,
+.avatar-frame-liga-maestro::after,
+.avatar-frame-liga-challenger::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  mask-image: radial-gradient(circle, transparent 37%, #000 62%);
+}
+.avatar-frame-trono::after,
+.avatar-frame-liga-maestro::after {
+  background: conic-gradient(from 20deg, transparent, #ffd54a, transparent 30%, #ff2e93, transparent 65%, #fff6b8, transparent);
+  animation: marco-corona-viva 4.8s ease-in-out infinite;
+}
+.avatar-frame-portal::after {
+  background: conic-gradient(from 0deg, transparent 10%, #a78bfa 24%, transparent 36%, #2de2e6 55%, transparent 68%, #ff2e93 84%, transparent);
+  animation: marco-portal-vivo 8s linear infinite;
+}
+.avatar-frame-tormenta::after,
+.avatar-frame-liga-challenger::after {
+  background: linear-gradient(115deg, transparent 37%, #e9feff 45%, transparent 51%, #2de2e6 61%, transparent 67%);
+  animation: marco-relampago-vivo 4.2s steps(1, end) infinite;
+}
+.avatar-frame-liga-challenger::after { animation-delay: 1.1s; }
+.avatar-frame-trono .avatar-frame-gem-glint { display: none; }
 .avatar-frame-art {
   /* El arte del marco va POR ENCIMA del avatar (antes iba detrás y el
      avatar tapaba el propio marco): se recorta con una máscara para que
@@ -556,7 +600,7 @@ body {
   background:
     linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.68) 44%, transparent 49%),
     conic-gradient(from 90deg, transparent, rgba(45, 226, 230, 0.5), transparent, rgba(255, 213, 74, 0.45), transparent);
-  animation-duration: 1.8s;
+  animation: avatar-aura-lightning 3.1s steps(1, end) infinite;
 }
 .avatar-aura-aura {
   background: conic-gradient(from 0deg, rgba(255, 213, 74, 0.5), transparent, rgba(167, 139, 250, 0.48), transparent, rgba(255, 213, 74, 0.5));
@@ -574,13 +618,13 @@ body {
   background:
     radial-gradient(circle at 36% 70%, rgba(255, 213, 74, 0.42), transparent 34%),
     conic-gradient(from 18deg, transparent, rgba(255, 46, 147, 0.42), transparent, rgba(255, 213, 74, 0.48), transparent);
-  animation-duration: 2.1s;
+  animation: avatar-aura-toast 4.5s ease-in-out infinite;
 }
 .avatar-aura-jefe {
   background:
     linear-gradient(125deg, transparent 28%, rgba(255, 213, 74, 0.56) 34%, transparent 44%),
     conic-gradient(from 45deg, rgba(255, 46, 147, 0.32), transparent, rgba(255, 213, 74, 0.58), transparent);
-  animation-duration: 1.8s;
+  animation: avatar-aura-boss 3.8s ease-in-out infinite;
 }
 .avatar-aura-cronica {
   background:
@@ -592,13 +636,57 @@ body {
   background:
     linear-gradient(90deg, transparent 16%, rgba(45, 226, 230, 0.54) 22%, transparent 30% 70%, rgba(155, 240, 11, 0.48) 78%, transparent 84%),
     radial-gradient(circle, rgba(45, 226, 230, 0.22), transparent 56%);
-  animation-duration: 2.35s;
+  animation: avatar-aura-scan 2.8s steps(1, end) infinite;
 }
 .avatar-aura-guardian {
   background:
     radial-gradient(circle at 50% 74%, rgba(45, 226, 230, 0.45), transparent 38%),
     conic-gradient(from 8deg, rgba(45, 226, 230, 0.42), transparent, rgba(167, 139, 250, 0.5), transparent, rgba(255, 213, 74, 0.35));
-  animation-duration: 2s;
+  animation: avatar-aura-guard 4.2s ease-in-out infinite;
+}
+@keyframes avatar-aura-lightning {
+  0%, 64%, 100% { opacity: 0.12; transform: scale(0.9) rotate(-6deg); }
+  67% { opacity: 0.82; transform: scale(1.04) rotate(3deg); }
+  70% { opacity: 0.08; }
+  73% { opacity: 0.65; transform: scale(1.06) rotate(5deg); }
+  77% { opacity: 0.12; }
+}
+@keyframes avatar-aura-toast {
+  0%, 100% { opacity: 0.22; transform: rotate(-25deg) scale(0.86); }
+  50% { opacity: 0.62; transform: rotate(25deg) scale(1.06); }
+}
+@keyframes avatar-aura-boss {
+  0%, 100% { opacity: 0.2; transform: translateX(-7%) scale(0.93); }
+  50% { opacity: 0.66; transform: translateX(7%) scale(1.04); }
+}
+@keyframes avatar-aura-scan {
+  0%, 100% { opacity: 0.14; transform: translateY(-8%) scale(0.92); }
+  45% { opacity: 0.58; transform: translateY(7%) scale(1); }
+  48% { opacity: 0.12; }
+  52% { opacity: 0.7; transform: translateY(11%) scale(1); }
+}
+@keyframes avatar-aura-guard {
+  0%, 100% { opacity: 0.24; transform: scale(0.82) rotate(-4deg); }
+  50% { opacity: 0.64; transform: scale(1.08) rotate(4deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .avatar-frame::after,
+  .avatar-frame-shine,
+  .avatar-frame-rayos-fx,
+  .avatar-frame-disco-fx,
+  .avatar-frame-orbit-wrap,
+  .avatar-frame-prisma-fx,
+  .avatar-frame-gem-glint,
+  .avatar-frame-cristal-fx,
+  .avatar-frame-halo-fx,
+  .avatar-frame-portal-fx,
+  .avatar-frame-dust,
+  .avatar-frame-ember,
+  .avatar-frame-glitch-line,
+  .avatar-frame-spark,
+  .avatar-frame-flame,
+  .avatar-frame-ray,
+  .avatar-aura { animation: none !important; }
 }
 
 @keyframes cofre-reward-glow {
