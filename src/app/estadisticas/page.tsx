@@ -10,12 +10,12 @@ export default async function EstadisticasGlobalesPage() {
 
   const { data: membresias } = await supabase
     .from("sala_miembros")
-    .select("salas(id, nombre)")
+    .select("salas(id, nombre, archivada_at)")
     .eq("usuario_id", user!.id);
 
-  const salas = (membresias ?? []).map((m) => {
-    const s = m.salas as unknown as { id: string; nombre: string };
-    return s;
+  const salas = (membresias ?? []).flatMap((m) => {
+    const s = m.salas as unknown as { id: string; nombre: string; archivada_at: string | null } | null;
+    return s && !s.archivada_at ? [s] : [];
   });
   const salaIds = salas.map((s) => s.id);
 

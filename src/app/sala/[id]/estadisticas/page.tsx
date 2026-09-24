@@ -113,6 +113,7 @@ export default async function EstadisticasSalaPage({
     .from("salas")
     .select("id, nombre, config")
     .eq("id", id)
+    .is("archivada_at", null)
     .single();
   if (!sala) notFound();
 

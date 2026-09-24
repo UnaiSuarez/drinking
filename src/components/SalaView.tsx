@@ -14,6 +14,7 @@ import BebidaSueltaLogger, {
   type BebidaCatalogo,
 } from "@/components/BebidaSueltaLogger";
 import SojasLogger from "@/components/SojasLogger";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 export type Miembro = {
   id: string;
@@ -83,7 +84,28 @@ export default function SalaView({
   const [errorNotif, setErrorNotif] = useState<string | null>(null);
   const [probandoNotif, setProbandoNotif] = useState(false);
   const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
+  const [archivarAbierto, setArchivarAbierto] = useState(false);
+  const [confirmacionSala, setConfirmacionSala] = useState("");
+  const [archivando, setArchivando] = useState(false);
+  const [errorArchivar, setErrorArchivar] = useState<string | null>(null);
   const esAdmin = miRol === "fundador" || miRol === "admin";
+  useModalScrollLock(archivarAbierto);
+
+  async function archivarSala(e: React.FormEvent) {
+    e.preventDefault();
+    if (confirmacionSala !== sala.nombre || archivando || nocheActiva) return;
+    setArchivando(true);
+    setErrorArchivar(null);
+    const { error } = await createClient().rpc("archivar_sala", { p_sala: sala.id });
+    setArchivando(false);
+    if (error) {
+      setErrorArchivar(error.message);
+      return;
+    }
+    setArchivarAbierto(false);
+    router.push("/");
+    router.refresh();
+  }
 
   useEffect(() => {
     (async () => {
@@ -484,6 +506,48 @@ export default function SalaView({
           </ul>
         )}
       </section>
+      {miRol === "fundador" && (
+        <section className="mt-10 border-t border-borde pt-6">
+          <button
+            type="button"
+            onClick={() => { setConfirmacionSala(""); setErrorArchivar(null); setArchivarAbierto(true); }}
+            disabled={Boolean(nocheActiva)}
+            className="rounded-lg border border-rosa/50 px-3 py-2 text-sm text-rosa disabled:opacity-40"
+          >
+            Archivar sala
+          </button>
+          {nocheActiva && <p className="mt-2 text-xs text-texto2">Cierra la noche antes de archivar.</p>}
+        </section>
+      )}
+      {archivarAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4" onMouseDown={(e) => { if (e.target === e.currentTarget) setArchivarAbierto(false); }}>
+          <form
+            onSubmit={(e) => void archivarSala(e)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="titulo-archivar-sala"
+            className="w-full max-w-sm rounded-lg border border-borde bg-tarjeta p-5"
+          >
+            <h2 id="titulo-archivar-sala" className="font-titulo text-xl text-texto">Archivar {sala.nombre}</h2>
+            <p className="mt-2 text-sm text-texto2">La sala desaparecerá para los miembros, pero conservará sus noches y estadísticas. Podrás restaurarla desde Tus salas.</p>
+            <label htmlFor="nombre-archivar-sala" className="mt-5 block text-sm text-texto">Escribe {sala.nombre} para confirmar</label>
+            <input
+              id="nombre-archivar-sala"
+              autoFocus
+              value={confirmacionSala}
+              onChange={(e) => setConfirmacionSala(e.target.value)}
+              className="mt-2 w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-texto outline-none focus:border-rosa"
+            />
+            {errorArchivar && <p role="alert" className="mt-3 text-sm text-rosa">{errorArchivar}</p>}
+            <div className="mt-5 flex justify-end gap-2">
+              <button type="button" onClick={() => setArchivarAbierto(false)} className="rounded-lg border border-borde px-3 py-2 text-sm text-texto2">Cancelar</button>
+              <button type="submit" disabled={confirmacionSala !== sala.nombre || archivando} className="rounded-lg bg-rosa px-3 py-2 text-sm font-semibold text-fondo disabled:opacity-40">
+                {archivando ? "Archivando…" : "Archivar"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       <section className="mb-8">
         <h2 className="mb-3 font-titulo text-xl text-texto">
