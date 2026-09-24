@@ -1,10 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { createClient } from "@/lib/supabase/client";
 
 type SitioCercano = { id: string; nombre: string; distancia_m: number };
 type Fase = "inicial" | "buscando" | "eligiendo" | "nuevo" | "confirmado" | "omitido";
+
+const ICONOS = ["📍", "🍺", "🍷", "🍸", "🥃", "🎉", "🏠", "⛺", "🌳", "🏖️"];
 
 /**
  * Ofrece marcar el sitio de un registro de bebida suelta recién creado
@@ -19,9 +23,17 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [cercanos, setCercanos] = useState<SitioCercano[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [coordsNuevo, setCoordsNuevo] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
+  const [iconoElegido, setIconoElegido] = useState(ICONOS[0]);
   const [nombreNuevo, setNombreNuevo] = useState("");
   const [nombreElegido, setNombreElegido] = useState("");
   const [guardando, setGuardando] = useState(false);
+
+  const miniMapaRef = useRef<HTMLDivElement | null>(null);
+  const miniMapaInstancia = useRef<LeafletMap | null>(null);
+  const miniMarcador = useRef<LeafletMarker | null>(null);
 
   function empezar() {
     if (!navigator.geolocation) {
@@ -74,13 +86,15 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
 
   async function crearYElegir(e: React.FormEvent) {
     e.preventDefault();
-    if (!coords || !nombreNuevo.trim()) return;
+    const punto = coordsNuevo ?? coords;
+    if (!punto || !nombreNuevo.trim()) return;
     setGuardando(true);
     setError(null);
     const { data: sitio, error: errorCrear } = await supabase.rpc("crear_sitio", {
       p_nombre: nombreNuevo.trim(),
-      p_lat: coords.lat,
-      p_lng: coords.lng,
+      p_lat: punto.lat,
+      p_lng: punto.lng,
+      p_icono: iconoElegido,
     });
     if (errorCrear || !sitio) {
       setGuardando(false);
@@ -99,6 +113,38 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
     setNombreElegido(sitio.nombre);
     setFase("confirmado");
   }
+
+  // Mapa con marcador arrastrable para ajustar el punto exacto del sitio
+  // nuevo: no hace falta que quede justo donde te pilló el GPS.
+  useEffect(() => {
+    if (fase !== "nuevo" || !coords) return;
+    let cancelado = false;
+    (async () => {
+      const L = await import("leaflet");
+      if (cancelado || !miniMapaRef.current || miniMapaInstancia.current) return;
+      const mapa = L.map(miniMapaRef.current, {
+        attributionControl: false,
+      }).setView([coords.lat, coords.lng], 17);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+      }).addTo(mapa);
+      const marcador = L.marker([coords.lat, coords.lng], { draggable: true }).addTo(
+        mapa
+      );
+      marcador.on("dragend", () => {
+        const pos = marcador.getLatLng();
+        setCoordsNuevo({ lat: pos.lat, lng: pos.lng });
+      });
+      miniMapaInstancia.current = mapa;
+      miniMarcador.current = marcador;
+    })();
+    return () => {
+      cancelado = true;
+      miniMapaInstancia.current?.remove();
+      miniMapaInstancia.current = null;
+      miniMarcador.current = null;
+    };
+  }, [fase, coords]);
 
   if (fase === "confirmado") {
     return (
@@ -151,15 +197,25 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
             </button>
           ))}
           <button
-            onClick={() => setFase("nuevo")}
+            onClick={() => {
+              setCoordsNuevo(coords);
+              setFase("nuevo");
+            }}
             className="flex w-full items-center gap-2 rounded-lg border border-dashed border-cian/50 px-3 py-2 text-xs text-cian"
           >
-            ➕ Es un sitio nuevo, aquí mismo
+            ➕ Es un sitio nuevo
           </button>
         </div>
       )}
       {fase === "nuevo" && (
         <form onSubmit={crearYElegir} className="flex flex-col gap-2">
+          <div
+            ref={miniMapaRef}
+            className="h-40 w-full overflow-hidden rounded-lg border border-borde"
+          />
+          <p className="text-center text-[11px] text-texto2">
+            Arrastra el marcador para ajustar el punto exacto
+          </p>
           <input
             value={nombreNuevo}
             onChange={(e) => setNombreNuevo(e.target.value)}
@@ -167,6 +223,22 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
             maxLength={60}
             className="w-full rounded-lg border border-borde bg-tarjeta px-3 py-2 text-xs text-texto placeholder-texto2 outline-none focus:border-ambar"
           />
+          <div className="flex flex-wrap gap-1.5">
+            {ICONOS.map((ic) => (
+              <button
+                key={ic}
+                type="button"
+                onClick={() => setIconoElegido(ic)}
+                className={`flex h-9 w-9 items-center justify-center rounded-lg border text-lg transition active:scale-90 ${
+                  iconoElegido === ic
+                    ? "border-ambar bg-ambar/10"
+                    : "border-borde"
+                }`}
+              >
+                {ic}
+              </button>
+            ))}
+          </div>
           <button
             type="submit"
             disabled={guardando || nombreNuevo.trim().length < 2}

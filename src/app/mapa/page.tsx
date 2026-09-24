@@ -20,6 +20,9 @@ export default async function MapaPage() {
       lat: number;
       lng: number;
       tipo: SitioMapa["tipo"];
+      icono: string;
+      creado_por: string | null;
+      descubridor_nombre: string | null;
     }[]
   ).map((f) => ({
     sitioId: f.sitio_id,
@@ -27,6 +30,9 @@ export default async function MapaPage() {
     lat: f.lat,
     lng: f.lng,
     tipo: f.tipo,
+    icono: f.icono,
+    creadoPor: f.creado_por,
+    descubridorNombre: f.descubridor_nombre,
   }));
 
   return (

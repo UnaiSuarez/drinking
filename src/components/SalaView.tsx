@@ -458,6 +458,14 @@ export default function SalaView({
           >
             📊 Estadísticas
           </Link>
+          {esPermanente && (
+            <Link
+              href={`/sala/${sala.id}/registros`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-rosa/50 bg-rosa/10 px-3 py-1.5 text-xs font-semibold text-rosa transition active:scale-95"
+            >
+              🥤 Bebidas de la sala
+            </Link>
+          )}
         </div>
         {liga.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
