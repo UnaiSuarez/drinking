@@ -17,14 +17,16 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924120100` | `otorgar_logros_lifetime_correccion` | **Aplicada el 24/09/2026 (12:27 UTC).** Corrige el fallo que hacía fallar todo registro de bebida suelta, retira el permiso a los roles de la API y serializa por usuario. |
 | `20260924120200` | `avisos_push_verificados` | **Aplicada el 24/09/2026 (12:28 UTC).** Tabla `avisos_push` y las funciones que verifican y reclaman los avisos push. |
 | `20260924130000` | `cron_cierre_noches_tablas_temporales` | **Aplicada el 24/09/2026 (16:34 UTC).** Corrige el cierre automático de noches; ver «Cierre automático de noches» más abajo. |
+| `20260924164806` | `amplia_catalogo_bebidas_global` | **Aplicada el 24/09/2026 (16:48 UTC).** Amplía el catálogo global de bebidas concretas de 35 a 134 entradas y retira la rareza elegible al crear una bebida nueva; ver «Catálogo ampliado y rareza fija al añadir» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
-contenido idéntico byte a byte (mismo md5). Las tres últimas se aplicaron con
+contenido idéntico byte a byte (mismo md5). Las cuatro siguientes se aplicaron con
 `apply_migration`, que registra la hora de aplicación como versión
-(`20260924122703`, `…122732`, `…122759`); se renombraron esas tres filas del
-historial a la versión de su fichero para que `supabase migration list` las
-reconozca. No se editan una vez aplicadas: el historial es lo que ocurrió; las
-correcciones van en migraciones nuevas.
+(`20260924122703`, `…122732`, `…122759`, `20260924164806`); las tres primeras de
+esas cuatro se renombraron en el historial a la versión de su fichero para que
+`supabase migration list` las reconozca — la última (`20260924164806`) ya
+coincidía, sin necesidad de renombrar. No se editan una vez aplicadas: el
+historial es lo que ocurrió; las correcciones van en migraciones nuevas.
 
 ## Cómo aplicar
 
@@ -99,6 +101,30 @@ desde julio, en la sala de pruebas «Prueba»: las 3 noches en «cerrando» desd
 el 07/07 pasaron a `cerrada` (sin efecto, 0 jugadores); la «activa» del 10/07
 pasó a `cerrando` con `fin_gracia` = 24/09 16:40 UTC y se finalizará sola 24h
 después de esa hora. La consulta de arriba devuelve 0 filas justo después.
+
+## Catálogo ampliado y rareza fija al añadir
+
+`20260924164806` amplía el catálogo global de bebidas concretas (`bebidas_catalogo`
+con `sala_id` nulo) de 35 a 134 entradas, en las mismas categorías que ya
+existían (Cerveza, Chupito, Cubata, Vino) y en dos que ya existían como
+`bebidas_tipo` pero sin bebidas concretas en el catálogo global (Kalimotxo,
+Shot especial). Es idempotente igual que el seed inicial: `insert ... where
+not exists`, no duplica nada si se reaplica.
+
+La misma migración cambia la firma de `crear_bebida_catalogo`: pasa de
+`(p_sala, p_nombre, p_categoria_id, p_rareza)` a `(p_sala, p_nombre,
+p_categoria_id)`. Un jugador puede seguir añadiendo una bebida que no esté en
+el catálogo desde la sala permanente, pero ya no elige su rareza: la función
+siempre crea la fila con `rareza = 'comun'`. Las rarezas superiores quedan
+reservadas al catálogo global seleccionado a mano. Se retira explícitamente
+la sobrecarga vieja de 4 argumentos (`drop function if exists ...(uuid, text,
+integer, text)`) antes de crear la de 3, para no dejar las dos coexistiendo
+(mismo fallo de sobrecargas ambiguas que ya pasó con
+`registrar_bebida_suelta`, corregido en `20260924113054`).
+
+El buscador del catálogo (input de texto que filtra por nombre, en la vista
+«Bebida concreta» de la sala permanente) ya existía desde antes de esta
+migración; sigue funcionando igual con las 134 entradas.
 
 ## Pruebas SQL
 
