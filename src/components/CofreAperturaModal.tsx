@@ -25,8 +25,11 @@ const COFRE_COLOR: Record<CofreTipo["id"], string> = {
   legendario: "#ffd54a",
 };
 
-function reversoPorRareza(rareza: CartaRareza | "unica") {
-  if (rareza === "legendaria" || rareza === "unica") return REVERSOS_CARTA.legendaria;
+function reversoPorRecompensa(recompensa: RecompensaCofre) {
+  if (recompensa.tipo === "fragmentoPersonaje") return REVERSOS_CARTA.personaje;
+  if (recompensa.tipo === "carta" && recompensa.oculta) return REVERSOS_CARTA.exclusiva;
+  const rareza = recompensa.rareza;
+  if (rareza === "legendaria") return REVERSOS_CARTA.legendaria;
   if (rareza === "epica") return REVERSOS_CARTA.epica;
   return REVERSOS_CARTA.comun;
 }
@@ -241,7 +244,7 @@ export default function CofreAperturaModal({
                 )}
                 <span className={`gacha-card relative block aspect-[3/4] ${secreta ? "cofre-reveal-secret" : ""}`}>
                   <span className="cofre-reveal-face absolute inset-0">
-                    <Image src={reversoPorRareza(rareza)} alt="Carta boca abajo" fill className="object-contain" sizes="120px" />
+                    <Image src={reversoPorRecompensa(recompensa)} alt="Carta boca abajo" fill className="object-contain" sizes="120px" />
                     {rareza !== "legendaria" && rareza !== "unica" && (
                       <span className="absolute inset-0 flex items-center justify-center font-titulo text-3xl text-oro drop-shadow-lg">?</span>
                     )}

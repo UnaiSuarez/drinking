@@ -318,7 +318,7 @@ export default function InventarioClient({
             const conseguida = cantidad > 0;
             const ocultaBloqueada = carta.oculta && !conseguida;
             const rareza = RAREZA_ESTILO[carta.rareza];
-            const imagen = ocultaBloqueada ? REVERSOS_CARTA.legendaria : carta.imagen;
+            const imagen = ocultaBloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
             const titulo = ocultaBloqueada ? "???" : carta.nombre;
             const descripcion = ocultaBloqueada
               ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."

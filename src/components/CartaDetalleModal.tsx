@@ -37,7 +37,7 @@ export default function CartaDetalleModal({
 
   if (typeof document === "undefined") return null;
 
-  const imagen = bloqueada ? REVERSOS_CARTA.legendaria : carta.imagen;
+  const imagen = bloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
   const titulo = bloqueada ? "???" : carta.nombre;
   const descripcion = bloqueada
     ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."
