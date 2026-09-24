@@ -135,7 +135,7 @@ export default function NochePendiente({
       fetch("/api/notificar-noche-activada", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ salaId, salaNombre, nocheId, userId }),
+        body: JSON.stringify({ nocheId }),
       }).catch((err) => {
         console.error("notificar-noche-activada:", err);
       });

@@ -273,7 +273,6 @@ export default function SalaView({
       {esPermanente && (
         <BebidaSueltaLogger
           salaId={sala.id}
-          salaNombre={sala.nombre}
           bebidas={bebidasSueltas}
           catalogo={catalogoBebidas}
         />
