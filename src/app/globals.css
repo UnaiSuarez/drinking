@@ -671,7 +671,6 @@ body {
   height: clamp(180px, 26dvh, 230px);
   overflow: hidden;
   border-radius: 8px;
-  background: #090f20;
   isolation: isolate;
 }
 .cofre-opening__light {
@@ -706,7 +705,6 @@ body {
 }
 .cofre-opening__closed {
   opacity: 1;
-  mask-image: radial-gradient(ellipse 72% 74% at 50% 55%, #000 65%, transparent 92%);
 }
 .cofre-opening__open { opacity: 0; transform: translateY(12px) scale(0.88); }
 .cofre-opening[data-stage="sellado"] .cofre-opening__chest {
@@ -825,6 +823,133 @@ body {
   mix-blend-mode: screen;
   z-index: 5;
   animation: gacha-estallido 0.7s ease-out forwards;
+}
+
+.cofre-grand-reveal {
+  --grand-color: #ffd54a;
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(5, 7, 17, 0.68) 12%, rgba(5, 7, 17, 0.9) 78%);
+  animation: cofre-grand-veil 1.9s ease-in-out both;
+}
+.cofre-grand-reveal[data-rarity="unica"] { --grand-color: #bd7bff; }
+.cofre-grand-reveal__beam {
+  position: absolute;
+  top: -10%;
+  left: 50%;
+  width: min(42vw, 180px);
+  height: 72%;
+  transform: translateX(-50%);
+  background: linear-gradient(transparent, var(--grand-color));
+  filter: blur(34px);
+  opacity: 0;
+  animation: cofre-grand-beam 1.4s ease-out both;
+}
+.cofre-grand-reveal__impact {
+  position: absolute;
+  top: 54%;
+  left: 50%;
+  width: min(72vw, 350px);
+  aspect-ratio: 1;
+  border: 3px solid var(--grand-color);
+  border-radius: 50%;
+  box-shadow: 0 0 28px var(--grand-color), inset 0 0 30px var(--grand-color);
+  opacity: 0;
+  animation: cofre-grand-impact 1.2s 0.48s ease-out both;
+}
+.cofre-grand-reveal__rays {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(90vw, 420px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, transparent 0deg 19deg, var(--grand-color) 20deg 22deg, transparent 23deg 40deg);
+  filter: blur(9px);
+  opacity: 0;
+  animation: cofre-grand-rays 1.65s 0.35s ease-out both;
+}
+.cofre-grand-reveal[data-rarity="unica"] .cofre-grand-reveal__rays {
+  background: repeating-conic-gradient(from 0deg, transparent 0deg 12deg, #bd7bff 13deg 15deg, transparent 16deg 30deg);
+}
+.cofre-grand-reveal__prize {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: min(60vw, 250px);
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  isolation: isolate;
+  filter: drop-shadow(0 0 22px var(--grand-color));
+  animation: cofre-grand-fall 1.9s cubic-bezier(0.15, 0.8, 0.25, 1) both;
+}
+.cofre-grand-reveal[data-rarity="unica"] .cofre-grand-reveal__prize::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -12px -12px auto;
+  aspect-ratio: 1;
+  border: 3px dashed #bd7bff;
+  border-radius: 50%;
+  box-shadow: 0 0 28px #bd7bff, inset 0 0 24px #ff2e93;
+  animation: cofre-unique-portal 1.1s linear infinite;
+}
+.cofre-grand-reveal__image {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.cofre-grand-reveal__name {
+  margin-top: 8px;
+  color: white;
+  font: 900 clamp(1.2rem, 4vw, 1.8rem)/1.15 var(--font-titulo), sans-serif;
+  text-shadow: 0 0 18px var(--grand-color);
+}
+.cofre-grand-reveal__tier {
+  margin-top: 4px;
+  color: var(--grand-color);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+@keyframes cofre-grand-veil {
+  0% { opacity: 0; }
+  20%, 78% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes cofre-grand-beam {
+  0% { opacity: 0; }
+  30%, 65% { opacity: 0.65; }
+  100% { opacity: 0; }
+}
+@keyframes cofre-grand-impact {
+  0%, 35% { opacity: 0; transform: translate(-50%, -50%) scale(0.15); }
+  45% { opacity: 0.95; }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); }
+}
+@keyframes cofre-grand-rays {
+  0%, 24% { opacity: 0; transform: translate(-50%, -50%) rotate(-45deg) scale(0.3); }
+  40% { opacity: 0.7; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(80deg) scale(1.2); }
+}
+@keyframes cofre-grand-fall {
+  0% { opacity: 0; transform: translateY(-75vh) rotate(-18deg) scale(0.55); }
+  34% { opacity: 1; }
+  47% { transform: translateY(12px) rotate(4deg) scale(1.18); }
+  62% { transform: translateY(-12px) rotate(-2deg) scale(0.98); }
+  78% { opacity: 1; transform: translateY(0) rotate(0) scale(1); }
+  100% { opacity: 0; transform: translateY(25px) rotate(0) scale(0.92); }
+}
+@keyframes cofre-unique-portal {
+  from { transform: rotate(0deg) scale(1); }
+  to { transform: rotate(360deg) scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -5,6 +5,7 @@ import Image from "next/image";
 import confetti from "canvas-confetti";
 import { REVERSOS_CARTA, type CartaRareza, type CofreTipo } from "@/lib/cofresDesign";
 import type { RecompensaCofre } from "@/lib/inventario";
+import { prepararAudioCofre, sonarCofre } from "@/lib/cofreAudio";
 
 type FaseCarta = "oculta" | "girando" | "revelada";
 type EtapaApertura = "sellado" | "abierto" | "saliendo" | "lista";
@@ -54,7 +55,13 @@ export default function CofreAperturaModal({
 }) {
   const [etapa, setEtapa] = useState<EtapaApertura>("sellado");
   const [fases, setFases] = useState<FaseCarta[]>(() => recompensas.map(() => "oculta"));
+  const [sonidoActivo, setSonidoActivo] = useState(true);
+  const [premioEspecial, setPremioEspecial] = useState<{
+    recompensa: RecompensaCofre;
+    rareza: "legendaria" | "unica";
+  } | null>(null);
   const timersRevelado = useRef<number[]>([]);
+  const timerEspecial = useRef<number | null>(null);
 
   useEffect(() => {
     if (etapa === "lista") return;
@@ -70,6 +77,10 @@ export default function CofreAperturaModal({
   }, [etapa]);
 
   useEffect(() => {
+    if (etapa === "abierto" && sonidoActivo) sonarCofre("abrir");
+  }, [etapa, sonidoActivo]);
+
+  useEffect(() => {
     const timers = timersRevelado.current;
     const cerrarConEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -78,6 +89,7 @@ export default function CofreAperturaModal({
     return () => {
       window.removeEventListener("keydown", cerrarConEscape);
       timers.forEach(clearTimeout);
+      if (timerEspecial.current !== null) clearTimeout(timerEspecial.current);
     };
   }, [onClose]);
 
@@ -91,10 +103,17 @@ export default function CofreAperturaModal({
     const sinMovimiento = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     setFases((actual) => actual.map((fase, i) => i === index ? (sinMovimiento ? "revelada" : "girando") : fase));
     if (sinMovimiento) return;
+    if (sonidoActivo) sonarCofre("revelar");
     if (navigator.vibrate) navigator.vibrate(15);
 
     const timer = window.setTimeout(() => {
       setFases((actual) => actual.map((fase, i) => i === index ? "revelada" : fase));
+      if (rareza === "legendaria" || rareza === "unica") {
+        if (timerEspecial.current !== null) clearTimeout(timerEspecial.current);
+        setPremioEspecial({ recompensa, rareza });
+        timerEspecial.current = window.setTimeout(() => setPremioEspecial(null), 1900);
+      }
+      if (sonidoActivo) sonarCofre(rareza === "legendaria" || rareza === "unica" ? rareza : "revelar");
       if (navigator.vibrate) {
         navigator.vibrate(
           rareza === "legendaria" || rareza === "unica"
@@ -136,6 +155,18 @@ export default function CofreAperturaModal({
                 : "Abriendo..."}
             </p>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              if (!sonidoActivo) prepararAudioCofre();
+              setSonidoActivo((activo) => !activo);
+            }}
+            aria-label={sonidoActivo ? "Silenciar cofres" : "Activar sonido de cofres"}
+            title={sonidoActivo ? "Silenciar" : "Activar sonido"}
+            className="ml-auto flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-borde text-lg text-texto2 active:scale-95"
+          >
+            {sonidoActivo ? "🔊" : "🔇"}
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -184,6 +215,7 @@ export default function CofreAperturaModal({
                 disabled={etapa !== "lista" || fase !== "oculta"}
                 aria-label={fase === "revelada" ? recompensa.nombre : `Revelar recompensa ${index + 1}`}
                 className={`cofre-reward-slot gacha-scene fase-${fase}`}
+                data-rarity={rareza}
                 style={
                   {
                     "--reward-color": RAREZA_COLOR[rareza][0],
@@ -216,6 +248,27 @@ export default function CofreAperturaModal({
           })}
         </div>
       </div>
+      {premioEspecial && (
+        <div className="cofre-grand-reveal" data-rarity={premioEspecial.rareza} aria-live="polite">
+          <span className="cofre-grand-reveal__beam" aria-hidden="true" />
+          <span className="cofre-grand-reveal__impact" aria-hidden="true" />
+          <span className="cofre-grand-reveal__rays" aria-hidden="true" />
+          <div className="cofre-grand-reveal__prize">
+            <Image
+              src={premioEspecial.recompensa.imagen}
+              alt=""
+              width={768}
+              height={768}
+              className="cofre-grand-reveal__image"
+              sizes="240px"
+            />
+            <strong className="cofre-grand-reveal__name">{premioEspecial.recompensa.nombre}</strong>
+            <span className="cofre-grand-reveal__tier">
+              {premioEspecial.rareza === "unica" ? "Recompensa unica" : "Legendaria"}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

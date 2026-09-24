@@ -15,6 +15,7 @@ import {
 } from "@/lib/cofresDesign";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CofreAperturaModal from "@/components/CofreAperturaModal";
+import { prepararAudioCofre } from "@/lib/cofreAudio";
 import {
   aplicarRecompensas,
   FRAGMENTOS_PERSONAJE_NECESARIOS,
@@ -125,6 +126,7 @@ export default function InventarioClient({
     const cofre = COFRES_TIPOS.find((item) => item.id === cofreId);
     if (!cofre || (inventario.cofres[cofreId] ?? 0) <= 0) return;
 
+    prepararAudioCofre();
     setAbriendo(cofreId);
     setMensaje(null);
     const recompensas = generarAperturaCofre(cofreId, inventario);
