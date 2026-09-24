@@ -1,0 +1,1 @@
+drop function if exists public.registrar_bebida_suelta(uuid, integer, text);
