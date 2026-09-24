@@ -42,6 +42,14 @@ export default async function AppHeader() {
         >
           👥
         </Link>
+        <Link
+          href="/ajustes"
+          aria-label="Ajustes"
+          className="text-lg outline-none transition active:scale-95"
+          title="Ajustes"
+        >
+          ⚙️
+        </Link>
         {user.email?.toLowerCase() === ADMIN_EMAIL && (
           <Link
             href="/admin"

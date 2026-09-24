@@ -66,3 +66,23 @@ export async function activarNotificaciones(): Promise<
   if (error) return { ok: false, error: error.message };
   return { ok: true };
 }
+
+export async function desactivarNotificaciones(): Promise<
+  { ok: true } | { ok: false; error: string }
+> {
+  if (!(await pushSoportado())) return { ok: true };
+  const reg = await navigator.serviceWorker.getRegistration();
+  const sub = await reg?.pushManager.getSubscription();
+  if (!sub) return { ok: true };
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("endpoint", sub.endpoint);
+  if (error) return { ok: false, error: error.message };
+  if (!(await sub.unsubscribe())) {
+    return { ok: false, error: "No se pudo desactivar este dispositivo." };
+  }
+  return { ok: true };
+}

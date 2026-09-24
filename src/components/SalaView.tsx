@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { calcularDivision } from "@/lib/liga";
 import { marcoPorLiga } from "@/lib/marcos";
-import { activarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
 import { type AvatarConfig } from "@/lib/avatar";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import BebidaSueltaLogger, {
@@ -78,12 +77,6 @@ export default function SalaView({
   const [errorFecha, setErrorFecha] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
-  const [notifSoportado, setNotifSoportado] = useState(false);
-  const [notifActivas, setNotifActivas] = useState(true); // evita el flash del banner antes de comprobar
-  const [activandoNotif, setActivandoNotif] = useState(false);
-  const [errorNotif, setErrorNotif] = useState<string | null>(null);
-  const [probandoNotif, setProbandoNotif] = useState(false);
-  const [resultadoPrueba, setResultadoPrueba] = useState<string | null>(null);
   const [archivarAbierto, setArchivarAbierto] = useState(false);
   const [confirmacionSala, setConfirmacionSala] = useState("");
   const [archivando, setArchivando] = useState(false);
@@ -105,49 +98,6 @@ export default function SalaView({
     setArchivarAbierto(false);
     router.push("/");
     router.refresh();
-  }
-
-  useEffect(() => {
-    (async () => {
-      const soportado = await pushSoportado();
-      setNotifSoportado(soportado);
-      if (soportado) setNotifActivas(await estaSuscrito());
-    })();
-  }, []);
-
-  async function activarNotif() {
-    setActivandoNotif(true);
-    setErrorNotif(null);
-    const r = await activarNotificaciones();
-    setActivandoNotif(false);
-    if (r.ok) {
-      setNotifActivas(true);
-    } else {
-      setErrorNotif(r.error);
-    }
-  }
-
-  async function probarNotif() {
-    setProbandoNotif(true);
-    setResultadoPrueba(null);
-    try {
-      const r = await fetch("/api/notificar-prueba", { method: "POST" });
-      const data = await r.json();
-      if (!r.ok) {
-        setResultadoPrueba(`❌ ${data.error ?? "No se pudo enviar."}`);
-      } else if (data.enviados > 0) {
-        setResultadoPrueba(
-          "✅ Enviada. Si no te llega en unos segundos, revisa los permisos de notificaciones del navegador/móvil."
-        );
-      } else {
-        setResultadoPrueba(
-          `❌ No se pudo entregar a ningún dispositivo (${data.fallidos} fallo(s))${data.error ? `: ${data.error}` : "."}`
-        );
-      }
-    } catch {
-      setResultadoPrueba("❌ Fallo de red al pedir la prueba.");
-    }
-    setProbandoNotif(false);
   }
 
   async function compartirCodigo() {
@@ -236,40 +186,6 @@ export default function SalaView({
           </div>
         </div>
       </header>
-
-      {notifSoportado && !notifActivas && (
-        <div className="mb-6 rounded-2xl border border-cian/50 bg-tarjeta p-4 text-center">
-          <p className="mb-2 text-sm text-texto2">
-            🔔 Activa las notificaciones para enterarte al instante cuando se
-            inicie una noche.
-          </p>
-          {errorNotif && <p className="mb-2 text-xs text-rosa">{errorNotif}</p>}
-          <button
-            onClick={activarNotif}
-            disabled={activandoNotif}
-            className="rounded-xl border border-cian px-4 py-2 text-sm text-cian active:scale-95 disabled:opacity-50"
-          >
-            {activandoNotif ? "Activando…" : "Activar notificaciones"}
-          </button>
-        </div>
-      )}
-
-      {notifSoportado && notifActivas && (
-        <div className="mb-6 rounded-2xl border border-borde bg-tarjeta p-3 text-center">
-          <button
-            onClick={probarNotif}
-            disabled={probandoNotif}
-            className="text-xs text-texto2 underline active:scale-95 disabled:opacity-50"
-          >
-            {probandoNotif
-              ? "Enviando prueba…"
-              : "🔔 Enviar notificación de prueba"}
-          </button>
-          {resultadoPrueba && (
-            <p className="mt-2 text-xs text-texto2">{resultadoPrueba}</p>
-          )}
-        </div>
-      )}
 
       {esPermanente && racha.actual > 0 && (
         <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl border border-ambar/50 bg-ambar/10 px-4 py-3 text-center">

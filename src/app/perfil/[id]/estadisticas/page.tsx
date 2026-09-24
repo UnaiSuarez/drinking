@@ -45,7 +45,7 @@ export default async function EstadisticasPerfilPage({
   const marco = tienda.marcoEquipado ?? marcoPorNivel(nivel.nivel);
   const profileHref = `/perfil/${id}${scope ? `?sala=${scope}` : ""}`;
 
-  return <main className="mx-auto min-h-dvh w-full max-w-4xl px-4 pb-24 pt-8 sm:px-6">
+  return <main className="mx-auto min-h-dvh w-full max-w-4xl overflow-x-clip px-4 pb-24 pt-8 sm:px-6">
     <Link href={profileHref} className="mb-6 inline-flex rounded-lg border border-borde px-3 py-2 text-sm text-texto2 hover:text-texto">← Perfil</Link>
     <header className="mb-8 flex min-w-0 items-center gap-4 border-b border-borde pb-6">
       <AvatarFrame config={parseAvatarConfig(perfil.avatar_config)} marco={marco} className="h-16 w-16" imageSizes="64px" />
