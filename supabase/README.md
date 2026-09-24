@@ -16,8 +16,9 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924120000` | `registrar_bebida_suelta_compatible` | **Aplicada el 24/09/2026 (12:27 UTC).** Respuesta compatible con clientes anteriores y posteriores al PR #15. |
 | `20260924120100` | `otorgar_logros_lifetime_correccion` | **Aplicada el 24/09/2026 (12:27 UTC).** Corrige el fallo que hacía fallar todo registro de bebida suelta, retira el permiso a los roles de la API y serializa por usuario. |
 | `20260924120200` | `avisos_push_verificados` | **Aplicada el 24/09/2026 (12:28 UTC).** Tabla `avisos_push` y las funciones que verifican y reclaman los avisos push. |
+| `20260924130000` | `cron_cierre_noches_tablas_temporales` | **NO aplicada todavía** (pendiente de autorización). Corrige el cierre automático de noches; ver «Cierre automático de noches» más abajo. |
 
-Las siete conservan en el historial de Supabase la versión de su fichero y el
+Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). Las tres últimas se aplicaron con
 `apply_migration`, que registra la hora de aplicación como versión
 (`20260924122703`, `…122732`, `…122759`); se renombraron esas tres filas del
@@ -53,6 +54,51 @@ pasada esa ventana.
 Reintentar exigiría guardar el estado de entrega (por ejemplo `enviado_at` e
 intentos) y reclamar en dos fases: reservar, enviar y confirmar, liberando la
 reserva si el envío falla. No forma parte de este arreglo.
+
+## Cierre automático de noches
+
+El trabajo `cerrar-noches-24h` (pg_cron, cada 10 minutos) ejecuta
+`cron_forzar_cierre_noches()`: borra pendientes de más de 24 h, pasa a
+«cerrando» las activas vencidas y finaliza las que llevan 24 h en «cerrando».
+
+Desde el 10/07/2026 08:20 UTC falló en **todas** las ejecuciones con
+`relation "tmp_cartas_activas" already exists`, porque `finalizar_noche` crea
+tablas temporales `on commit drop` y el cron la llamaba varias veces en la misma
+transacción. El error deshacía la ejecución entera, así que ninguna noche se
+cerraba sola (ni se borraban pendientes viejas ni pasaban a «cerrando» las
+activas vencidas). El cierre manual desde la app (una llamada a
+`finalizar_noche` por transacción) no debería verse afectado, y consta al menos
+una noche cerrada después de esa fecha (29/08). La migración `20260924130000`
+lo corrige sin tocar `finalizar_noche`: antes de finalizar cada noche elimina,
+por nombre, las cinco tablas temporales que esa función crea
+(`tmp_cartas_activas`, `tmp_personaje_equipado`, `tmp_registro_puntos`,
+`tmp_bono_cartas_flat`, `tmp_liga_antes`). Si `finalizar_noche` cambia y crea otra
+tabla temporal, hay que añadirla a esa lista. `tests/cron_cierre_noches.sql` lo
+prueba.
+
+**Los fallos siguen siendo visibles:** si `finalizar_noche` falla por otra causa,
+el error se propaga y la ejecución queda en `failed` en `cron.job_run_details`.
+Limitación conocida: no hay aislamiento por noche, así que una noche defectuosa
+vuelve a bloquear el cierre de las demás mientras no se corrija. Aislarlas
+exigiría un registro persistente y observable de los fallos individuales (no
+basta con capturar el error y dejar un WARNING, porque el trabajo pasaría a
+`succeeded` y el fallo quedaría oculto); queda como mejora posterior.
+
+Para detectar noches atascadas o vencidas sin cerrar:
+
+```sql
+select id, estado, fin_gracia, fin_programado from noches
+where (estado = 'cerrando' and fin_gracia <= now() - interval '25 hours')
+   or (estado = 'activa' and fin_programado <= now() - interval '25 hours');
+```
+
+## Pruebas SQL
+
+`supabase/tests/*.sql` son pruebas que se pegan en el editor SQL. Cada una
+termina siempre con un error `RESULTADO_VERIFICACION {...}`, de modo que se
+deshace por completo y no deja datos. No forman parte de las migraciones.
+La del cron se aísla de las noches reales con una copia temporal de `noches`
+(ver su cabecera), así que no actualiza ni bloquea ninguna fila real.
 
 ## Lo que todavía no está en el repositorio
 
