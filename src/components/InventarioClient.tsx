@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import confetti from "canvas-confetti";
 import {
   CARTAS_COFRES,
   COFRES_TIPOS,
@@ -64,6 +65,16 @@ const RAREZA_ESTILO: Record<
   },
 };
 
+// Colores reales (no clases Tailwind) para el estallido de luz y el confeti
+// al aterrizar una carta, según su rareza.
+const RAREZA_COLOR_HEX: Record<CartaRareza | "unica", string[]> = {
+  comun: ["#8a8fa8"],
+  rara: ["#2de2e6", "#67f5f8"],
+  epica: ["#ff2e93", "#a78bfa"],
+  legendaria: ["#ffd54a", "#ffb627", "#f5f1e8"],
+  unica: ["#a78bfa", "#ff2e93"],
+};
+
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
@@ -98,10 +109,11 @@ export default function InventarioClient({
   const [rawConfig, setRawConfig] = useState<unknown>(avatarConfigRaw);
   const [abriendo, setAbriendo] = useState<CofreTipo["id"] | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  type FaseCarta = "oculta" | "llegando" | "tumbando" | "revelada";
   const [apertura, setApertura] = useState<{
     cofre: CofreTipo;
     recompensas: RecompensaCofre[];
-    reveladas: boolean[];
+    fases: FaseCarta[];
   } | null>(null);
   const [cartaAbierta, setCartaAbierta] = useState<CartaCofre | null>(null);
 
@@ -155,19 +167,65 @@ export default function InventarioClient({
       setApertura({
         cofre,
         recompensas,
-        reveladas: recompensas.map(() => false),
+        fases: recompensas.map(() => "oculta"),
       });
     }
     setAbriendo(null);
   }
 
-  function revelarCarta(index: number) {
+  const DURACION_LLEGADA = 280;
+  const DURACION_TUMBADO = 750;
+
+  function ponerFase(index: number, fase: FaseCarta) {
     setApertura((actual) => {
       if (!actual) return actual;
-      const reveladas = [...actual.reveladas];
-      reveladas[index] = true;
-      return { ...actual, reveladas };
+      const fases = [...actual.fases];
+      fases[index] = fase;
+      return { ...actual, fases };
     });
+  }
+
+  function revelarCarta(index: number) {
+    const recompensa = apertura?.recompensas[index];
+    if (!recompensa || apertura!.fases[index] !== "oculta") return;
+
+    const rareza =
+      recompensa.tipo === "fragmentoPersonaje" ? "unica" : recompensa.rareza;
+
+    // Como un gachapón: llega dando saltitos (todavía cerrada), luego se
+    // sacude rápido en el aire y aterriza mostrando lo que hay dentro, con
+    // un estallido de luz del color de su rareza.
+    ponerFase(index, "llegando");
+    if (navigator.vibrate) navigator.vibrate(15);
+
+    setTimeout(() => {
+      ponerFase(index, "tumbando");
+    }, DURACION_LLEGADA);
+
+    setTimeout(() => {
+      ponerFase(index, "revelada");
+      if (navigator.vibrate) {
+        navigator.vibrate(
+          rareza === "legendaria" || rareza === "unica"
+            ? [40, 30, 60]
+            : rareza === "epica"
+              ? [30, 20, 40]
+              : 30
+        );
+      }
+      if (rareza !== "comun") {
+        confetti({
+          particleCount:
+            rareza === "legendaria" || rareza === "unica" ? 60 : rareza === "epica" ? 40 : 22,
+          spread: 65,
+          startVelocity: 32,
+          gravity: 1.1,
+          scalar: 0.8,
+          origin: { x: 0.5, y: 0.55 },
+          colors: RAREZA_COLOR_HEX[rareza],
+        });
+      }
+    }, DURACION_LLEGADA + DURACION_TUMBADO);
   }
 
   return (
@@ -444,7 +502,7 @@ export default function InventarioClient({
                   recompensa.tipo === "fragmentoPersonaje"
                     ? "unica"
                     : recompensa.rareza;
-                const revelada = apertura.reveladas[index];
+                const fase = apertura.fases[index];
                 const secreta =
                   recompensa.tipo === "fragmentoPersonaje" ||
                   (recompensa.tipo === "carta" && recompensa.oculta);
@@ -458,10 +516,19 @@ export default function InventarioClient({
                     key={recompensa.id}
                     type="button"
                     onClick={() => revelarCarta(index)}
-                    className={`cofre-reveal-scene ${revelada ? "is-revealed" : ""}`}
+                    disabled={fase !== "oculta"}
+                    className={`gacha-scene fase-${fase} ${fase === "oculta" ? "gacha-idle" : ""}`}
                   >
+                    {fase === "revelada" && (
+                      <span
+                        className="gacha-estallido"
+                        style={{
+                          background: `radial-gradient(circle, ${RAREZA_COLOR_HEX[rareza][0]}, transparent 65%)`,
+                        }}
+                      />
+                    )}
                     <span
-                      className={`cofre-reveal-inner relative block aspect-[3/4] rounded-2xl border bg-fondo ${borde} ${
+                      className={`gacha-card relative block aspect-[3/4] rounded-2xl border bg-fondo ${borde} ${
                         secreta ? "cofre-reveal-secret" : ""
                       }`}
                     >
