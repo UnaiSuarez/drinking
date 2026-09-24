@@ -1,10 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import confetti from "canvas-confetti";
 import {
   CARTAS_COFRES,
   COFRES_TIPOS,
@@ -15,6 +14,7 @@ import {
   type CofreTipo,
 } from "@/lib/cofresDesign";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
+import CofreAperturaModal from "@/components/CofreAperturaModal";
 import {
   aplicarRecompensas,
   FRAGMENTOS_PERSONAJE_NECESARIOS,
@@ -65,31 +65,9 @@ const RAREZA_ESTILO: Record<
   },
 };
 
-// Colores reales (no clases Tailwind) para el estallido de luz y el confeti
-// al aterrizar una carta, según su rareza.
-const RAREZA_COLOR_HEX: Record<CartaRareza | "unica", string[]> = {
-  comun: ["#8a8fa8"],
-  rara: ["#2de2e6", "#67f5f8"],
-  epica: ["#ff2e93", "#a78bfa"],
-  legendaria: ["#ffd54a", "#ffb627", "#f5f1e8"],
-  unica: ["#a78bfa", "#ff2e93"],
-};
-
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
-}
-
-function reversoPorRareza(rareza: CartaRareza | "unica") {
-  if (rareza === "legendaria" || rareza === "unica") return REVERSOS_CARTA.legendaria;
-  if (rareza === "epica") return REVERSOS_CARTA.epica;
-  return REVERSOS_CARTA.comun;
-}
-
-function etiquetaRecompensa(recompensa: RecompensaCofre) {
-  if (recompensa.tipo === "monedas") return `${recompensa.cantidad} chapas`;
-  if (recompensa.tipo === "fragmentoPersonaje") return "Fragmento unico";
-  return recompensa.oculta ? "Carta oculta" : "Carta";
 }
 
 export default function InventarioClient({
@@ -109,13 +87,12 @@ export default function InventarioClient({
   const [rawConfig, setRawConfig] = useState<unknown>(avatarConfigRaw);
   const [abriendo, setAbriendo] = useState<CofreTipo["id"] | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
-  type FaseCarta = "oculta" | "llegando" | "tumbando" | "revelada";
   const [apertura, setApertura] = useState<{
     cofre: CofreTipo;
     recompensas: RecompensaCofre[];
-    fases: FaseCarta[];
   } | null>(null);
   const [cartaAbierta, setCartaAbierta] = useState<CartaCofre | null>(null);
+  const cerrarApertura = useCallback(() => setApertura(null), []);
 
   const inventario = useMemo(() => parseInventarioState(rawConfig), [rawConfig]);
   const tienda = useMemo(() => parseTiendaState(rawConfig), [rawConfig]);
@@ -164,68 +141,9 @@ export default function InventarioClient({
     };
     const ok = await guardarConfig(nextConfig);
     if (ok) {
-      setApertura({
-        cofre,
-        recompensas,
-        fases: recompensas.map(() => "oculta"),
-      });
+      setApertura({ cofre, recompensas });
     }
     setAbriendo(null);
-  }
-
-  const DURACION_LLEGADA = 280;
-  const DURACION_TUMBADO = 750;
-
-  function ponerFase(index: number, fase: FaseCarta) {
-    setApertura((actual) => {
-      if (!actual) return actual;
-      const fases = [...actual.fases];
-      fases[index] = fase;
-      return { ...actual, fases };
-    });
-  }
-
-  function revelarCarta(index: number) {
-    const recompensa = apertura?.recompensas[index];
-    if (!recompensa || apertura!.fases[index] !== "oculta") return;
-
-    const rareza =
-      recompensa.tipo === "fragmentoPersonaje" ? "unica" : recompensa.rareza;
-
-    // Como un gachapón: llega dando saltitos (todavía cerrada), luego se
-    // sacude rápido en el aire y aterriza mostrando lo que hay dentro, con
-    // un estallido de luz del color de su rareza.
-    ponerFase(index, "llegando");
-    if (navigator.vibrate) navigator.vibrate(15);
-
-    setTimeout(() => {
-      ponerFase(index, "tumbando");
-    }, DURACION_LLEGADA);
-
-    setTimeout(() => {
-      ponerFase(index, "revelada");
-      if (navigator.vibrate) {
-        navigator.vibrate(
-          rareza === "legendaria" || rareza === "unica"
-            ? [40, 30, 60]
-            : rareza === "epica"
-              ? [30, 20, 40]
-              : 30
-        );
-      }
-      if (rareza !== "comun") {
-        confetti({
-          particleCount:
-            rareza === "legendaria" || rareza === "unica" ? 60 : rareza === "epica" ? 40 : 22,
-          spread: 65,
-          startVelocity: 32,
-          gravity: 1.1,
-          scalar: 0.8,
-          origin: { x: 0.5, y: 0.55 },
-          colors: RAREZA_COLOR_HEX[rareza],
-        });
-      }
-    }, DURACION_LLEGADA + DURACION_TUMBADO);
   }
 
   return (
@@ -464,110 +382,11 @@ export default function InventarioClient({
       </section>
 
       {apertura && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-fondo/92 p-4 backdrop-blur-sm">
-          <div className="max-h-[92dvh] w-full max-w-md overflow-y-auto rounded-3xl border border-borde bg-tarjeta p-5 text-center shadow-2xl">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <div className="text-left">
-                <p className="font-titulo text-2xl text-ambar">
-                  {apertura.cofre.nombre}
-                </p>
-                <p className="text-xs text-texto2">
-                  Toca cada carta para revelarla.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setApertura(null)}
-                className="rounded-xl border border-borde px-3 py-2 text-sm text-texto2 active:scale-95"
-              >
-                Cerrar
-              </button>
-            </div>
-
-            <div className="relative mx-auto mb-5 h-28 w-28">
-              <span className="cofre-reward-aura" />
-              <Image
-                src={apertura.cofre.imagen}
-                alt={apertura.cofre.nombre}
-                width={768}
-                height={768}
-                className="cofre-open-chest relative z-10 h-full w-full object-contain"
-                sizes="112px"
-              />
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              {apertura.recompensas.map((recompensa, index) => {
-                const rareza =
-                  recompensa.tipo === "fragmentoPersonaje"
-                    ? "unica"
-                    : recompensa.rareza;
-                const fase = apertura.fases[index];
-                const secreta =
-                  recompensa.tipo === "fragmentoPersonaje" ||
-                  (recompensa.tipo === "carta" && recompensa.oculta);
-                const borde =
-                  rareza === "unica"
-                    ? "border-purple-300"
-                    : RAREZA_ESTILO[rareza].borde;
-
-                return (
-                  <button
-                    key={recompensa.id}
-                    type="button"
-                    onClick={() => revelarCarta(index)}
-                    disabled={fase !== "oculta"}
-                    className={`gacha-scene fase-${fase} ${fase === "oculta" ? "gacha-idle" : ""}`}
-                  >
-                    {fase === "revelada" && (
-                      <span
-                        className="gacha-estallido"
-                        style={{
-                          background: `radial-gradient(circle, ${RAREZA_COLOR_HEX[rareza][0]}, transparent 65%)`,
-                        }}
-                      />
-                    )}
-                    <span
-                      className={`gacha-card relative block aspect-[3/4] rounded-2xl border bg-fondo ${borde} ${
-                        secreta ? "cofre-reveal-secret" : ""
-                      }`}
-                    >
-                      <span className="cofre-reveal-face absolute inset-0 rounded-2xl">
-                        <Image
-                          src={reversoPorRareza(rareza)}
-                          alt="Carta boca abajo"
-                          fill
-                          className="rounded-2xl object-cover"
-                          sizes="120px"
-                        />
-                        <span className="absolute inset-0 flex items-center justify-center font-titulo text-4xl text-oro">
-                          ?
-                        </span>
-                      </span>
-                      <span className="cofre-reveal-face cofre-reveal-front absolute inset-0 overflow-hidden rounded-2xl bg-tarjeta p-2">
-                        {secreta && <span className="cofre-reward-aura" />}
-                        <Image
-                          src={recompensa.imagen}
-                          alt={recompensa.nombre}
-                          width={768}
-                          height={768}
-                          className="relative z-10 aspect-square w-full rounded-xl object-cover"
-                          sizes="120px"
-                        />
-                        <span className="relative z-10 mt-1 block font-titulo text-[11px] leading-tight text-texto">
-                          {recompensa.nombre}
-                        </span>
-                        <span className="relative z-10 block text-[9px] text-texto2">
-                          {etiquetaRecompensa(recompensa)}
-                        </span>
-                      </span>
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </div>
+        <CofreAperturaModal
+          cofre={apertura.cofre}
+          recompensas={apertura.recompensas}
+          onClose={cerrarApertura}
+        />
       )}
 
       {cartaAbierta && (

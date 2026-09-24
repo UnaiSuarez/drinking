@@ -30,6 +30,7 @@ import { parseTiendaState } from "@/lib/tienda";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
+import CartaUsoCelebracion from "@/components/CartaUsoCelebracion";
 
 export type Bebida = {
   id: number;
@@ -406,6 +407,11 @@ export default function NocheLive({
   const [objetivosCarta, setObjetivosCarta] = useState<Record<string, string>>({});
   const [cartaADuplicar, setCartaADuplicar] = useState("");
   const [mensajeCarta, setMensajeCarta] = useState<string | null>(null);
+  const [cartaCelebracion, setCartaCelebracion] = useState<{
+    carta: CartaCofre;
+    detalle?: string;
+  } | null>(null);
+  const cerrarCelebracion = useCallback(() => setCartaCelebracion(null), []);
   const [confirmaciones, setConfirmaciones] = useState<string[]>(
     confirmacionesIniciales
   );
@@ -841,6 +847,7 @@ export default function NocheLive({
           ? `Le robaste "${cartaPorId(data?.carta)?.nombre ?? data?.carta}" a ${objetivo.nombre}.`
           : `Le cambiaste la carta activa a ${objetivo.nombre}.`
       );
+      setCartaCelebracion({ carta, detalle: objetivo.nombre });
       router.refresh();
       return;
     }
@@ -855,6 +862,7 @@ export default function NocheLive({
         return;
       }
       setMensajeCarta("¡Meteorito de Caos! Todos los bonus activos han desaparecido.");
+      setCartaCelebracion({ carta });
       router.refresh();
       return;
     }
@@ -969,6 +977,13 @@ export default function NocheLive({
       );
       if (carta.id === "copia-de-seguridad") setCartaADuplicar("");
       if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
+      setCartaCelebracion({
+        carta,
+        detalle:
+          carta.id === "ruleta-del-bar"
+            ? cartaPorId(cartaIdEfectiva)?.nombre
+            : objetivo?.nombre,
+      });
     }
     setUsandoCarta(null);
   }
@@ -1896,6 +1911,13 @@ export default function NocheLive({
           cantidad={miInventario.cartas[cartaDetalle.id] ?? 0}
           bloqueada={false}
           onClose={() => setCartaDetalle(null)}
+        />
+      )}
+      {cartaCelebracion && (
+        <CartaUsoCelebracion
+          carta={cartaCelebracion.carta}
+          detalle={cartaCelebracion.detalle}
+          onClose={cerrarCelebracion}
         />
       )}
     </main>

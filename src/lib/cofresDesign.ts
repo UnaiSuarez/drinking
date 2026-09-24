@@ -16,6 +16,7 @@ export type CofreTipo = {
   id: "comun" | "epico" | "legendario";
   nombre: string;
   imagen: string;
+  imagenAbierto: string;
   cartas: number;
   precio: number;
   garantia: string;
@@ -41,6 +42,7 @@ export const COFRES_TIPOS: CofreTipo[] = [
     id: "comun",
     nombre: "Cofre Comun",
     imagen: "/chests/ai/items/cofre-comun.webp",
+    imagenAbierto: "/chests/ai/items/cofre-comun-abierto-alpha.webp",
     cartas: 1,
     precio: 90,
     garantia: "Una recompensa sin garantia premium.",
@@ -58,6 +60,7 @@ export const COFRES_TIPOS: CofreTipo[] = [
     id: "epico",
     nombre: "Cofre Epico",
     imagen: "/chests/ai/items/cofre-epico.webp",
+    imagenAbierto: "/chests/ai/items/cofre-epico-abierto-alpha.webp",
     cartas: 2,
     precio: 260,
     garantia: "Mejor probabilidad de cartas raras y epicas.",
@@ -75,6 +78,7 @@ export const COFRES_TIPOS: CofreTipo[] = [
     id: "legendario",
     nombre: "Cofre Legendario",
     imagen: "/chests/ai/items/cofre-legendario.webp",
+    imagenAbierto: "/chests/ai/items/cofre-legendario-abierto-alpha.webp",
     cartas: 3,
     precio: 690,
     garantia: "Una recompensa de alto valor asegurada.",
