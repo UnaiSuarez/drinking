@@ -13,7 +13,6 @@ import { parseAvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
 import { MARCO_INFO, marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
-import PerfilEstadisticas, { type PerfilStats } from "@/components/PerfilEstadisticas";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -71,16 +70,6 @@ export default async function PerfilPage({
     .select("noche_id, posicion_final, pl_ganados, noches!inner(estado, inicio)")
     .eq("usuario_id", id)
     .eq("noches.estado", "cerrada");
-
-  const { data: estadisticasGlobales } = await supabase.rpc("estadisticas_perfil", {
-    p_usuario: id,
-  });
-  const { data: estadisticasSala } = salaContexto
-    ? await supabase.rpc("estadisticas_perfil", { p_usuario: id, p_sala: salaContexto.id })
-    : { data: null };
-  const { data: misEstadisticasSala } = salaContexto && user && user.id !== id
-    ? await supabase.rpc("estadisticas_perfil", { p_usuario: user.id, p_sala: salaContexto.id })
-    : { data: null };
 
   // Colección de medallas (repetibles: COUNT = contador ×N)
   const { data: medallas } = await supabase
@@ -375,8 +364,8 @@ export default async function PerfilPage({
           </div>
         )}
 
-        {esMiPerfil && (
-          <div className="mx-auto mb-2 grid w-fit grid-cols-2 gap-2">
+        <div className="mx-auto mb-2 flex flex-wrap justify-center gap-2">
+          {esMiPerfil && <>
             <Link
               href="/tienda"
               className="rounded-xl border border-ambar px-4 py-2 text-xs text-ambar active:scale-95"
@@ -389,8 +378,14 @@ export default async function PerfilPage({
             >
               🎴 Inventario
             </Link>
-          </div>
-        )}
+          </>}
+          <Link
+            href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}
+            className="rounded-xl border border-lima px-4 py-2 text-xs text-lima active:scale-95"
+          >
+            📊 Estadísticas
+          </Link>
+        </div>
         {esMiPerfil && <CumpleanosEditor actual={perfil.cumpleanos} />}
         {esMiPerfil && (
           <PerfilCustomizer
@@ -405,14 +400,6 @@ export default async function PerfilPage({
           />
         )}
       </header>
-
-      <PerfilEstadisticas
-        global={estadisticasGlobales as PerfilStats | null}
-        sala={estadisticasSala as PerfilStats | null}
-        mia={misEstadisticasSala as PerfilStats | null}
-        salaNombre={salaContexto?.nombre ?? null}
-        esMiPerfil={esMiPerfil}
-      />
 
       {/* Colección de medallas */}
       <section className="mb-8">
