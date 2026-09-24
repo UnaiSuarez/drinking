@@ -549,10 +549,10 @@ export default function SalaView({
         </div>
       )}
 
-      <section className="mb-8">
-        <h2 className="mb-3 font-titulo text-xl text-texto">
-          Miembros ({miembros.length})
-        </h2>
+      <details className="group mb-8">
+        <summary className="mb-3 flex cursor-pointer list-none items-center justify-between font-titulo text-xl text-texto focus-visible:outline-cian">
+          Miembros ({miembros.length}) <span aria-hidden="true" className="text-base text-texto2 group-open:rotate-180">⌄</span>
+        </summary>
         <ul className="space-y-2">
           {miembros.map((m) => (
             <li key={m.id}>
@@ -585,12 +585,12 @@ export default function SalaView({
             </li>
           ))}
         </ul>
-      </section>
+      </details>
 
-      <section>
-        <h2 className="mb-3 font-titulo text-xl text-texto">
-          Últimas noches
-        </h2>
+      <details className="group">
+        <summary className="mb-3 flex cursor-pointer list-none items-center justify-between font-titulo text-xl text-texto focus-visible:outline-cian">
+          Últimas noches <span aria-hidden="true" className="text-base text-texto2 group-open:rotate-180">⌄</span>
+        </summary>
         {nochesCerradas.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
             Aún no hay historia que contar… 📖
@@ -623,7 +623,7 @@ export default function SalaView({
             ))}
           </ul>
         )}
-      </section>
+      </details>
     </main>
   );
 }

@@ -1,7 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import AvatarEditor from "@/components/AvatarEditor";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import ProfileAchievementDetails from "@/components/ProfileAchievementDetails";
@@ -13,6 +12,7 @@ import { parseAvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
 import { MARCO_INFO, marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
+import PerfilEstadisticas, { type PerfilStats } from "@/components/PerfilEstadisticas";
 
 const RAREZA_ESTILO: Record<string, string> = {
   comun: "border-borde text-texto2",
@@ -46,6 +46,7 @@ export default async function PerfilPage({
   const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
   const marcoNivel = marcoPorNivel(nivel.nivel);
+  const marcoPersonal = tienda.marcoEquipado ?? marcoNivel;
   const vitrinaSlugs = (perfil.vitrina ?? []) as string[];
 
   const { data: salasPerfilRaw } = await supabase
@@ -59,8 +60,9 @@ export default async function PerfilPage({
       return sala ? { id: sala.id, nombre: sala.nombre } : null;
     })
     .filter((sala): sala is { id: string; nombre: string } => Boolean(sala));
-  const salaContexto =
-    salasPerfil.find((sala) => sala.id === salaParam) ?? salasPerfil[0] ?? null;
+  const salaContexto = salaParam
+    ? salasPerfil.find((sala) => sala.id === salaParam) ?? null
+    : null;
 
   // Noches jugadas (solo cerradas, visibles según salas compartidas)
   const { data: participaciones } = await supabase
@@ -69,12 +71,15 @@ export default async function PerfilPage({
     .eq("usuario_id", id)
     .eq("noches.estado", "cerrada");
 
-  // Registros históricos del usuario (en noches visibles)
-  const { data: registros } = await supabase
-    .from("registros")
-    .select("noche_id, bebida_tipo_id, bebidas_tipo(nombre, icono)")
-    .eq("usuario_id", id)
-    .eq("anulado", false);
+  const { data: estadisticasGlobales } = await supabase.rpc("estadisticas_perfil", {
+    p_usuario: id,
+  });
+  const { data: estadisticasSala } = salaContexto
+    ? await supabase.rpc("estadisticas_perfil", { p_usuario: id, p_sala: salaContexto.id })
+    : { data: null };
+  const { data: misEstadisticasSala } = salaContexto && user && user.id !== id
+    ? await supabase.rpc("estadisticas_perfil", { p_usuario: user.id, p_sala: salaContexto.id })
+    : { data: null };
 
   // Colección de medallas (repetibles: COUNT = contador ×N)
   const { data: medallas } = await supabase
@@ -89,12 +94,6 @@ export default async function PerfilPage({
       (n.noches as unknown as { inicio: string } | null)?.inicio ?? null,
     ])
   );
-  const nochesJugadas = noches.length;
-  const victorias = noches.filter((n) => n.posicion_final === 1).length;
-  const podios = noches.filter(
-    (n) => n.posicion_final !== null && n.posicion_final! <= 3
-  ).length;
-  const plTotal = noches.reduce((acc, n) => acc + (n.pl_ganados ?? 0), 0);
 
   let rankingSala:
     | {
@@ -154,30 +153,6 @@ export default async function PerfilPage({
     ? marcoPorLiga(rankingSala.pl, rankingSala.esTop1)
     : "madera";
 
-  const regs = registros ?? [];
-  const totalBebidas = regs.length;
-  const dpn = nochesJugadas > 0 ? (totalBebidas / nochesJugadas).toFixed(1) : "—";
-  const winrate =
-    nochesJugadas > 0 ? Math.round((victorias / nochesJugadas) * 100) : 0;
-
-  // Bebida favorita
-  const porTipo = new Map<number, { nombre: string; icono: string; n: number }>();
-  const porNoche = new Map<string, number>();
-  for (const r of regs) {
-    const bt = r.bebidas_tipo as unknown as {
-      nombre: string;
-      icono: string;
-    } | null;
-    if (bt) {
-      const t = porTipo.get(r.bebida_tipo_id) ?? { ...bt, n: 0 };
-      t.n += 1;
-      porTipo.set(r.bebida_tipo_id, t);
-    }
-    porNoche.set(r.noche_id, (porNoche.get(r.noche_id) ?? 0) + 1);
-  }
-  const favorita = [...porTipo.values()].sort((a, b) => b.n - a.n)[0] ?? null;
-  const record = porNoche.size > 0 ? Math.max(...porNoche.values()) : 0;
-
   // Medallas agrupadas con contador
   const coleccion = new Map<
     string,
@@ -222,18 +197,18 @@ export default async function PerfilPage({
         <div className="mb-4 flex flex-col items-center">
           <AvatarFramePreview
             config={avatar}
-            marco={marcoNivel}
+            marco={marcoPersonal}
             titulo={perfil.nombre}
-            subtitulo={`Nivel ${nivel.nivel} · ${MARCO_INFO[marcoNivel].nombre}`}
+            subtitulo={`Nivel ${nivel.nivel} · ${MARCO_INFO[marcoPersonal].nombre}`}
             triggerClassName="h-32 w-32"
             previewClassName="h-80 w-80"
           />
           <p className="mt-3 font-titulo text-sm text-cian">
-            Nivel {nivel.nivel} · {MARCO_INFO[marcoNivel].nombre}
+            Nivel {nivel.nivel} · {MARCO_INFO[marcoPersonal].nombre}
           </p>
           {tienda.marcoEquipado && tienda.marcoEquipado !== marcoNivel && (
             <p className="text-[11px] text-texto2">
-              Marco cosmético equipado: {MARCO_INFO[tienda.marcoEquipado].nombre}
+              Marco de nivel: {MARCO_INFO[marcoNivel].nombre}
             </p>
           )}
         </div>
@@ -264,7 +239,7 @@ export default async function PerfilPage({
           })}
         </p>
 
-        <div className="mb-5 grid grid-cols-2 gap-3 text-left">
+        <div className={`mb-5 grid gap-3 text-left ${rankingSala ? "grid-cols-2" : "grid-cols-1"}`}>
           <section className="rounded-2xl border border-cian/50 bg-tarjeta p-3">
             <p className="mb-2 font-titulo text-xs uppercase text-cian">
               Nivel personal
@@ -272,7 +247,7 @@ export default async function PerfilPage({
             <div className="mb-2 flex justify-center">
               <AvatarFramePreview
                 config={avatar}
-                marco={marcoNivel}
+                marco={marcoPersonal}
                 titulo={perfil.nombre}
                 subtitulo={`Nivel personal ${nivel.nivel}`}
                 triggerClassName="h-24 w-24"
@@ -283,7 +258,7 @@ export default async function PerfilPage({
               Nivel {nivel.nivel}
             </p>
             <p className="mb-2 text-center text-[11px] text-texto2">
-              {MARCO_INFO[marcoNivel].nombre}
+              {MARCO_INFO[marcoPersonal].nombre}
             </p>
             <div className="mb-1 flex justify-between text-[11px] text-texto2">
               <span>XP</span>
@@ -304,7 +279,7 @@ export default async function PerfilPage({
             </div>
           </section>
 
-          <section className="rounded-2xl border border-ambar/50 bg-tarjeta p-3">
+          {rankingSala && <section className="rounded-2xl border border-ambar/50 bg-tarjeta p-3">
             <p className="mb-2 font-titulo text-xs uppercase text-ambar">
               Liga de sala
             </p>
@@ -349,7 +324,7 @@ export default async function PerfilPage({
                 </p>
               </>
             )}
-          </section>
+          </section>}
         </div>
 
         {rankingSala && (
@@ -414,7 +389,6 @@ export default async function PerfilPage({
             </Link>
           </div>
         )}
-        {esMiPerfil && <AvatarEditor actual={perfil.avatar_config} />}
         {esMiPerfil && <CumpleanosEditor actual={perfil.cumpleanos} />}
         {esMiPerfil && (
           <PerfilCustomizer
@@ -430,55 +404,13 @@ export default async function PerfilPage({
         )}
       </header>
 
-      {/* Stats principales */}
-      <section className="mb-8 grid grid-cols-3 gap-3 text-center">
-        <div className="rounded-2xl border border-borde bg-tarjeta p-4">
-          <p className="font-titulo text-3xl text-ambar">{dpn}</p>
-          <p className="text-[10px] uppercase text-texto2">
-            DPN (bebidas/noche)
-          </p>
-        </div>
-        <div className="rounded-2xl border border-borde bg-tarjeta p-4">
-          <p className="font-titulo text-3xl text-cian">{winrate}%</p>
-          <p className="text-[10px] uppercase text-texto2">Winrate</p>
-        </div>
-        <div className="rounded-2xl border border-borde bg-tarjeta p-4">
-          <p className="font-titulo text-3xl text-lima">{plTotal}</p>
-          <p className="text-[10px] uppercase text-texto2">PL históricos</p>
-        </div>
-      </section>
-
-      {/* Stats detalladas */}
-      <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
-        <ul className="space-y-2 text-sm">
-          <li className="flex justify-between">
-            <span className="text-texto2">Noches jugadas</span>
-            <span className="font-titulo text-texto">{nochesJugadas}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-texto2">Victorias</span>
-            <span className="font-titulo text-oro">🥇 {victorias}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-texto2">Podios</span>
-            <span className="font-titulo text-texto">{podios}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-texto2">Bebidas totales</span>
-            <span className="font-titulo text-texto">{totalBebidas}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-texto2">Récord en una noche</span>
-            <span className="font-titulo text-rosa">{record}</span>
-          </li>
-          <li className="flex justify-between">
-            <span className="text-texto2">Bebida favorita</span>
-            <span className="font-titulo text-texto">
-              {favorita ? `${favorita.icono} ${favorita.nombre}` : "—"}
-            </span>
-          </li>
-        </ul>
-      </section>
+      <PerfilEstadisticas
+        global={estadisticasGlobales as PerfilStats | null}
+        sala={estadisticasSala as PerfilStats | null}
+        mia={misEstadisticasSala as PerfilStats | null}
+        salaNombre={salaContexto?.nombre ?? null}
+        esMiPerfil={esMiPerfil}
+      />
 
       {/* Colección de medallas */}
       <section className="mb-8">

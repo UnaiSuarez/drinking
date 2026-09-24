@@ -20,6 +20,7 @@
 
 html {
   background: var(--color-fondo);
+  overflow-x: clip;
 }
 
 body {

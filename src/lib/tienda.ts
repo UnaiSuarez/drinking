@@ -358,6 +358,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
 
 const MARCOS_COMPRABLES = new Set(TIENDA_MARCOS.map((marco) => marco.id));
 const AVATARES_COMPRABLES = new Set(TIENDA_AVATARES.map((avatar) => avatar.id));
+const PERSONAJES_DESBLOQUEABLES = new Set(PERSONAJES_OCULTOS.map((personaje) => personaje.id));
 
 export function calcularChapasGanadas(params: {
   xp: number;
@@ -388,12 +389,17 @@ export function parseTiendaState(raw: unknown): TiendaState {
   const avatares = (tienda.avatares ?? []).filter((avatar): avatar is string =>
     AVATARES_COMPRABLES.has(avatar)
   );
+  const inventario = (raw ?? {}) as { inventario?: { personajesOcultos?: string[] } };
+  const personajes = (inventario.inventario?.personajesOcultos ?? []).filter((id) =>
+    PERSONAJES_DESBLOQUEABLES.has(id)
+  );
   const marcoEquipado =
     tienda.marcoEquipado && marcos.includes(tienda.marcoEquipado)
       ? tienda.marcoEquipado
       : null;
   const avatarEquipado =
-    tienda.avatarEquipado && avatares.includes(tienda.avatarEquipado)
+    tienda.avatarEquipado &&
+    (avatares.includes(tienda.avatarEquipado) || personajes.includes(tienda.avatarEquipado))
       ? tienda.avatarEquipado
       : null;
 

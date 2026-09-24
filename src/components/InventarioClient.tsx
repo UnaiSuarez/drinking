@@ -15,6 +15,7 @@ import {
 } from "@/lib/cofresDesign";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CofreAperturaModal from "@/components/CofreAperturaModal";
+import AvatarFramePreview from "@/components/AvatarFramePreview";
 import { prepararAudioCofre } from "@/lib/cofreAudio";
 import {
   aplicarRecompensas,
@@ -27,10 +28,15 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import {
   PERSONAJES_OCULTOS,
+  TIENDA_AVATARES,
+  TIENDA_MARCOS,
   calcularChapasGanadas,
   calcularSaldoChapas,
   parseTiendaState,
 } from "@/lib/tienda";
+import { parseAvatarConfig } from "@/lib/avatar";
+import { MARCO_INFO, marcoPorNivel, type MarcoPerfil } from "@/lib/marcos";
+import { progresoNivel } from "@/lib/niveles";
 
 const RAREZA_ESTILO: Record<
   CartaRareza,
@@ -87,6 +93,7 @@ export default function InventarioClient({
   const router = useRouter();
   const [rawConfig, setRawConfig] = useState<unknown>(avatarConfigRaw);
   const [abriendo, setAbriendo] = useState<CofreTipo["id"] | null>(null);
+  const [equipando, setEquipando] = useState<string | null>(null);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [apertura, setApertura] = useState<{
     cofre: CofreTipo;
@@ -97,6 +104,8 @@ export default function InventarioClient({
 
   const inventario = useMemo(() => parseInventarioState(rawConfig), [rawConfig]);
   const tienda = useMemo(() => parseTiendaState(rawConfig), [rawConfig]);
+  const avatar = useMemo(() => parseAvatarConfig(rawConfig), [rawConfig]);
+  const marcoActual = tienda.marcoEquipado ?? marcoPorNivel(progresoNivel(xp).nivel);
   const chapasGanadas = calcularChapasGanadas({ xp, plHistoricos });
   const saldo = calcularSaldoChapas({ xp, plHistoricos, tienda });
   const cofresTotales = totalItems(inventario.cofres);
@@ -120,6 +129,34 @@ export default function InventarioClient({
     setRawConfig(nextConfig);
     router.refresh();
     return true;
+  }
+
+  async function equiparMarco(id: MarcoPerfil) {
+    if (!tienda.marcos.includes(id) || equipando) return;
+    setEquipando(id);
+    setMensaje(null);
+    const ok = await guardarConfig({
+      ...objetoConfig(rawConfig),
+      tienda: { ...tienda, marcoEquipado: id },
+    });
+    if (ok) setMensaje(`${MARCO_INFO[id].nombre} equipado.`);
+    setEquipando(null);
+  }
+
+  async function equiparAvatar(id: string) {
+    if (equipando) return;
+    const item = [...TIENDA_AVATARES, ...PERSONAJES_OCULTOS].find((entry) => entry.id === id);
+    if (!item || (!tienda.avatares.includes(id) && !inventario.personajesOcultos.includes(id))) return;
+    setEquipando(id);
+    setMensaje(null);
+    const ok = await guardarConfig({
+      ...objetoConfig(rawConfig),
+      ...item.config,
+      avatarImagen: item.imagen,
+      tienda: { ...tienda, avatarEquipado: id },
+    });
+    if (ok) setMensaje(`${item.nombre} equipado.`);
+    setEquipando(null);
   }
 
   async function abrirCofre(cofreId: CofreTipo["id"]) {
@@ -200,6 +237,39 @@ export default function InventarioClient({
           Ver catalogo
         </Link>
       </div>
+
+      <section className="mb-8">
+        <h2 className="mb-3 font-titulo text-xl text-texto">Mis personajes</h2>
+        <ul className="grid grid-cols-2 gap-3">
+          {[...TIENDA_AVATARES.filter((item) => tienda.avatares.includes(item.id)),
+            ...PERSONAJES_OCULTOS.filter((item) => inventario.personajesOcultos.includes(item.id))].map((item) => (
+            <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
+              <AvatarFramePreview config={item.config} marco={marcoActual} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
+              <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
+              <button type="button" disabled={Boolean(equipando) || tienda.avatarEquipado === item.id} onClick={() => void equiparAvatar(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
+                {tienda.avatarEquipado === item.id ? "Equipado" : "Equipar"}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {tienda.avatares.length === 0 && inventario.personajesOcultos.length === 0 && <p className="text-sm text-texto2">Aún no tienes personajes desbloqueados.</p>}
+      </section>
+
+      <section className="mb-8">
+        <h2 className="mb-3 font-titulo text-xl text-texto">Mis marcos</h2>
+        <ul className="grid grid-cols-2 gap-3">
+          {TIENDA_MARCOS.filter((item) => tienda.marcos.includes(item.id)).map((item) => (
+            <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
+              <AvatarFramePreview config={avatar} marco={item.id} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
+              <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
+              <button type="button" disabled={Boolean(equipando) || tienda.marcoEquipado === item.id} onClick={() => void equiparMarco(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
+                {tienda.marcoEquipado === item.id ? "Equipado" : "Equipar"}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {tienda.marcos.length === 0 && <p className="text-sm text-texto2">Aún no tienes marcos comprados.</p>}
+      </section>
 
       <section className="mb-8">
         <h2 className="mb-3 font-titulo text-xl text-texto">Mis cofres</h2>
