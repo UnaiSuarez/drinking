@@ -16,7 +16,7 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924120000` | `registrar_bebida_suelta_compatible` | **Aplicada el 24/09/2026 (12:27 UTC).** Respuesta compatible con clientes anteriores y posteriores al PR #15. |
 | `20260924120100` | `otorgar_logros_lifetime_correccion` | **Aplicada el 24/09/2026 (12:27 UTC).** Corrige el fallo que hacía fallar todo registro de bebida suelta, retira el permiso a los roles de la API y serializa por usuario. |
 | `20260924120200` | `avisos_push_verificados` | **Aplicada el 24/09/2026 (12:28 UTC).** Tabla `avisos_push` y las funciones que verifican y reclaman los avisos push. |
-| `20260924130000` | `cron_cierre_noches_tablas_temporales` | **NO aplicada todavía** (pendiente de autorización). Corrige el cierre automático de noches; ver «Cierre automático de noches» más abajo. |
+| `20260924130000` | `cron_cierre_noches_tablas_temporales` | **Aplicada el 24/09/2026 (16:34 UTC).** Corrige el cierre automático de noches; ver «Cierre automático de noches» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). Las tres últimas se aplicaron con
@@ -91,6 +91,14 @@ select id, estado, fin_gracia, fin_programado from noches
 where (estado = 'cerrando' and fin_gracia <= now() - interval '25 hours')
    or (estado = 'activa' and fin_programado <= now() - interval '25 hours');
 ```
+
+**Aplicada y verificada el 24/09/2026 16:34 UTC.** Tras aplicar la migración se
+invocó `cron_forzar_cierre_noches()` una vez de forma manual (no hacía falta
+esperar a la siguiente pasada de pg_cron) para limpiar el atasco acumulado
+desde julio, en la sala de pruebas «Prueba»: las 3 noches en «cerrando» desde
+el 07/07 pasaron a `cerrada` (sin efecto, 0 jugadores); la «activa» del 10/07
+pasó a `cerrando` con `fin_gracia` = 24/09 16:40 UTC y se finalizará sola 24h
+después de esa hora. La consulta de arriba devuelve 0 filas justo después.
 
 ## Pruebas SQL
 
