@@ -18,15 +18,21 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924120200` | `avisos_push_verificados` | **Aplicada el 24/09/2026 (12:28 UTC).** Tabla `avisos_push` y las funciones que verifican y reclaman los avisos push. |
 | `20260924130000` | `cron_cierre_noches_tablas_temporales` | **Aplicada el 24/09/2026 (16:34 UTC).** Corrige el cierre automático de noches; ver «Cierre automático de noches» más abajo. |
 | `20260924164806` | `amplia_catalogo_bebidas_global` | **Aplicada el 24/09/2026 (16:48 UTC).** Amplía el catálogo global de bebidas concretas de 35 a 134 entradas y retira la rareza elegible al crear una bebida nueva; ver «Catálogo ampliado y rareza fija al añadir» más abajo. |
+| `20260924173746` | `documenta_finalizar_noche` | **Aplicada el 24/09/2026 (17:43 UTC).** Trae `finalizar_noche` al repositorio por primera vez, sin cambiar su comportamiento; ver «Cuatro cartas que ya funcionaban sin estar documentadas» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
-contenido idéntico byte a byte (mismo md5). Las cuatro siguientes se aplicaron con
+contenido idéntico byte a byte (mismo md5). Las cinco siguientes se aplicaron con
 `apply_migration`, que registra la hora de aplicación como versión
-(`20260924122703`, `…122732`, `…122759`, `20260924164806`); las tres primeras de
-esas cuatro se renombraron en el historial a la versión de su fichero para que
-`supabase migration list` las reconozca — la última (`20260924164806`) ya
-coincidía, sin necesidad de renombrar. No se editan una vez aplicadas: el
-historial es lo que ocurrió; las correcciones van en migraciones nuevas.
+(`20260924122703`, `…122732`, `…122759`, `20260924164806`, `…174304`); las
+cuatro primeras de esas cinco se renombraron en el historial a la versión de su
+fichero para que `supabase migration list` las reconozca — `20260924164806` ya
+coincidía, sin necesidad de renombrar. `20260924173746` es la excepción: su
+`CREATE OR REPLACE FUNCTION` no coincide al carácter con lo que ya había en
+producción (algún detalle de espaciado o codificación al transcribirla desde
+`pg_get_functiondef`, ver más abajo), así que no es una copia byte a byte como
+las siete primeras, aunque sí se verificó que el comportamiento no cambia. No
+se editan una vez aplicadas: el historial es lo que ocurrió; las correcciones
+van en migraciones nuevas.
 
 ## Cómo aplicar
 
@@ -126,20 +132,54 @@ El buscador del catálogo (input de texto que filtra por nombre, en la vista
 «Bebida concreta» de la sala permanente) ya existía desde antes de esta
 migración; sigue funcionando igual con las 134 entradas.
 
+## Cuatro cartas que ya funcionaban sin estar documentadas
+
+Un PR en curso (#21, rama `codex/perfil-vistas`) bloqueó provisionalmente en
+el cliente cuatro cartas (`trono-del-campeon`, `dado-maldito`,
+`brindis-prohibido`, `caliz-final-boss`), con el motivo «tienen arte y
+descripción, pero todavía no tienen resolución en el cliente ni en las
+migraciones versionadas». Es cierto que no estaban en las migraciones
+versionadas — pero sí tienen resolución completa, en `finalizar_noche`, desde
+antes de que existieran migraciones versionadas. Se resuelven con el mismo
+mecanismo genérico que el resto de cartas de cierre: `usarCartaEnNoche`
+(`src/lib/inventario.ts`) escribe una entrada en
+`avatar_config.inventario.cartasActivas`; `finalizar_noche` la lee al cerrar
+la noche y aplica el efecto. No hacía falta ningún caso especial en el
+cliente para estas cuatro, igual que no lo hay para `sombra-del-after` o
+`coronacion-secreta`.
+
+- **Trono del Campeón** (personal): +1 cofre épico si acabas 1º.
+- **Cáliz Final Boss** (personal): tu última bebida antes del cierre cuenta
+  x5 si acabas en el podio (top 3).
+- **Brindis Prohibido** (objetivo): durante la ventana de la carta, caster y
+  objetivo acaban con el mismo total de puntos (el combinado de ambos
+  repartido a medias).
+- **Dado Maldito** (global, oculta): resultado aleatorio de tres posibles —
+  +3 PL a toda la sala, -2 PL a toda la sala, o +10 PL a un jugador al azar.
+
+`supabase/tests/cartas_pendientes.sql` lo verifica con un control-vs-prueba
+para cada una de las cuatro (mismos registros, con y sin la carta activa, y
+se compara el `pl_ganados` resultante). El bloqueo de PR #21 se puede retirar
+sin más trabajo de backend.
+
 ## Pruebas SQL
 
 `supabase/tests/*.sql` son pruebas que se pegan en el editor SQL. Cada una
 termina siempre con un error `RESULTADO_VERIFICACION {...}`, de modo que se
 deshace por completo y no deja datos. No forman parte de las migraciones.
 La del cron se aísla de las noches reales con una copia temporal de `noches`
-(ver su cabecera), así que no actualiza ni bloquea ninguna fila real.
+(ver su cabecera), así que no actualiza ni bloquea ninguna fila real. La de
+cartas usa usuarios exclusivos por escenario (nunca reutilizados) para que
+los logros de racha/veterano, que comprueban across todas las noches del
+usuario, no contaminen la comparación control-vs-prueba (ver su cabecera).
 
 ## Lo que todavía no está en el repositorio
 
-Todo lo anterior a `20260924112236` (esquema base, ligas, logros, cartas,
-salas permanentes…) sigue existiendo solo en el historial de Supabase. Para
-poder reconstruir la base desde cero hace falta volcar ese historial a esta
-carpeta (`supabase db pull` o exportar las sentencias de
+Todo lo anterior a `20260924112236` (esquema base, ligas, logros, salas
+permanentes…) sigue existiendo solo en el historial de Supabase, con la
+excepción de `finalizar_noche` (`20260924173746`). Para poder reconstruir la
+base desde cero hace falta volcar el resto de ese historial a esta carpeta
+(`supabase db pull` o exportar las sentencias de
 `supabase_migrations.schema_migrations`).
 
 ## Retirada de la compatibilidad con clientes anteriores al PR #15
