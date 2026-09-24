@@ -230,6 +230,9 @@ body {
      solo se vea su borde ornamental y el hueco central deje ver el avatar. */
   z-index: 3;
   pointer-events: none;
+  /* El arte IA tiene un fondo azul opaco. Lighten lo integra en la
+     superficie de la tarjeta y deja visibles los metales luminosos. */
+  mix-blend-mode: lighten;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M0 0H100V100H0V0Z M39 30L30 39V61L39 70H61L70 61V39L61 30Z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M0 0H100V100H0V0Z M39 30L30 39V61L39 70H61L70 61V39L61 30Z'/%3E%3C/svg%3E");
   -webkit-mask-size: 100% 100%;
@@ -745,6 +748,27 @@ body {
 }
 .cofre-reveal-face {
   backface-visibility: hidden;
+}
+.cofre-card-category {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 900;
+  color: white;
+  text-shadow: 0 1px 5px #0d0e1a, 0 0 8px var(--reward-color);
+}
+.cofre-reward-slot[data-kind="rara"] .cofre-reveal-face:first-child img {
+  filter: hue-rotate(115deg) drop-shadow(0 0 12px #2de2e6);
+}
+.cofre-reward-slot[data-kind="exclusiva"] .cofre-reveal-face:first-child img {
+  filter: hue-rotate(65deg) drop-shadow(0 0 18px #a78bfa);
+}
+.cofre-reward-slot[data-kind="personaje"] .cofre-reveal-face:first-child img {
+  filter: hue-rotate(80deg) saturate(1.4) drop-shadow(0 0 22px #ff2e93);
 }
 .cofre-reveal-front {
   transform: rotateY(180deg);

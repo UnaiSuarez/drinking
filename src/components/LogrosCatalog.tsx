@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import MedalIcon from "@/components/MedalIcon";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 export type LogroCatalogo = {
   id: number;
@@ -87,6 +88,7 @@ export default function LogrosCatalog({
   const [seleccionado, setSeleccionado] = useState<LogroCatalogo | null>(null);
   const [progresoSeleccionado, setProgresoSeleccionado] =
     useState<LogroProgreso | null>(null);
+  useModalScrollLock(Boolean(seleccionado || progresoSeleccionado));
   const ocultoSeleccionado =
     !!seleccionado && seleccionado.secreto && seleccionado.n === 0;
   const textoSeleccionado = seleccionado

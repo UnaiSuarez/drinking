@@ -2,9 +2,11 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import AvatarFrame from "@/components/AvatarFrame";
 import { type AvatarConfig, type EstadoAvatar } from "@/lib/avatar";
 import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 export default function AvatarFramePreview({
   config,
@@ -15,6 +17,7 @@ export default function AvatarFramePreview({
   triggerClassName = "h-12 w-12",
   previewClassName = "h-64 w-64",
   asSpan = false,
+  portraitOnly = false,
 }: {
   config: AvatarConfig;
   estado?: EstadoAvatar;
@@ -24,10 +27,12 @@ export default function AvatarFramePreview({
   triggerClassName?: string;
   previewClassName?: string;
   asSpan?: boolean;
+  portraitOnly?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
+  useModalScrollLock(abierto);
 
   useEffect(() => {
     if (!abierto) return;
@@ -35,7 +40,9 @@ export default function AvatarFramePreview({
       if (event.key === "Escape") setAbierto(false);
     }
     window.addEventListener("keydown", cerrarConEscape);
-    return () => window.removeEventListener("keydown", cerrarConEscape);
+    return () => {
+      window.removeEventListener("keydown", cerrarConEscape);
+    };
   }, [abierto]);
 
   function abrir(event: React.MouseEvent | React.KeyboardEvent) {
@@ -44,7 +51,11 @@ export default function AvatarFramePreview({
     setAbierto(true);
   }
 
-  const trigger = (
+  const trigger = portraitOnly && config.avatarImagen ? (
+    <span className={`relative inline-flex overflow-hidden ${triggerClassName}`}>
+      <Image src={config.avatarImagen} alt="" fill sizes="128px" className="object-contain" />
+    </span>
+  ) : (
     <AvatarFrame
       config={config}
       estado={estado}
@@ -84,7 +95,7 @@ export default function AvatarFramePreview({
 
       {abierto && typeof document !== "undefined" && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-fondo/90 p-5 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-fondo/90 p-5 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           aria-labelledby={tituloId}
@@ -104,13 +115,19 @@ export default function AvatarFramePreview({
               </button>
             </div>
             <div className="mb-4 flex justify-center">
-              <AvatarFrame
-                config={config}
-                estado={estado}
-                marco={marco}
-                className={previewClassName}
-                imageSizes="(max-width: 768px) 80vw, 360px"
-              />
+              {portraitOnly && config.avatarImagen ? (
+                <div className={`relative max-h-[50dvh] max-w-full ${previewClassName}`}>
+                  <Image src={config.avatarImagen} alt={titulo} fill sizes="(max-width: 768px) 80vw, 360px" className="object-contain" />
+                </div>
+              ) : (
+                <AvatarFrame
+                  config={config}
+                  estado={estado}
+                  marco={marco}
+                  className={previewClassName}
+                  imageSizes="(max-width: 768px) 80vw, 360px"
+                />
+              )}
             </div>
             <h2 id={tituloId} className="font-titulo text-2xl text-texto">
               {titulo}
@@ -118,10 +135,12 @@ export default function AvatarFramePreview({
             {subtitulo && (
               <p className="mt-1 text-sm text-texto2">{subtitulo}</p>
             )}
-            <p className="mt-3 font-titulo text-sm text-ambar">
-              {marcoInfo.nombre}
-            </p>
-            <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
+            {!portraitOnly && (
+              <>
+                <p className="mt-3 font-titulo text-sm text-ambar">{marcoInfo.nombre}</p>
+                <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
+              </>
+            )}
           </div>
         </div>,
         document.body

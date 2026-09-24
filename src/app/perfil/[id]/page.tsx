@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import AvatarEditor from "@/components/AvatarEditor";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
+import ProfileAchievementDetails from "@/components/ProfileAchievementDetails";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import CumpleanosEditor from "@/components/CumpleanosEditor";
 import BackButton from "@/components/BackButton";
@@ -78,10 +79,16 @@ export default async function PerfilPage({
   // Colección de medallas (repetibles: COUNT = contador ×N)
   const { data: medallas } = await supabase
     .from("logros_usuario")
-    .select("logros(slug, nombre, icono, descripcion, rareza)")
+    .select("noche_id, logros(slug, nombre, icono, descripcion, rareza)")
     .eq("usuario_id", id);
 
   const noches = participaciones ?? [];
+  const fechasNoches = new Map(
+    noches.map((n) => [
+      n.noche_id,
+      (n.noches as unknown as { inicio: string } | null)?.inicio ?? null,
+    ])
+  );
   const nochesJugadas = noches.length;
   const victorias = noches.filter((n) => n.posicion_final === 1).length;
   const podios = noches.filter(
@@ -181,6 +188,7 @@ export default async function PerfilPage({
       descripcion: string;
       rareza: string;
       n: number;
+      fechas: string[];
     }
   >();
   for (const m of medallas ?? []) {
@@ -192,8 +200,10 @@ export default async function PerfilPage({
       rareza: string;
     } | null;
     if (!l) continue;
-    const e = coleccion.get(l.slug) ?? { ...l, n: 0 };
+    const e = coleccion.get(l.slug) ?? { ...l, n: 0, fechas: [] };
     e.n += 1;
+    const fecha = m.noche_id ? fechasNoches.get(m.noche_id) : null;
+    if (fecha) e.fechas.push(fecha);
     coleccion.set(l.slug, e);
   }
   const ordenRareza = ["legendaria", "epica", "rara", "comun"];
@@ -235,7 +245,16 @@ export default async function PerfilPage({
           )}
         </h1>
         {perfil.titulo && (
-          <p className="font-titulo text-sm text-ambar">« {perfil.titulo} »</p>
+          <div>
+            {medallasOrdenadas.find((m) => m.nombre === perfil.titulo) ? (
+              <ProfileAchievementDetails
+                achievement={medallasOrdenadas.find((m) => m.nombre === perfil.titulo)!}
+                variant="title"
+              />
+            ) : (
+              <p className="font-titulo text-sm text-ambar">« {perfil.titulo} »</p>
+            )}
+          </div>
         )}
         <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
@@ -372,14 +391,7 @@ export default async function PerfilPage({
                   title={m.nombre}
                   className="inline-flex"
                 >
-                  <MedalIcon
-                    icono={m.icono}
-                    nombre={m.nombre}
-                    slug={m.slug}
-                    rareza={m.rareza}
-                    className="h-16 w-16"
-                    contador={m.n}
-                  />
+                  <ProfileAchievementDetails achievement={m} variant="medal" />
                 </span>
               );
             })}

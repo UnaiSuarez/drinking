@@ -4,6 +4,7 @@ import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import { REVERSOS_CARTA, type CartaCofre, type CartaRareza } from "@/lib/cofresDesign";
+import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 const RAREZA_ETIQUETA: Record<CartaRareza, string> = {
   comun: "Comun",
@@ -24,6 +25,7 @@ export default function CartaDetalleModal({
   onClose: () => void;
 }) {
   const tituloId = useId();
+  useModalScrollLock(true);
 
   useEffect(() => {
     function cerrarConEscape(event: KeyboardEvent) {

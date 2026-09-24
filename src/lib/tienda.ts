@@ -35,7 +35,6 @@ export type TiendaAvatar = {
 };
 
 export type PersonajeOculto = TiendaAvatar & {
-  desbloqueo: string;
   placeholderImagen: string;
   /** Habilidad pasiva que se activa mientras llevas este personaje
    * equipado. Se resuelve en finalizar_noche (ver tmp_personaje_equipado). */
@@ -304,7 +303,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "ultimo-ronda",
     nombre: "El Rubio de la Última Ronda",
     descripcion: "Personaje único, sonrisa peligrosa y croquetas de emergencia.",
-    desbloqueo: "Llegará en cofres con un logro secreto de última ronda.",
     habilidad: "Habilidad oculta: tus bebidas en los últimos 10 minutos antes del cierre dan +2 PL extra.",
     precio: 0,
     rareza: "unica",
@@ -316,7 +314,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "jefe-after",
     nombre: "El Jefe del After",
     descripcion: "Personaje único, shaker en mano y mirada de reservado cerrado.",
-    desbloqueo: "Llegará en cofres con una cadena de noches épicas.",
     habilidad: "Habilidad oculta: si tú inicias la noche, todos los que beban ganan +1 PL extra.",
     precio: 0,
     rareza: "unica",
@@ -328,7 +325,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "narrador-noche",
     nombre: "El Narrador de la Noche",
     descripcion: "Personaje único, móvil arriba y prueba gráfica de todo.",
-    desbloqueo: "Llegará en cofres con logros sociales especiales.",
     habilidad: "Habilidad oculta: cada bebida que registres con comentario da +1 PL extra.",
     precio: 0,
     rareza: "unica",
@@ -340,7 +336,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "silencioso-letal",
     nombre: "El Silencioso Letal",
     descripcion: "Personaje único, refresco azul y subida discreta en la tabla.",
-    desbloqueo: "Llegará en cofres con un logro oculto de remontada.",
     habilidad: "Habilidad oculta: tus refrescos y aguas dan siempre +1 PL.",
     precio: 0,
     rareza: "unica",
@@ -352,7 +347,6 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "guardian-cubata",
     nombre: "El Guardián del Cubata",
     descripcion: "Personaje único, vaso brillante y aura de no-me-lo-toques.",
-    desbloqueo: "Llegará en cofres con logros de resistencia y temporada.",
     habilidad: "Habilidad oculta: eres inmune a las cartas de objetivo que te lancen.",
     precio: 0,
     rareza: "unica",

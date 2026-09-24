@@ -121,6 +121,15 @@ function elegirRuletaBar(random: () => number = Math.random): string {
 // servidor (RPC) para que no se puedan falsificar desde el cliente.
 const CARTAS_RPC_CRUZADAS = new Set(["mano-larga", "cambio-de-vaso"]);
 
+// Estas cartas tienen arte y descripción, pero todavía no tienen resolución
+// en el cliente ni en las migraciones versionadas. No consumirlas en vano.
+const CARTAS_SIN_EFECTO = new Set([
+  "trono-del-campeon",
+  "dado-maldito",
+  "brindis-prohibido",
+  "caliz-final-boss",
+]);
+
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
@@ -814,6 +823,10 @@ export default function NocheLive({
 
   async function usarCarta(carta: CartaCofre) {
     if (!unido || !miJugador) return;
+    if (CARTAS_SIN_EFECTO.has(carta.id)) {
+      setMensajeCarta("Esta carta aún no tiene efecto disponible; la conservas en tu inventario.");
+      return;
+    }
     const objetivoId = objetivosCarta[carta.id];
     const objetivo = jugadores.find((jugador) => jugador.id === objetivoId);
     if (carta.alcance === "objetivo" && !objetivo) {
@@ -1631,6 +1644,7 @@ export default function NocheLive({
                       <button
                         type="button"
                         disabled={
+                          CARTAS_SIN_EFECTO.has(carta.id) ||
                           usandoCarta === carta.id ||
                           (requiereObjetivo && !objetivosCarta[carta.id]) ||
                           (carta.id === "copia-de-seguridad" && !cartaADuplicar)
@@ -1638,7 +1652,9 @@ export default function NocheLive({
                         onClick={() => usarCarta(carta)}
                         className="mt-3 w-full rounded-xl bg-cian py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-45"
                       >
-                        {usandoCarta === carta.id ? "Usando..." : "Usar carta"}
+                        {CARTAS_SIN_EFECTO.has(carta.id)
+                          ? "Efecto pendiente"
+                          : usandoCarta === carta.id ? "Usando..." : "Usar carta"}
                       </button>
                     </li>
                   );
@@ -1678,10 +1694,11 @@ export default function NocheLive({
               return (
                 <li
                   key={activa.id}
-                  className="rounded-2xl border border-cian/40 bg-tarjeta px-4 py-3"
+                  className={`rounded-2xl border bg-tarjeta px-4 py-3 ${activa.objetivoId === userId ? "border-rosa" : "border-cian/40"}`}
                 >
                   <p className="font-titulo text-sm text-cian">
                     {carta.nombre}
+                    {activa.objetivoId === userId && <span className="ml-2 text-xs text-rosa">Te afecta</span>}
                   </p>
                   <p className="text-xs text-texto2">
                     {activa.usuarioNombre}
@@ -1689,6 +1706,9 @@ export default function NocheLive({
                       ? ` → ${activa.objetivoNombre}`
                       : " ha activado la carta"}
                   </p>
+                  {activa.objetivoId === userId && (
+                    <p className="mt-1 text-xs text-texto2">{carta.efecto}</p>
+                  )}
                 </li>
               );
             })}
