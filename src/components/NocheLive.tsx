@@ -31,6 +31,7 @@ import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CartaUsoCelebracion from "@/components/CartaUsoCelebracion";
+import SojasLogger from "@/components/SojasLogger";
 
 export type Bebida = {
   id: number;
@@ -1486,7 +1487,7 @@ export default function NocheLive({
 
           {/* Botones de bebida */}
           <div className="mb-6 grid grid-cols-2 gap-3">
-            {bebidas.map((b) => (
+            {bebidas.filter((b) => b.nombre !== "Agua/Refresco").map((b) => (
               <button
                 key={b.id}
                 onClick={() => registrarBebida(b)}
@@ -1503,6 +1504,12 @@ export default function NocheLive({
               </button>
             ))}
           </div>
+
+          <SojasLogger
+            salaId={noche.sala_id}
+            nocheId={noche.id}
+            disabled={!puedeRegistrar || graciaExpirada}
+          />
 
           {progresoRetos.some((r) => r.actual > 0) && (
             <section className="mb-6 rounded-3xl border border-borde bg-tarjeta p-4">

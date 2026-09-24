@@ -13,6 +13,7 @@ import BebidaSueltaLogger, {
   type BebidaTipo,
   type BebidaCatalogo,
 } from "@/components/BebidaSueltaLogger";
+import SojasLogger from "@/components/SojasLogger";
 
 export type Miembro = {
   id: string;
@@ -271,11 +272,16 @@ export default function SalaView({
       )}
 
       {esPermanente && (
-        <BebidaSueltaLogger
-          salaId={sala.id}
-          bebidas={bebidasSueltas}
-          catalogo={catalogoBebidas}
-        />
+        <>
+          <BebidaSueltaLogger
+            salaId={sala.id}
+            bebidas={bebidasSueltas.filter((b) => b.nombre !== "Agua/Refresco")}
+            catalogo={catalogoBebidas.filter((b) =>
+              b.categoriaId !== bebidasSueltas.find((tipo) => tipo.nombre === "Agua/Refresco")?.id
+            )}
+          />
+          <SojasLogger salaId={sala.id} />
+        </>
       )}
 
       {nocheActiva && nocheActiva.estado === "pendiente" ? (
