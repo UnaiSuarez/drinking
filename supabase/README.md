@@ -19,20 +19,21 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924130000` | `cron_cierre_noches_tablas_temporales` | **Aplicada el 24/09/2026 (16:34 UTC).** Corrige el cierre automático de noches; ver «Cierre automático de noches» más abajo. |
 | `20260924164806` | `amplia_catalogo_bebidas_global` | **Aplicada el 24/09/2026 (16:48 UTC).** Amplía el catálogo global de bebidas concretas de 35 a 134 entradas y retira la rareza elegible al crear una bebida nueva; ver «Catálogo ampliado y rareza fija al añadir» más abajo. |
 | `20260924173746` | `documenta_finalizar_noche` | **Aplicada el 24/09/2026 (17:43 UTC).** Trae `finalizar_noche` al repositorio por primera vez, sin cambiar su comportamiento; ver «Cuatro cartas que ya funcionaban sin estar documentadas» más abajo. |
+| `20260924215656` | `nombre_usuario_unico` | **Aplicada el 24/09/2026 (21:58 UTC).** `perfiles.nombre` pasa a ser único (case-insensitive) y editable; ver «Nombre de usuario único» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
-contenido idéntico byte a byte (mismo md5). Las cinco siguientes se aplicaron con
+contenido idéntico byte a byte (mismo md5). Las seis siguientes se aplicaron con
 `apply_migration`, que registra la hora de aplicación como versión
-(`20260924122703`, `…122732`, `…122759`, `20260924164806`, `…174304`); las
-cuatro primeras de esas cinco se renombraron en el historial a la versión de su
-fichero para que `supabase migration list` las reconozca — `20260924164806` ya
-coincidía, sin necesidad de renombrar. `20260924173746` es la excepción: su
-`CREATE OR REPLACE FUNCTION` no coincide al carácter con lo que ya había en
-producción (algún detalle de espaciado o codificación al transcribirla desde
-`pg_get_functiondef`, ver más abajo), así que no es una copia byte a byte como
-las siete primeras, aunque sí se verificó que el comportamiento no cambia. No
-se editan una vez aplicadas: el historial es lo que ocurrió; las correcciones
-van en migraciones nuevas.
+(`20260924122703`, `…122732`, `…122759`, `20260924164806`, `…174304`,
+`…215804`); todas menos `20260924173746` se renombraron en el historial a la
+versión de su fichero para que `supabase migration list` las reconozca —
+`20260924164806` ya coincidía, sin necesidad de renombrar. `20260924173746` es
+la excepción: su `CREATE OR REPLACE FUNCTION` no coincide al carácter con lo
+que ya había en producción (algún detalle de espaciado o codificación al
+transcribirla desde `pg_get_functiondef`, ver más abajo), así que no es una
+copia byte a byte como las siete primeras, aunque sí se verificó que el
+comportamiento no cambia. No se editan una vez aplicadas: el historial es lo
+que ocurrió; las correcciones van en migraciones nuevas.
 
 ## Cómo aplicar
 
@@ -161,6 +162,33 @@ cliente para estas cuatro, igual que no lo hay para `sombra-del-after` o
 para cada una de las cuatro (mismos registros, con y sin la carta activa, y
 se compara el `pl_ganados` resultante). El bloqueo de PR #21 se puede retirar
 sin más trabajo de backend.
+
+## Nombre de usuario único
+
+Hasta `20260924215656`, `perfiles.nombre` se generaba en el alta
+(`handle_new_user`) a partir del correo (la parte antes de la `@`) y no había
+ni forma de cambiarlo ni garantía de que fuera único. El login solo pide
+correo + contraseña (se retiró el enlace mágico de `src/app/login/page.tsx`:
+seguía funcionando pero confundía sobre qué era el "nombre" del usuario), así
+que seguimos sin pedir un username en el alta — lo que cambia es que ahora:
+
+- `perfiles.nombre` tiene un índice único case-insensitive
+  (`perfiles_nombre_lower_key` sobre `lower(nombre)`).
+- `handle_new_user` sigue generando el nombre a partir del correo, pero si
+  colisiona con uno ya existente le añade un sufijo numérico (`juan`,
+  `juan2`, `juan3`…) en vez de fallar el alta.
+- Nueva RPC `cambiar_nombre_usuario(p_nombre text)`: valida longitud (3-24),
+  charset (`[[:alnum:]_. -]`) y unicidad (excluyendo el propio perfil, para
+  poder cambiar solo mayúsculas/minúsculas del nombre propio), y actualiza
+  `perfiles.nombre`. Nuevo componente `src/components/NombreEditor.tsx` en el
+  perfil propio para usarla.
+- Se resolvió el único duplicado que había en producción antes de crear el
+  índice (`tualemandeconfianza`, dos perfiles de prueba; el segundo pasó a
+  `tualemandeconfianza3`, ya que `…2` también estaba en uso).
+
+Este nombre único es el que hace falta para poder buscar/añadir amigos por
+nombre (siguiente paso, todavía no implementado). `supabase/tests/nombre_usuario_unico.sql`
+verifica la generación sin colisión y las tres validaciones de la RPC.
 
 ## Pruebas SQL
 

@@ -4,36 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
-type Modo = "magic" | "password-entrar" | "password-registro";
+type Modo = "entrar" | "registro";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [modo, setModo] = useState<Modo>("magic");
+  const [modo, setModo] = useState<Modo>("entrar");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [enviado, setEnviado] = useState(false);
   const [registrado, setRegistrado] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  async function enviarMagicLink(e: React.FormEvent) {
-    e.preventDefault();
-    setCargando(true);
-    setError(null);
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/confirm`,
-      },
-    });
-    setCargando(false);
-    if (error) {
-      setError("No se pudo enviar el enlace. Prueba de nuevo en un rato.");
-    } else {
-      setEnviado(true);
-    }
-  }
 
   async function entrarConPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -98,19 +78,7 @@ export default function LoginPage() {
       </div>
 
       <section className="w-full max-w-sm">
-        {enviado ? (
-          <div className="rounded-3xl border border-borde bg-tarjeta p-8 text-center glow-cian">
-            <div className="mb-3 text-5xl">📬</div>
-            <h2 className="font-titulo text-2xl text-cian">
-              ¡Revisa tu correo!
-            </h2>
-            <p className="mt-2 text-texto2">
-              Te hemos enviado un enlace mágico a{" "}
-              <span className="text-texto">{email}</span>. Tócalo y estás
-              dentro.
-            </p>
-          </div>
-        ) : registrado ? (
+        {registrado ? (
           <div className="rounded-3xl border border-borde bg-tarjeta p-8 text-center glow-cian">
             <div className="mb-3 text-5xl">📬</div>
             <h2 className="font-titulo text-2xl text-cian">¡Ya casi!</h2>
@@ -120,142 +88,66 @@ export default function LoginPage() {
             </p>
           </div>
         ) : (
-          <>
-          <div className="mb-4 flex rounded-2xl border border-borde bg-tarjeta p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setModo("magic");
-                setError(null);
-              }}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-                modo === "magic"
-                  ? "bg-ambar text-fondo"
-                  : "text-texto2"
-              }`}
+          <form
+            onSubmit={modo === "entrar" ? entrarConPassword : registrarConPassword}
+            className="rounded-3xl border border-borde bg-tarjeta p-8 glow-ambar"
+          >
+            <label
+              htmlFor="email"
+              className="mb-2 block font-titulo text-lg text-texto"
             >
-              Enlace mágico
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setModo("password-entrar");
-                setError(null);
-              }}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-                modo !== "magic" ? "bg-ambar text-fondo" : "text-texto2"
-              }`}
+              Correo
+            </label>
+            <input
+              id="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="tu@correo.com"
+              className="mb-3 w-full rounded-2xl border border-borde bg-fondo px-5 py-4 text-lg text-texto placeholder-texto2 outline-none focus:border-ambar"
+            />
+            <label
+              htmlFor="password"
+              className="mb-2 block font-titulo text-lg text-texto"
             >
               Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              required
+              minLength={6}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              className="mb-4 w-full rounded-2xl border border-borde bg-fondo px-5 py-4 text-lg text-texto placeholder-texto2 outline-none focus:border-ambar"
+            />
+            {error && <p className="mb-4 text-sm text-rosa">{error}</p>}
+            <button
+              type="submit"
+              disabled={cargando}
+              className="w-full rounded-2xl bg-ambar px-6 py-4 font-titulo text-xl text-fondo transition active:scale-95 disabled:opacity-50"
+            >
+              {cargando
+                ? "Un momento…"
+                : modo === "entrar"
+                ? "Entrar"
+                : "Crear cuenta 🍻"}
             </button>
-          </div>
-
-          {modo === "magic" && (
-            <form
-              key="magic"
-              onSubmit={enviarMagicLink}
-              className="rounded-3xl border border-borde bg-tarjeta p-8 glow-ambar"
+            <button
+              type="button"
+              onClick={() => {
+                setModo(modo === "entrar" ? "registro" : "entrar");
+                setError(null);
+              }}
+              className="mt-4 w-full text-center text-xs text-texto2 underline"
             >
-              <label
-                htmlFor="email"
-                className="mb-2 block font-titulo text-lg text-texto"
-              >
-                Tu correo
-              </label>
-              <input
-                id="email"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
-                className="mb-4 w-full rounded-2xl border border-borde bg-fondo px-5 py-4 text-lg text-texto placeholder-texto2 outline-none focus:border-ambar"
-              />
-              {error && <p className="mb-4 text-sm text-rosa">{error}</p>}
-              <button
-                type="submit"
-                disabled={cargando}
-                className="w-full rounded-2xl bg-ambar px-6 py-4 font-titulo text-xl text-fondo transition active:scale-95 disabled:opacity-50"
-              >
-                {cargando ? "Enviando…" : "Entrar con enlace mágico ✨"}
-              </button>
-              <p className="mt-4 text-center text-xs text-texto2">
-                Sin contraseñas. Te llega un enlace al correo y listo.
-              </p>
-            </form>
-          )}
-
-          {modo !== "magic" && (
-            <form
-              key="password"
-              onSubmit={
-                modo === "password-entrar"
-                  ? entrarConPassword
-                  : registrarConPassword
-              }
-              className="rounded-3xl border border-borde bg-tarjeta p-8 glow-ambar"
-            >
-              <label
-                htmlFor="email2"
-                className="mb-2 block font-titulo text-lg text-texto"
-              >
-                Correo
-              </label>
-              <input
-                id="email2"
-                type="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@correo.com"
-                className="mb-3 w-full rounded-2xl border border-borde bg-fondo px-5 py-4 text-lg text-texto placeholder-texto2 outline-none focus:border-ambar"
-              />
-              <label
-                htmlFor="password"
-                className="mb-2 block font-titulo text-lg text-texto"
-              >
-                Contraseña
-              </label>
-              <input
-                id="password"
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="mb-4 w-full rounded-2xl border border-borde bg-fondo px-5 py-4 text-lg text-texto placeholder-texto2 outline-none focus:border-ambar"
-              />
-              {error && <p className="mb-4 text-sm text-rosa">{error}</p>}
-              <button
-                type="submit"
-                disabled={cargando}
-                className="w-full rounded-2xl bg-ambar px-6 py-4 font-titulo text-xl text-fondo transition active:scale-95 disabled:opacity-50"
-              >
-                {cargando
-                  ? "Un momento…"
-                  : modo === "password-entrar"
-                  ? "Entrar"
-                  : "Crear cuenta 🍻"}
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  setModo(
-                    modo === "password-entrar"
-                      ? "password-registro"
-                      : "password-entrar"
-                  )
-                }
-                className="mt-4 w-full text-center text-xs text-texto2 underline"
-              >
-                {modo === "password-entrar"
-                  ? "¿No tienes cuenta? Regístrate"
-                  : "¿Ya tienes cuenta? Entra"}
-              </button>
-            </form>
-          )}
-          </>
+              {modo === "entrar"
+                ? "¿No tienes cuenta? Regístrate"
+                : "¿Ya tienes cuenta? Entra"}
+            </button>
+          </form>
         )}
       </section>
     </main>
