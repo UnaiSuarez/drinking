@@ -38,13 +38,6 @@ const RAREZA_NOMBRE: Record<string, string> = {
   legendaria: "Legendaria",
 };
 
-const RAREZAS: (keyof typeof RAREZA_NOMBRE)[] = [
-  "comun",
-  "rara",
-  "epica",
-  "legendaria",
-];
-
 export default function BebidaSueltaLogger({
   salaId,
   bebidas,
@@ -72,7 +65,6 @@ export default function BebidaSueltaLogger({
   const [anadiendo, setAnadiendo] = useState(false);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevaCategoria, setNuevaCategoria] = useState<number | "">("");
-  const [nuevaRareza, setNuevaRareza] = useState("comun");
 
   const [colaLogros, setColaLogros] = useState<LogroNuevo[]>([]);
   const [logroActual, setLogroActual] = useState<LogroNuevo | null>(null);
@@ -200,7 +192,6 @@ export default function BebidaSueltaLogger({
         p_sala: salaId,
         p_nombre: nuevoNombre.trim(),
         p_categoria_id: nuevaCategoria,
-        p_rareza: nuevaRareza,
       }
     );
     if (errorCrear || !nueva) {
@@ -219,7 +210,6 @@ export default function BebidaSueltaLogger({
     );
     setNuevoNombre("");
     setNuevaCategoria("");
-    setNuevaRareza("comun");
     setAnadiendo(false);
     await registrarConcreta(item);
   }
@@ -379,22 +369,6 @@ export default function BebidaSueltaLogger({
                 </option>
               ))}
             </select>
-            <div className="mb-3 flex gap-1.5">
-              {RAREZAS.map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setNuevaRareza(r)}
-                  className={`flex-1 rounded-lg border py-1.5 text-[11px] font-semibold transition active:scale-95 ${
-                    nuevaRareza === r
-                      ? RAREZA_ESTILO[r]
-                      : "border-borde text-texto2"
-                  }`}
-                >
-                  {RAREZA_NOMBRE[r]}
-                </button>
-              ))}
-            </div>
             <button
               type="submit"
               disabled={anadiendo || cargando || !nuevoNombre.trim() || nuevaCategoria === ""}
