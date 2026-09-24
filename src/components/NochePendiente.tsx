@@ -122,6 +122,24 @@ export default function NochePendiente({
       return;
     }
     cargarJugador(userId);
+
+    // Si este "unirme" es el que ha hecho que la noche pase de pendiente a
+    // activa (el trigger de la base de datos ya lo habrá resuelto para
+    // cuando este insert termina), avisamos al resto de la sala.
+    const { data: nocheActual } = await supabase
+      .from("noches")
+      .select("estado")
+      .eq("id", nocheId)
+      .single();
+    if (nocheActual?.estado === "activa") {
+      fetch("/api/notificar-noche-activada", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ salaId, salaNombre, nocheId, userId }),
+      }).catch((err) => {
+        console.error("notificar-noche-activada:", err);
+      });
+    }
   }
 
   async function cancelar() {
