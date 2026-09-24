@@ -25,6 +25,7 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924224811` | `hotfix_trigger_sala_archivada` | **Aplicada el 24/09/2026 (22:48 UTC).** Corrige `rechazar_escritura_sala_archivada` (PR #21), que rompía crear una sala y crear una noche en toda la producción; ver «Hotfix: crear sala y crear noche rotos» más abajo. |
 | `20260924232000` | `borrar_registro_bebida_suelta` | **Aplicada el 24/09/2026 (23:09 UTC).** Nueva RPC para borrar un registro de bebida suelta (propio, o de cualquiera si eres admin/fundador), sin el límite de 30s de `anular_bebida_suelta`; ver «Bebidas de la sala: listado y borrado» más abajo. |
 | `20260924233500` | `sitios_icono_y_borrado` | **Aplicada el 24/09/2026 (23:11 UTC).** `sitios.icono`, `crear_sitio` acepta icono, `eliminar_sitio` (solo quien lo descubrió) y `mis_sitios_mapa` expone icono y descubridor; ver «Mapa de sitios» más abajo. |
+| `20260924235000` | `ranking_bebidas_sala` | **Aplicada el 24/09/2026 (23:32 UTC).** Nueva RPC para el ranking de `/sala/[id]/registros`, que deja de tener que cargar todo el historial solo para sumarlo; ver «Bebidas de la sala: listado y borrado» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). El resto se aplicaron con
@@ -298,7 +299,12 @@ marcar el sitio de un registro de una noche se rechaza explícitamente.
 - Al crear un sitio nuevo ya no se manda directamente la coordenada del
   GPS: el frontend muestra un mapa pequeño centrado ahí, con un marcador
   arrastrable, para poder ajustar el punto exacto antes de confirmar (el
-  GPS de un móvil no siempre acierta el portal exacto).
+  GPS de un móvil no siempre acierta el portal exacto). Ese marcador salía
+  invisible (un recuadro transparente): el icono por defecto de Leaflet
+  depende de rutas de imagen que el bundler de Next no resuelve — el mismo
+  problema que `MapaSitiosClient.tsx` ya evitaba con un `divIcon` propio;
+  se corrigió dándole uno también al marcador arrastrable, con el emoji
+  elegido pintado en vivo según se cambia de icono.
 - `eliminar_sitio(p_sitio_id)`: solo quien lo descubrió (`sitios.creado_por`)
   puede borrarlo. Al borrarlo, los registros que lo tenían marcado se
   quedan con `sitio_id` a `null` (la columna ya era `on delete set null`),
@@ -334,14 +340,28 @@ liga o el podio.
 Nueva página `/sala/[id]/registros` (`src/app/sala/[id]/registros/page.tsx` +
 `src/components/RegistrosSalaClient.tsx`), enlazada desde `/sala/[id]` junto
 al botón de Estadísticas, solo en sala permanente. Muestra un ranking de
-quién lleva más (contando lo cargado en esa visita, no en vivo) y el
-historial completo con quién bebió qué y cuándo, con botón de borrar donde
-corresponda.
+quién lleva más y el historial con quién bebió qué y cuándo, con botón de
+borrar donde corresponda.
 
 `supabase/tests/borrar_registro_bebida_suelta.sql` verifica que el propio
 autor puede borrar su registro (con el descuento de XP correspondiente) más
 allá de los 30s, que un miembro cualquiera no puede borrar el de otro, que un
 admin sí, y que un registro de una noche se rechaza siempre.
+
+Al probarlo con datos reales, una sala con mucha actividad cargaba TODO el
+historial de golpe (la página original traía todos los registros en tandas
+de 1000 solo para poder sumar el ranking), lo que resultaba en una lista
+interminable e incómoda de recorrer. `20260924235000` añade
+`ranking_bebidas_sala(p_sala)`: agrupa y cuenta en el propio Postgres (rápido
+con el índice de `sala_id`), así que el ranking ya no depende de traerse el
+historial completo. El historial en sí ahora se pagina: la página del
+servidor solo carga los últimos 20 registros, y `RegistrosSalaClient` tiene
+un botón "Ver más" que pide la siguiente tanda de 20 directamente a
+`registros` (la política de lectura ya lo permite) según hace falta.
+
+`supabase/tests/ranking_bebidas_sala.sql` verifica que suma bien por
+usuario, que ordena de mayor a menor, que un registro de una noche no cuenta,
+y que alguien que no es miembro de la sala no ve nada al llamarla.
 
 ## Pruebas SQL
 
