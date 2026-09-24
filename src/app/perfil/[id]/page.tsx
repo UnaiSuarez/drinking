@@ -6,6 +6,7 @@ import MedalIcon from "@/components/MedalIcon";
 import ProfileAchievementDetails from "@/components/ProfileAchievementDetails";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import CumpleanosEditor from "@/components/CumpleanosEditor";
+import NombreEditor from "@/components/NombreEditor";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
@@ -231,6 +232,7 @@ export default async function PerfilPage({
             )}
           </div>
         )}
+        {esMiPerfil && <NombreEditor actual={perfil.nombre} />}
         <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
           {new Date(perfil.created_at).toLocaleDateString("es-ES", {
