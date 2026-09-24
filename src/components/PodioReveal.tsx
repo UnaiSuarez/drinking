@@ -18,6 +18,7 @@ export type ResultadoJugador = {
   id: string;
   nombre: string;
   avatarConfig: AvatarConfig;
+  marcoPersonal: MarcoPerfil;
   posicion: number;
   bebidas: number;
   puntos: number;
@@ -50,12 +51,6 @@ const COLORES: Record<number, string> = {
   3: "bg-bronce",
 };
 const MEDALLAS: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
-const MARCO_PODIO: Record<number, MarcoPerfil> = {
-  1: "challenger",
-  2: "plata",
-  3: "oro",
-};
-
 type Fase = "countdown" | "votacion" | "revelado";
 
 type PremioPodio = {
@@ -386,7 +381,7 @@ export default function PodioReveal({
 
   if (terminado && postFase === "xp" && miXp && miResultado) {
     return (
-      <RevealXp avatarConfig={miResultado.avatarConfig} xp={miXp} onSiguiente={avanzarPostFase} />
+      <RevealXp avatarConfig={miResultado.avatarConfig} marcoPersonal={miResultado.marcoPersonal} xp={miXp} onSiguiente={avanzarPostFase} />
     );
   }
   if (terminado && postFase === "liga" && miLiga && miResultado) {
@@ -456,7 +451,7 @@ export default function PodioReveal({
                   <AvatarFramePreview
                     config={j.avatarConfig}
                     estado={estadoPorBebidas(j.bebidas)}
-                    marco={MARCO_PODIO[pos] ?? "madera"}
+                    marco={j.marcoPersonal}
                     titulo={j.nombre}
                     subtitulo={`${j.puntos} pts · ${j.bebidas} bebidas`}
                     triggerClassName={`mx-auto h-16 w-16 ${

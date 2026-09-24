@@ -40,7 +40,7 @@ export type AvatarConfig = {
 };
 
 export const AVATAR_PREDETERMINADO: AvatarConfig = {
-  avatarImagen: null,
+  avatarImagen: "/avatars/ai/default-host.webp",
   avatarAnimacion: "ninguna",
   piel: "#f2c397",
   caraForma: "redonda",
@@ -174,7 +174,7 @@ export function parseAvatarConfig(raw: unknown): AvatarConfig {
   const avatarImagen =
     typeof r.avatarImagen === "string" && r.avatarImagen.startsWith("/avatars/ai/")
       ? r.avatarImagen
-      : null;
+      : AVATAR_PREDETERMINADO.avatarImagen;
   const avatarAnimacion = (
     [
       "ninguna",

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import AvatarFrame from "@/components/AvatarFrame";
 import { type AvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
-import { MARCO_INFO, marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
+import { MARCO_INFO, marcoPorLiga, marcoPorNivel, type MarcoPerfil } from "@/lib/marcos";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
 
 type Tramo = {
@@ -37,7 +37,7 @@ function tramosNivel(xpAntes: number, xpDespues: number): Tramo[] {
 /** Barra de progreso de nivel animada: recorre, uno a uno, cada nivel que
  * se cruza esta noche, mostrando un destello de "¡Subes a nivel N!" en cada
  * salto antes de continuar con el siguiente tramo. */
-function BarraNivel({ xpAntes, xpDespues }: { xpAntes: number; xpDespues: number }) {
+function BarraNivel({ xpAntes, xpDespues, marcoPersonal }: { xpAntes: number; xpDespues: number; marcoPersonal: MarcoPerfil }) {
   const tramos = useMemo(() => tramosNivel(xpAntes, xpDespues), [xpAntes, xpDespues]);
   const [paso, setPaso] = useState(0);
   const [ancho, setAncho] = useState(() => tramos[0]?.fracInicio ?? 0);
@@ -85,17 +85,22 @@ function BarraNivel({ xpAntes, xpDespues }: { xpAntes: number; xpDespues: number
           🎉 ¡Subes a nivel {nivelActual + 1}!
         </p>
       )}
-      <p className="mt-2 text-xs text-texto2">Marco actual: {MARCO_INFO[marco].nombre}</p>
+      <p className="mt-2 text-xs text-texto2">
+        Marco de nivel: {MARCO_INFO[marco].nombre}
+        {marcoPersonal !== marco && ` · Equipado: ${MARCO_INFO[marcoPersonal].nombre}`}
+      </p>
     </div>
   );
 }
 
 export function RevealXp({
   avatarConfig,
+  marcoPersonal,
   xp,
   onSiguiente,
 }: {
   avatarConfig: AvatarConfig;
+  marcoPersonal: MarcoPerfil;
   xp: {
     ganada: number;
     antes: number;
@@ -104,8 +109,6 @@ export function RevealXp({
   };
   onSiguiente: () => void;
 }) {
-  const marcoDespues = marcoPorNivel(progresoNivel(xp.despues).nivel);
-
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col items-center justify-center px-6 py-10">
       <p className="mb-1 text-center font-titulo text-sm uppercase tracking-wide text-texto2">
@@ -115,10 +118,10 @@ export function RevealXp({
         +{xp.ganada} XP
       </p>
 
-      <AvatarFrame config={avatarConfig} marco={marcoDespues} className="mb-6 h-20 w-20" imageSizes="80px" />
+      <AvatarFrame config={avatarConfig} marco={marcoPersonal} className="mb-6 h-20 w-20" imageSizes="80px" />
 
       <div className="mb-6 w-full rounded-3xl border border-borde bg-tarjeta p-5">
-        <BarraNivel xpAntes={xp.antes} xpDespues={xp.despues} />
+        <BarraNivel xpAntes={xp.antes} xpDespues={xp.despues} marcoPersonal={marcoPersonal} />
       </div>
 
       <ul className="mb-8 w-full space-y-2">
