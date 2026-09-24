@@ -20,20 +20,26 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924164806` | `amplia_catalogo_bebidas_global` | **Aplicada el 24/09/2026 (16:48 UTC).** Amplía el catálogo global de bebidas concretas de 35 a 134 entradas y retira la rareza elegible al crear una bebida nueva; ver «Catálogo ampliado y rareza fija al añadir» más abajo. |
 | `20260924173746` | `documenta_finalizar_noche` | **Aplicada el 24/09/2026 (17:43 UTC).** Trae `finalizar_noche` al repositorio por primera vez, sin cambiar su comportamiento; ver «Cuatro cartas que ya funcionaban sin estar documentadas» más abajo. |
 | `20260924215656` | `nombre_usuario_unico` | **Aplicada el 24/09/2026 (21:58 UTC).** `perfiles.nombre` pasa a ser único (case-insensitive) y editable; ver «Nombre de usuario único» más abajo. |
+| `20260924221823` | `sistema_amigos` | **Aplicada el 24/09/2026 (22:19 UTC).** Tabla `amistades` y las funciones para buscar usuarios, enviar/responder solicitudes y listar amigos; ver «Sistema de amigos» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
-contenido idéntico byte a byte (mismo md5). Las seis siguientes se aplicaron con
+contenido idéntico byte a byte (mismo md5). Las siete siguientes se aplicaron con
 `apply_migration`, que registra la hora de aplicación como versión
 (`20260924122703`, `…122732`, `…122759`, `20260924164806`, `…174304`,
-`…215804`); todas menos `20260924173746` se renombraron en el historial a la
-versión de su fichero para que `supabase migration list` las reconozca —
-`20260924164806` ya coincidía, sin necesidad de renombrar. `20260924173746` es
-la excepción: su `CREATE OR REPLACE FUNCTION` no coincide al carácter con lo
-que ya había en producción (algún detalle de espaciado o codificación al
-transcribirla desde `pg_get_functiondef`, ver más abajo), así que no es una
-copia byte a byte como las siete primeras, aunque sí se verificó que el
-comportamiento no cambia. No se editan una vez aplicadas: el historial es lo
-que ocurrió; las correcciones van en migraciones nuevas.
+`…215804`, `…221911`); todas menos `20260924173746` se renombraron en el
+historial a la versión de su fichero para que `supabase migration list` las
+reconozca — `20260924164806` ya coincidía, sin necesidad de renombrar.
+`20260924173746` es la excepción: su `CREATE OR REPLACE FUNCTION` no coincide
+al carácter con lo que ya había en producción (algún detalle de espaciado o
+codificación al transcribirla desde `pg_get_functiondef`, ver más abajo), así
+que no es una copia byte a byte como las siete primeras, aunque sí se
+verificó que el comportamiento no cambia. No se editan una vez aplicadas: el
+historial es lo que ocurrió; las correcciones van en migraciones nuevas.
+
+Nota: entre `20260924215656` y `20260924221823` se aplicó en producción, desde
+otra rama (PR #21, `codex/perfil-vistas`), la migración
+`perfil_estadisticas_y_borrado_salas`. No está documentada en esta tabla
+todavía porque ese PR sigue abierto; se añadirá aquí cuando se fusione.
 
 ## Cómo aplicar
 
@@ -187,8 +193,35 @@ que seguimos sin pedir un username en el alta — lo que cambia es que ahora:
   `tualemandeconfianza3`, ya que `…2` también estaba en uso).
 
 Este nombre único es el que hace falta para poder buscar/añadir amigos por
-nombre (siguiente paso, todavía no implementado). `supabase/tests/nombre_usuario_unico.sql`
-verifica la generación sin colisión y las tres validaciones de la RPC.
+nombre. `supabase/tests/nombre_usuario_unico.sql` verifica la generación sin
+colisión y las tres validaciones de la RPC.
+
+## Sistema de amigos
+
+`20260924221823` añade la tabla `amistades`: una fila por par de usuarios
+(orden canónico `usuario_a < usuario_b` para no duplicar en ninguna
+dirección), con `estado` (`pendiente`/`aceptada`) y `solicitado_por`. Solo
+tiene política de lectura (`usuario_a = auth.uid() or usuario_b = auth.uid()`);
+todas las mutaciones pasan por RPCs `security definer`, igual que el resto de
+la app:
+
+- `buscar_usuarios_por_nombre(p_query)`: subcadena case-insensitive sobre
+  `perfiles.nombre`, excluyendo al propio usuario, máximo 10 resultados.
+- `mis_amigos()`: todas las filas propias (pendientes y aceptadas, en ambas
+  direcciones), con el "otro" usuario ya resuelto.
+- `enviar_solicitud_amistad(p_destino_id)`: crea la solicitud pendiente. Si
+  el destino ya te había enviado una a ti, la acepta directamente en vez de
+  dejar dos solicitudes cruzadas.
+- `responder_solicitud_amistad(p_solicitante_id, p_aceptar)`: acepta (pasa a
+  `aceptada`) o rechaza (borra la fila) una solicitud recibida.
+- `eliminar_amigo(p_otro_id)`: borra la relación, sea cual sea su estado
+  (sirve tanto para cancelar una solicitud propia como para eliminar una
+  amistad ya aceptada).
+
+Página `/amigos` (`src/app/amigos/page.tsx` + `src/components/AmigosClient.tsx`),
+enlazada desde la cabecera (`src/components/AppHeader.tsx`). `supabase/tests/sistema_amigos.sql`
+verifica búsqueda, solicitud, duplicado, rechazo, aceptación, el caso de
+solicitudes cruzadas y eliminar.
 
 ## Pruebas SQL
 

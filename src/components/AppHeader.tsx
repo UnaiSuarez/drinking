@@ -34,6 +34,14 @@ export default async function AppHeader() {
         🍻 El Ranking
       </Link>
       <span className="flex items-center gap-3">
+        <Link
+          href="/amigos"
+          aria-label="Amigos"
+          className="text-lg outline-none transition active:scale-95"
+          title="Amigos"
+        >
+          👥
+        </Link>
         {user.email?.toLowerCase() === ADMIN_EMAIL && (
           <Link
             href="/admin"
