@@ -47,12 +47,10 @@ const RAREZAS: (keyof typeof RAREZA_NOMBRE)[] = [
 
 export default function BebidaSueltaLogger({
   salaId,
-  salaNombre,
   bebidas,
   catalogo,
 }: {
   salaId: string;
-  salaNombre: string;
   bebidas: BebidaTipo[];
   catalogo: BebidaCatalogo[];
 }) {
@@ -151,12 +149,9 @@ export default function BebidaSueltaLogger({
         fetch("/api/notificar-logro", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            salaId,
-            salaNombre,
-            logroNombre: notable.nombre,
-            logroIcono: notable.icono,
-          }),
+          // Solo la sala: el servidor comprueba en la base qué logro se
+          // acaba de conceder y saca los textos de ahí.
+          body: JSON.stringify({ salaId }),
         }).catch((err) => console.error("notificar-logro:", err));
       }
     }
