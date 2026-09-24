@@ -23,6 +23,8 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924221823` | `sistema_amigos` | **Aplicada el 24/09/2026 (22:19 UTC).** Tabla `amistades` y las funciones para buscar usuarios, enviar/responder solicitudes y listar amigos; ver «Sistema de amigos» más abajo. |
 | `20260924224400` | `mapa_de_sitios` | **Aplicada el 24/09/2026 (22:44 UTC).** Tabla `sitios` y `registros.sitio_id`, solo para sala permanente; ver «Mapa de sitios» más abajo. |
 | `20260924224811` | `hotfix_trigger_sala_archivada` | **Aplicada el 24/09/2026 (22:48 UTC).** Corrige `rechazar_escritura_sala_archivada` (PR #21), que rompía crear una sala y crear una noche en toda la producción; ver «Hotfix: crear sala y crear noche rotos» más abajo. |
+| `20260924232000` | `borrar_registro_bebida_suelta` | **Aplicada el 24/09/2026 (23:09 UTC).** Nueva RPC para borrar un registro de bebida suelta (propio, o de cualquiera si eres admin/fundador), sin el límite de 30s de `anular_bebida_suelta`; ver «Bebidas de la sala: listado y borrado» más abajo. |
+| `20260924233500` | `sitios_icono_y_borrado` | **Aplicada el 24/09/2026 (23:11 UTC).** `sitios.icono`, `crear_sitio` acepta icono, `eliminar_sitio` (solo quien lo descubrió) y `mis_sitios_mapa` expone icono y descubridor; ver «Mapa de sitios» más abajo. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). El resto se aplicaron con
@@ -274,7 +276,7 @@ del tipo de sala.
 
 - `sitios_cercanos(p_lat, p_lng, p_radio_metros)`: los 5 sitios más cercanos
   dentro del radio (haversine; no hace falta PostGIS a esta escala).
-- `crear_sitio(p_nombre, p_lat, p_lng)`: da de alta un sitio nuevo.
+- `crear_sitio(p_nombre, p_lat, p_lng, p_icono)`: da de alta un sitio nuevo.
 - `marcar_sitio_de_registro(p_registro_id, p_sitio_id)`: asocia un registro
   ya existente (tiene que ser tuyo, de sala permanente, no anulado) a un
   sitio.
@@ -286,6 +288,60 @@ del tipo de sala.
 
 `supabase/tests/mapa_de_sitios.sql` verifica todo lo anterior, incluido que
 marcar el sitio de un registro de una noche se rechaza explícitamente.
+
+`20260924233500` amplía esto con lo que se echó en falta al probarlo:
+
+- `sitios.icono` (por defecto 📍): `crear_sitio` ahora acepta un cuarto
+  parámetro `p_icono` opcional (si viene vacío o no se manda, cae al valor
+  por defecto). El frontend (`SitioPicker.tsx`) deja elegir entre un puñado
+  de emojis fijos al crear un sitio nuevo.
+- Al crear un sitio nuevo ya no se manda directamente la coordenada del
+  GPS: el frontend muestra un mapa pequeño centrado ahí, con un marcador
+  arrastrable, para poder ajustar el punto exacto antes de confirmar (el
+  GPS de un móvil no siempre acierta el portal exacto).
+- `eliminar_sitio(p_sitio_id)`: solo quien lo descubrió (`sitios.creado_por`)
+  puede borrarlo. Al borrarlo, los registros que lo tenían marcado se
+  quedan con `sitio_id` a `null` (la columna ya era `on delete set null`),
+  nunca se borra el registro de la bebida en sí.
+- `mis_sitios_mapa()` cambió de tipo de retorno (se recreó con `drop
+  function` + `create function`, no con `create or replace`, porque
+  Postgres no deja cambiar las columnas de una función que devuelve una
+  tabla): ahora también devuelve `icono`, `creado_por` y
+  `descubridor_nombre`, para pintar el icono real en el mapa y mostrar
+  "descubierto por" con el botón de borrar si el sitio es tuyo.
+
+`supabase/tests/sitios_icono_y_borrado.sql` verifica el icono elegido y el
+que cae al valor por defecto, que `mis_sitios_mapa` expone icono/descubridor,
+que solo el descubridor puede borrar un sitio (otro miembro lo tiene
+prohibido) y que borrar un sitio no se lleva por delante el registro que lo
+tenía marcado.
+
+## Bebidas de la sala: listado y borrado
+
+`20260924232000` añade `borrar_registro_bebida_suelta(p_registro_id)`: la
+política de lectura de `registros` ya dejaba ver a cualquier miembro todos
+los registros de su sala (`registros_select`, `es_miembro(sala_id)`), así que
+no hacía falta una RPC nueva para listarlos — solo para poder borrar uno más
+allá de los 30 segundos que permite `anular_bebida_suelta` (pensada para el
+"deshacer" inmediato, no para corregir un error que se nota más tarde).
+
+Puede borrar su propio registro cualquier miembro; el de otra persona, solo
+un admin o el fundador de la sala. Igual que el mapa de sitios, solo aplica a
+bebida suelta (`sala_id is not null`): nunca se puede borrar con esta función
+un registro de una noche, para no tocar nada que ya haya contado para la
+liga o el podio.
+
+Nueva página `/sala/[id]/registros` (`src/app/sala/[id]/registros/page.tsx` +
+`src/components/RegistrosSalaClient.tsx`), enlazada desde `/sala/[id]` junto
+al botón de Estadísticas, solo en sala permanente. Muestra un ranking de
+quién lleva más (contando lo cargado en esa visita, no en vivo) y el
+historial completo con quién bebió qué y cuándo, con botón de borrar donde
+corresponda.
+
+`supabase/tests/borrar_registro_bebida_suelta.sql` verifica que el propio
+autor puede borrar su registro (con el descuento de XP correspondiente) más
+allá de los 30s, que un miembro cualquiera no puede borrar el de otro, que un
+admin sí, y que un registro de una noche se rechaza siempre.
 
 ## Pruebas SQL
 

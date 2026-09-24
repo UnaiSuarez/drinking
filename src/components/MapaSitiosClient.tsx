@@ -11,6 +11,9 @@ export type SitioMapa = {
   lat: number;
   lng: number;
   tipo: "tuyo" | "amigo" | "ambos";
+  icono: string;
+  creadoPor: string | null;
+  descubridorNombre: string | null;
 };
 
 type FilaDetalle = {
@@ -49,17 +52,35 @@ export default function MapaSitiosClient({
   const mapaInstancia = useRef<LeafletMap | null>(null);
   const capaMarcadores = useRef<LayerGroup | null>(null);
 
+  const [sitios, setSitios] = useState(sitiosIniciales);
   const [filtro, setFiltro] = useState<Filtro>("todos");
   const [seleccionado, setSeleccionado] = useState<SitioMapa | null>(null);
   const [detalle, setDetalle] = useState<PersonaDetalle[] | null>(null);
   const [cargandoDetalle, setCargandoDetalle] = useState(false);
+  const [borrando, setBorrando] = useState(false);
+  const [errorBorrar, setErrorBorrar] = useState<string | null>(null);
 
-  const visibles = sitiosIniciales.filter((s) => {
+  const visibles = sitios.filter((s) => {
     if (filtro === "todos") return true;
     if (filtro === "tuyo") return s.tipo === "tuyo" || s.tipo === "ambos";
     return s.tipo === "amigo" || s.tipo === "ambos";
   });
-  const idsVisibles = visibles.map((s) => s.sitioId).join(",");
+  const idsVisibles = visibles.map((s) => `${s.sitioId}:${s.icono}`).join(",");
+
+  async function borrarSitio(sitio: SitioMapa) {
+    setBorrando(true);
+    setErrorBorrar(null);
+    const { error } = await supabase.rpc("eliminar_sitio", {
+      p_sitio_id: sitio.sitioId,
+    });
+    setBorrando(false);
+    if (error) {
+      setErrorBorrar(error.message);
+      return;
+    }
+    setSitios((prev) => prev.filter((s) => s.sitioId !== sitio.sitioId));
+    setSeleccionado(null);
+  }
 
   async function abrirSitio(sitio: SitioMapa) {
     setSeleccionado(sitio);
@@ -133,9 +154,9 @@ export default function MapaSitiosClient({
       for (const sitio of visibles) {
         const icono = L.divIcon({
           className: "",
-          html: `<div style="width:26px;height:26px;border-radius:999px 999px 999px 2px;background:${COLOR_TIPO[sitio.tipo]};transform:rotate(45deg);box-shadow:0 2px 6px rgba(0,0,0,0.4);"></div>`,
-          iconSize: [26, 26],
-          iconAnchor: [13, 26],
+          html: `<div style="width:30px;height:30px;border-radius:50%;background:${COLOR_TIPO[sitio.tipo]};display:flex;align-items:center;justify-content:center;font-size:15px;line-height:1;border:2px solid rgba(255,255,255,0.85);box-shadow:0 2px 6px rgba(0,0,0,0.4);">${sitio.icono}</div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
         });
         const marcador = L.marker([sitio.lat, sitio.lng], { icon: icono }).addTo(capa);
         marcador.on("click", () => abrirSitio(sitio));
@@ -191,7 +212,7 @@ export default function MapaSitiosClient({
         </span>
       </div>
 
-      {sitiosIniciales.length === 0 && (
+      {sitios.length === 0 && (
         <p className="mt-4 rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
           Todavía no has marcado ningún sitio. Se hace al registrar una
           bebida en sala permanente.
@@ -200,9 +221,9 @@ export default function MapaSitiosClient({
 
       {seleccionado && (
         <div className="mt-4 rounded-2xl border border-borde bg-tarjeta p-4">
-          <div className="mb-2 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <p className="font-titulo text-base text-texto">
-              {seleccionado.nombre}
+              {seleccionado.icono} {seleccionado.nombre}
             </p>
             <button
               onClick={() => setSeleccionado(null)}
@@ -211,6 +232,14 @@ export default function MapaSitiosClient({
               ✕
             </button>
           </div>
+          {seleccionado.descubridorNombre && (
+            <p className="mb-3 text-xs text-texto2">
+              Descubierto por{" "}
+              {seleccionado.creadoPor === userId
+                ? "ti"
+                : seleccionado.descubridorNombre}
+            </p>
+          )}
           {cargandoDetalle ? (
             <p className="text-xs text-texto2">Cargando…</p>
           ) : detalle && detalle.length > 0 ? (
@@ -241,6 +270,20 @@ export default function MapaSitiosClient({
             </div>
           ) : (
             <p className="text-xs text-texto2">Sin datos.</p>
+          )}
+          {seleccionado.creadoPor === userId && (
+            <div className="mt-3 border-t border-borde pt-3">
+              {errorBorrar && (
+                <p className="mb-2 text-xs text-rosa">{errorBorrar}</p>
+              )}
+              <button
+                onClick={() => borrarSitio(seleccionado)}
+                disabled={borrando}
+                className="w-full rounded-lg border border-rosa/50 py-2 text-xs text-rosa disabled:opacity-50"
+              >
+                {borrando ? "Borrando…" : "🗑️ Borrar este sitio"}
+              </button>
+            </div>
           )}
         </div>
       )}
