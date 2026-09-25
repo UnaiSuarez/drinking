@@ -174,7 +174,9 @@ export function claseTambaleo(bebidas: number): string {
 export function parseAvatarConfig(raw: unknown): AvatarConfig {
   const r = (raw ?? {}) as Partial<AvatarConfig>;
   const avatarImagen =
-    typeof r.avatarImagen === "string" && r.avatarImagen.startsWith("/avatars/ai/")
+    typeof r.avatarImagen === "string" &&
+    (r.avatarImagen.startsWith("/avatars/ai/") ||
+      /^\/personajes\/[a-z0-9-]+\/skins\/[a-z0-9-]+\.webp$/.test(r.avatarImagen))
       ? r.avatarImagen
       : AVATAR_PREDETERMINADO.avatarImagen;
   const avatarAnimacionGuardada = (

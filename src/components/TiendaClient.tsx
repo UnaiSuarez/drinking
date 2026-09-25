@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import { PersonajeFichaTrigger } from "@/components/PersonajeFicha";
@@ -20,8 +21,6 @@ import {
   calcularChapasGanadas,
   calcularSaldoChapas,
   parseTiendaState,
-  skinsDisponibles,
-  type PersonajeSkin,
   type TiendaRareza,
   type TiendaState,
 } from "@/lib/tienda";
@@ -144,26 +143,6 @@ export default function TiendaClient({
     };
     const ok = await guardarConfig(nextConfig);
     if (ok) setMensaje(yaComprado ? "Marco equipado." : "Marco comprado y equipado.");
-    setComprando(null);
-  }
-
-  // Las skins normales se compran con chapas, solo si ya tienes al personaje
-  // secreto. Los momentos históricos no se compran: solo salen en cofres.
-  async function comprarSkin(skin: PersonajeSkin) {
-    if (comprando || skin.tipo !== "normal" || !skin.precio) return;
-    if (!inventario.personajesOcultos.includes(skin.personajeId) || inventario.skins.includes(skin.id)) return;
-    if (saldo < skin.precio) {
-      setMensaje("Te faltan chapas para esa skin.");
-      return;
-    }
-    setComprando(skin.id);
-    setMensaje(null);
-    const ok = await guardarConfig({
-      ...objetoConfig(rawConfig),
-      inventario: { ...inventario, skins: [...inventario.skins, skin.id] },
-      tienda: { ...tienda, gastadas: tienda.gastadas + skin.precio },
-    });
-    if (ok) setMensaje(`${skin.nombre} comprada. Equípala desde la ficha del personaje o el inventario.`);
     setComprando(null);
   }
 
@@ -433,46 +412,6 @@ export default function TiendaClient({
         </ul>
       </section>
 
-      {inventario.personajesOcultos.length > 0 && skinsDisponibles().some((s) => s.tipo === "normal") && (
-        <section className="mb-8">
-          <h2 className="mb-1 font-titulo text-xl text-texto">Skins de personajes</h2>
-          <p className="mb-3 text-xs text-texto2">
-            Aspectos de tus personajes secretos. También salen en cofres; los momentos históricos solo salen en cofres.
-          </p>
-          <ul className="grid grid-cols-2 gap-3">
-            {skinsDisponibles()
-              .filter((s) => s.tipo === "normal" && inventario.personajesOcultos.includes(s.personajeId))
-              .map((skin) => {
-                const personaje = PERSONAJES_OCULTOS.find((p) => p.id === skin.personajeId);
-                const tiene = inventario.skins.includes(skin.id);
-                const rareza = RAREZA_ESTILO[skin.rareza];
-                return (
-                  <li key={skin.id} className={`rounded-2xl border bg-tarjeta p-4 ${rareza.borde}`}>
-                    <div className="relative mx-auto mb-3 h-24 w-24 overflow-hidden rounded-2xl bg-fondo/60">
-                      <Image src={skin.imagen} alt={skin.nombre} fill sizes="96px" className="object-contain" />
-                    </div>
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <p className="font-titulo text-sm text-texto">{skin.nombre}</p>
-                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${rareza.fondo} ${rareza.texto}`}>
-                        {rareza.etiqueta}
-                      </span>
-                    </div>
-                    <p className="mb-3 text-[11px] text-texto2">{personaje?.nombre}</p>
-                    <button
-                      type="button"
-                      disabled={tiene || comprando === skin.id}
-                      onClick={() => void comprarSkin(skin)}
-                      className={`w-full rounded-xl px-3 py-2 font-titulo text-sm active:scale-95 disabled:opacity-50 ${rareza.boton}`}
-                    >
-                      {tiene ? "Conseguida" : `${skin.precio} chapas`}
-                    </button>
-                  </li>
-                );
-              })}
-          </ul>
-        </section>
-      )}
-
       <section>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
@@ -533,14 +472,19 @@ export default function TiendaClient({
                   {desbloqueado ? item.habilidad : "La identidad se revela al completar sus fragmentos."}
                 </p>
                 {desbloqueado ? (
-                  <button
-                    type="button"
-                    disabled={comprando === item.id || equipado}
-                    onClick={() => equiparPersonaje(item.id, item.imagen, item.config)}
-                    className={`w-full rounded-xl px-3 py-2 font-titulo text-sm active:scale-95 disabled:opacity-50 ${rareza.boton}`}
-                  >
-                    {equipado ? "Equipado" : "Equipar"}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      disabled={comprando === item.id || equipado}
+                      onClick={() => equiparPersonaje(item.id, item.imagen, item.config)}
+                      className={`w-full rounded-xl px-3 py-2 font-titulo text-sm active:scale-95 disabled:opacity-50 ${rareza.boton}`}
+                    >
+                      {equipado ? "Equipado" : "Equipar"}
+                    </button>
+                    <Link href={`/personaje/${item.id}`} className="mt-2 block text-center text-xs text-cian underline-offset-2 hover:underline">
+                      Ver personaje y skins
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-fondo">

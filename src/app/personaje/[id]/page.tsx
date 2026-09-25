@@ -42,9 +42,18 @@ export default async function PersonajeRoute({
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("avatar_config")
+    .select("avatar_config, xp")
     .eq("id", user.id)
     .single();
+
+  const { data: participaciones } = await supabase
+    .from("noche_jugadores")
+    .select("pl_ganados")
+    .eq("usuario_id", user.id);
+  const plHistoricos = (participaciones ?? []).reduce(
+    (total, participacion) => total + (participacion.pl_ganados ?? 0),
+    0
+  );
 
   const esAdmin = user.email === ADMIN_EMAIL;
   const forzarBloqueado = esAdmin && demo === "bloqueado";
@@ -66,6 +75,8 @@ export default async function PersonajeRoute({
         userId={user.id}
         personajeId={id}
         avatarConfigRaw={perfil?.avatar_config ?? null}
+        xp={perfil?.xp ?? 0}
+        plHistoricos={plHistoricos}
         desbloqueado={desbloqueado}
         oculto={esOculto}
         ilustraciones={ilustraciones}
