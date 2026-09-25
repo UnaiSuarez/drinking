@@ -30,6 +30,9 @@ export const REVERSOS_CARTA = {
   legendaria: "/chests/ai/items/card-back-legendaria-v2.webp",
   exclusiva: "/chests/ai/items/card-back-legendaria-alpha.webp",
   personaje: "/chests/ai/items/card-back-personaje.webp",
+  /** Un único reverso para todas las rarezas de skin. */
+  skin: "/chests/ai/items/card-back-skin.webp",
+  momento: "/chests/ai/items/card-back-momento.webp",
 };
 
 export const MONEDA_COFRES = {

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import AdminPanel from "@/components/AdminPanel";
 
-const ADMIN_EMAIL = "unaisucar64535@gmail.com";
+import { ADMIN_EMAIL } from "@/lib/admin";
 
 export default async function AdminPage() {
   const supabase = await createClient();

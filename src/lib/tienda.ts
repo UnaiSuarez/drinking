@@ -4,6 +4,7 @@ import {
   type AvatarConfig,
 } from "@/lib/avatar";
 import { type MarcoPerfil } from "@/lib/marcos";
+import { type CartaRareza } from "@/lib/cofresDesign";
 
 export type TiendaRareza = "comun" | "rara" | "epica" | "legendaria" | "unica";
 
@@ -13,7 +14,11 @@ export type TiendaState = {
   marcos: MarcoPerfil[];
   avatares: string[];
   marcoEquipado: MarcoPerfil | null;
+  /** Personaje equipado. Siempre es el personaje (aunque lleve skin): el
+   * servidor resuelve su habilidad secreta leyendo este campo. */
   avatarEquipado: string | null;
+  /** Skin equipada sobre el personaje equipado, si hay alguna. */
+  skinEquipada: string | null;
 };
 
 export type TiendaMarco = {
@@ -24,18 +29,27 @@ export type TiendaMarco = {
   rareza: TiendaRareza;
 };
 
-/** Variante de un personaje ligada a un momento histórico del grupo. Cada
- * skin cuenta su propia historia. Todavía no hay ninguna: se rellenará
- * cuando existan las ilustraciones. */
+export type SkinTipo = "normal" | "momento";
+
+/** Variante de un personaje secreto. Solo se consigue en cofres y solo después
+ * de desbloquear al personaje.
+ * - normal: aspecto alternativo con rareza (p. ej. "militar"); no lleva relato.
+ * - momento: un día que ocurrió de verdad; lleva fecha y una historia real
+ *   aportada por el grupo (nunca inventada). */
 export type PersonajeSkin = {
   id: string;
+  personajeId: string;
+  tipo: SkinTipo;
   nombre: string;
-  /** Momento histórico que conmemora (p. ej. una noche concreta). */
-  momento: string;
-  historia: string;
+  rareza: CartaRareza;
+  /** Avatar cuadrado que se equipa en el perfil. */
   imagen: string;
-  /** Ilustración de cuerpo completo de la skin, si existe. */
-  ilustracion?: string;
+  /** Ilustración de cuerpo completo para la ficha. */
+  ilustracion: string;
+  descripcion?: string;
+  /** Solo momentos históricos. */
+  fecha?: string;
+  historia?: string;
 };
 
 export type TiendaAvatar = {
@@ -50,7 +64,6 @@ export type TiendaAvatar = {
   /** Ilustración de cuerpo completo. Solo se declara cuando el arte existe;
    * mientras falte, la ficha muestra el retrato entero sin recortar. */
   ilustracion?: string;
-  skins?: PersonajeSkin[];
 };
 
 export type PersonajeOculto = TiendaAvatar & {
@@ -58,6 +71,10 @@ export type PersonajeOculto = TiendaAvatar & {
   /** Habilidad pasiva que se activa mientras llevas este personaje
    * equipado. Se resuelve en finalizar_noche (ver tmp_personaje_equipado). */
   habilidad: string;
+  /** Persona real en la que se inspira el personaje. */
+  nombreReal: string;
+  /** Historia del personaje, aportada por el grupo. Vacía hasta entonces. */
+  historia?: string;
 };
 
 function avatarIA(
@@ -344,6 +361,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Rubio de la Última Ronda",
     descripcion: "Personaje único, sonrisa peligrosa y croquetas de emergencia.",
     habilidad: "Habilidad oculta: tus bebidas en los últimos 10 minutos antes del cierre dan +2 PL extra.",
+    nombreReal: "Antonio",
     precio: 0,
     rareza: "unica",
     imagen: "/avatars/ai/items/ultimo-ronda.webp",
@@ -355,6 +373,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Jefe del After",
     descripcion: "Personaje único, shaker en mano y mirada de reservado cerrado.",
     habilidad: "Habilidad oculta: si tú inicias la noche, todos los que beban ganan +1 PL extra.",
+    nombreReal: "Denys",
     precio: 0,
     rareza: "unica",
     imagen: "/avatars/ai/items/jefe-after.webp",
@@ -366,6 +385,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Narrador de la Noche",
     descripcion: "Personaje único, móvil arriba y prueba gráfica de todo.",
     habilidad: "Habilidad oculta: cada bebida que registres con comentario da +1 PL extra.",
+    nombreReal: "Ramón",
     precio: 0,
     rareza: "unica",
     imagen: "/avatars/ai/items/narrador-noche.webp",
@@ -377,6 +397,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Silencioso Letal",
     descripcion: "Personaje único, refresco azul y subida discreta en la tabla.",
     habilidad: "Habilidad oculta: tus refrescos y aguas dan siempre +1 PL.",
+    nombreReal: "Alejandro",
     precio: 0,
     rareza: "unica",
     imagen: "/avatars/ai/items/silencioso-letal.webp",
@@ -388,6 +409,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Guardián del Cubata",
     descripcion: "Personaje único, vaso brillante y aura de no-me-lo-toques.",
     habilidad: "Habilidad oculta: eres inmune a las cartas de objetivo que te lancen.",
+    nombreReal: "Unai",
     precio: 0,
     rareza: "unica",
     imagen: "/avatars/ai/items/guardian-cubata.webp",
@@ -396,14 +418,74 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
   },
 ];
 
-export type PersonajeCatalogo = TiendaAvatar & { habilidad?: string; placeholderImagen?: string };
+export type PersonajeCatalogo = TiendaAvatar & {
+  habilidad?: string;
+  placeholderImagen?: string;
+  nombreReal?: string;
+  historia?: string;
+};
+
+// ─── Skins y momentos históricos ────────────────────────────────────────────
+// Para añadir una: 1) copia las dos imágenes en public/personajes/<personaje>/skins/
+// (<id>.webp = avatar cuadrado, <id>-completo.webp = cuerpo completo) y
+// 2) añade UNA línea aquí con skinNormal(...) o momentoHistorico(...).
+// No se inventa ninguna skin ni relato: solo se listan las que ya tienen arte.
+
+export function rutaCompletoPersonaje(personajeId: string) {
+  return `/personajes/${personajeId}/completo.webp`;
+}
+
+function rutasSkin(personajeId: string, id: string) {
+  const base = `/personajes/${personajeId}/skins/${id}`;
+  return { imagen: `${base}.webp`, ilustracion: `${base}-completo.webp` };
+}
+
+export function skinNormal(datos: {
+  id: string;
+  personajeId: string;
+  nombre: string;
+  rareza: CartaRareza;
+  descripcion?: string;
+}): PersonajeSkin {
+  return { ...datos, tipo: "normal", ...rutasSkin(datos.personajeId, datos.id) };
+}
+
+export function momentoHistorico(datos: {
+  id: string;
+  personajeId: string;
+  nombre: string;
+  /** Fecha real del día, tal como se quiere mostrar (p. ej. "14 de agosto de 2025"). */
+  fecha: string;
+  /** Relato real aportado por el grupo. Si aún no está, se muestra "pendiente". */
+  historia?: string;
+  rareza?: CartaRareza;
+  descripcion?: string;
+}): PersonajeSkin {
+  return { rareza: "legendaria", ...datos, tipo: "momento", ...rutasSkin(datos.personajeId, datos.id) };
+}
+
+export const SKINS_PERSONAJES: PersonajeSkin[] = [
+  skinNormal({ id: "constructor-robot", personajeId: "ultimo-ronda", nombre: "Constructor Robot", rareza: "legendaria" }),
+  skinNormal({ id: "rumano", personajeId: "jefe-after", nombre: "Rumano", rareza: "legendaria" }),
+  skinNormal({ id: "samurai", personajeId: "guardian-cubata", nombre: "Samurái", rareza: "legendaria" }),
+  skinNormal({ id: "militar-eeuu", personajeId: "narrador-noche", nombre: "Militar EE. UU.", rareza: "legendaria" }),
+  skinNormal({ id: "fisico", personajeId: "silencioso-letal", nombre: "Físico", rareza: "legendaria" }),
+];
+
+export function skinsDe(personajeId: string, tipo?: SkinTipo) {
+  return SKINS_PERSONAJES.filter((skin) => skin.personajeId === personajeId && (!tipo || skin.tipo === tipo));
+}
+
+export function skinPorId(id: string | null | undefined) {
+  return id ? SKINS_PERSONAJES.find((skin) => skin.id === id) ?? null : null;
+}
 
 export function personajePorImagen(imagen: string | null): PersonajeCatalogo | null {
   if (!imagen) return null;
+  const skin = SKINS_PERSONAJES.find((item) => item.imagen === imagen);
+  const todos: PersonajeCatalogo[] = [...AVATARES_GRATIS, ...TIENDA_AVATARES, ...PERSONAJES_OCULTOS];
   return (
-    [...AVATARES_GRATIS, ...TIENDA_AVATARES, ...PERSONAJES_OCULTOS].find(
-      (personaje) => personaje.imagen === imagen
-    ) ?? null
+    todos.find((personaje) => (skin ? personaje.id === skin.personajeId : personaje.imagen === imagen)) ?? null
   );
 }
 
@@ -455,6 +537,14 @@ export function parseTiendaState(raw: unknown): TiendaState {
       ? tienda.avatarEquipado
       : null;
 
+  const skinsPropias = (inventario.inventario as { skins?: string[] } | undefined)?.skins ?? [];
+  const skinEquipada =
+    typeof tienda.skinEquipada === "string" &&
+    skinsPropias.includes(tienda.skinEquipada) &&
+    skinPorId(tienda.skinEquipada)?.personajeId === avatarEquipado
+      ? tienda.skinEquipada
+      : null;
+
   return {
     gastadas: Math.max(0, Math.floor(tienda.gastadas ?? 0)),
     bonus: Math.max(0, Math.floor(tienda.bonus ?? 0)),
@@ -462,6 +552,7 @@ export function parseTiendaState(raw: unknown): TiendaState {
     avatares,
     marcoEquipado,
     avatarEquipado,
+    skinEquipada,
   };
 }
 

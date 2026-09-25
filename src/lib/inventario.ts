@@ -6,7 +6,14 @@ import {
   type CartaRareza,
   type CofreTipo,
 } from "@/lib/cofresDesign";
-import { PERSONAJES_OCULTOS, type PersonajeOculto, type TiendaState } from "@/lib/tienda";
+import {
+  PERSONAJES_OCULTOS,
+  SKINS_PERSONAJES,
+  type PersonajeOculto,
+  type PersonajeSkin,
+  type SkinTipo,
+  type TiendaState,
+} from "@/lib/tienda";
 
 export type InventarioState = {
   cofres: Record<string, number>;
@@ -14,6 +21,8 @@ export type InventarioState = {
   cartasActivas: CartaActiva[];
   personajeFragmentos: Record<string, number>;
   personajesOcultos: string[];
+  /** Skins y momentos históricos conseguidos en cofres. */
+  skins: string[];
   podiosPremiados: string[];
   historialAperturas: Array<{
     id: string;
@@ -61,6 +70,21 @@ export type RecompensaCofre =
       imagen: string;
       descripcion: string;
       oculta: boolean;
+    }
+  | {
+      id: string;
+      tipo: "skin";
+      skinId: string;
+      personajeId: string;
+      personajeNombre: string;
+      skinTipo: SkinTipo;
+      nombre: string;
+      rareza: CartaRareza;
+      imagen: string;
+      /** Ilustración de cuerpo completo (la animación de la skin la muestra entera). */
+      ilustracion: string;
+      descripcion: string;
+      fecha?: string;
     }
   | {
       id: string;
@@ -114,6 +138,10 @@ export function parseInventarioState(raw: unknown): InventarioState {
         (id): id is string => typeof id === "string"
       )
     : [];
+  const skinsValidas = new Set(SKINS_PERSONAJES.map((skin) => skin.id));
+  const skins = Array.isArray(inventario.skins)
+    ? inventario.skins.filter((id): id is string => typeof id === "string" && skinsValidas.has(id))
+    : [];
   const personajeFragmentos = mapaCantidades(
     inventario.personajeFragmentos,
     new Set(PERSONAJES_OCULTOS.map((personaje) => personaje.id))
@@ -159,6 +187,7 @@ export function parseInventarioState(raw: unknown): InventarioState {
     cartasActivas,
     personajeFragmentos,
     personajesOcultos,
+    skins,
     podiosPremiados,
     historialAperturas,
   };
@@ -273,12 +302,61 @@ function recompensaPersonaje(
   };
 }
 
+const PESO_SKIN: Record<CofreTipo["id"], number> = { comun: 3, epico: 6, legendario: 9 };
+const PESO_SKIN_PREMIUM = 10;
+const PESO_RAREZA_SKIN: Record<CartaRareza, number> = { comun: 6, rara: 4, epica: 2, legendaria: 1 };
+
+/** Skins que aún puede ganar: solo de personajes ya desbloqueados. */
+export function skinsPendientes(inventario: InventarioState, excluir: Set<string> = new Set()) {
+  return SKINS_PERSONAJES.filter(
+    (skin) =>
+      inventario.personajesOcultos.includes(skin.personajeId) &&
+      !inventario.skins.includes(skin.id) &&
+      !excluir.has(skin.id)
+  );
+}
+
+function recompensaSkin(skin: PersonajeSkin): RecompensaCofre {
+  const personaje = PERSONAJES_OCULTOS.find((item) => item.id === skin.personajeId);
+  return {
+    id: `skin-${skin.id}-${crypto.randomUUID()}`,
+    tipo: "skin",
+    skinId: skin.id,
+    personajeId: skin.personajeId,
+    personajeNombre: personaje?.nombre ?? "",
+    skinTipo: skin.tipo,
+    nombre: skin.nombre,
+    rareza: skin.rareza,
+    imagen: skin.imagen,
+    ilustracion: skin.ilustracion,
+    descripcion:
+      skin.descripcion ??
+      (skin.tipo === "momento" ? "Un momento histórico del grupo." : `Skin de ${personaje?.nombre ?? "personaje"}.`),
+    fecha: skin.fecha,
+  };
+}
+
+function elegirSkin(pendientes: PersonajeSkin[], random = Math.random) {
+  const total = pendientes.reduce((acc, skin) => acc + PESO_RAREZA_SKIN[skin.rareza], 0);
+  let tirada = random() * total;
+  for (const skin of pendientes) {
+    tirada -= PESO_RAREZA_SKIN[skin.rareza];
+    if (tirada <= 0) return skin;
+  }
+  return pendientes[pendientes.length - 1];
+}
+
 function resultadoSlot(
   cofre: CofreTipo,
   inventario: InventarioState,
   premium: boolean,
-  random = Math.random
+  random = Math.random,
+  excluir: Set<string> = new Set()
 ): RecompensaCofre {
+  // La skin solo entra en el sorteo si hay alguna disponible (personaje ya
+  // desbloqueado y skin aún no conseguida): sin skins el reparto no cambia.
+  const pendientes = skinsPendientes(inventario, excluir);
+  const skin = pendientes.length > 0 ? (premium ? PESO_SKIN_PREMIUM : PESO_SKIN[cofre.id]) : 0;
   const tipo = premium
     ? elegirPonderado(
         {
@@ -286,10 +364,17 @@ function resultadoSlot(
           epica: 45,
           legendaria: 34,
           personajeOculto: 6,
+          skin,
         },
         random
       )
-    : elegirPonderado(cofre.ratios, random);
+    : elegirPonderado({ ...cofre.ratios, skin }, random);
+
+  if (tipo === "skin") {
+    const elegida = elegirSkin(pendientes, random);
+    excluir.add(elegida.id);
+    return recompensaSkin(elegida);
+  }
 
   if (tipo === "monedas") return recompensaMonedas(cofre, premium, random);
   if (tipo === "personajeOculto") {
@@ -340,8 +425,9 @@ export function generarAperturaCofre(
   const cofre = COFRES_TIPOS.find((item) => item.id === cofreId);
   if (!cofre) throw new Error(`Cofre desconocido: ${cofreId}`);
 
+  const excluir = new Set<string>();
   const recompensas = Array.from({ length: cofre.cartas }, (_, index) =>
-    resultadoSlot(cofre, inventario, cofre.id === "legendario" && index === 0, random)
+    resultadoSlot(cofre, inventario, cofre.id === "legendario" && index === 0, random, excluir)
   );
   return marcarProgresoFragmentos(recompensas, inventario);
 }
@@ -359,6 +445,7 @@ export function aplicarRecompensas(params: {
     cartasActivas: [...params.inventario.cartasActivas],
     personajeFragmentos: { ...params.inventario.personajeFragmentos },
     personajesOcultos: [...params.inventario.personajesOcultos],
+    skins: [...params.inventario.skins],
     podiosPremiados: [...params.inventario.podiosPremiados],
     historialAperturas: [...params.inventario.historialAperturas],
   };
@@ -375,6 +462,14 @@ export function aplicarRecompensas(params: {
     } else if (recompensa.tipo === "carta") {
       nextInventario.cartas[recompensa.cartaId] =
         (nextInventario.cartas[recompensa.cartaId] ?? 0) + 1;
+    } else if (recompensa.tipo === "skin") {
+      // Solo cuenta si el personaje ya está desbloqueado; nunca se duplica.
+      if (
+        nextInventario.personajesOcultos.includes(recompensa.personajeId) &&
+        !nextInventario.skins.includes(recompensa.skinId)
+      ) {
+        nextInventario.skins.push(recompensa.skinId);
+      }
     } else {
       if (nextInventario.personajesOcultos.includes(recompensa.personajeId)) {
         nextTienda.bonus += 250;
