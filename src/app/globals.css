@@ -645,6 +645,124 @@ body {
     conic-gradient(from 8deg, rgba(45, 226, 230, 0.42), transparent, rgba(167, 139, 250, 0.5), transparent, rgba(255, 213, 74, 0.35));
   animation: avatar-aura-guard 4.2s ease-in-out infinite;
 }
+
+/* Legendary frames and characters keep their motion on the ornament, never on the face. */
+.avatar-frame-legend-fx,
+.avatar-character-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.avatar-frame-legend-fx { z-index: 4; }
+.avatar-character-fx { z-index: 5; }
+.avatar-frame-legend-fx::before,
+.avatar-frame-legend-fx::after,
+.avatar-character-fx::before,
+.avatar-character-fx::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.avatar-frame-legend-fx::before {
+  background: conic-gradient(from 0deg, transparent 0 26%, var(--legend-color) 34%, transparent 40% 72%, var(--legend-color) 80%, transparent 88%);
+  -webkit-mask-image: radial-gradient(circle, transparent 48%, #000 68%);
+  mask-image: radial-gradient(circle, transparent 48%, #000 68%);
+  mix-blend-mode: screen;
+  animation: avatar-legend-circuit 7s linear infinite;
+}
+.avatar-frame-legend-fx::after {
+  background:
+    radial-gradient(circle at 20% 15%, #fff 0 1.5%, transparent 3%),
+    radial-gradient(circle at 80% 24%, var(--legend-color) 0 2%, transparent 4%),
+    radial-gradient(circle at 72% 82%, #fff 0 1.5%, transparent 3%);
+  filter: drop-shadow(0 0 5px var(--legend-color));
+  animation: avatar-legend-sparks 4.8s ease-in-out infinite;
+}
+.avatar-frame-legend-trono { --legend-color: #ffd54a; }
+.avatar-frame-legend-tormenta { --legend-color: #84edff; }
+.avatar-frame-legend-liga-challenger { --legend-color: #d8b4fe; }
+.avatar-frame-legend-tormenta::before { animation-duration: 4.2s; }
+.avatar-frame-legend-tormenta::after { animation: avatar-legend-lightning 5.2s steps(1, end) infinite; }
+.avatar-frame-legend-liga-challenger::after { animation-delay: 1.3s; }
+
+.avatar-character-fx {
+  --character-color: #bd7bff;
+  --character-soft: rgba(189, 123, 255, 0.55);
+}
+.avatar-character-fx::before {
+  inset: 2%;
+  border-radius: 18%;
+  background: conic-gradient(from 0deg, transparent 0 14%, var(--character-soft) 20%, transparent 27% 46%, var(--character-color) 52%, transparent 59% 77%, var(--character-soft) 84%, transparent 92%);
+  -webkit-mask-image: radial-gradient(circle, transparent 49%, #000 68%);
+  mask-image: radial-gradient(circle, transparent 49%, #000 68%);
+  mix-blend-mode: screen;
+  animation: avatar-character-orbit 8s linear infinite;
+}
+.avatar-character-fx::after {
+  background:
+    radial-gradient(circle at 16% 29%, #fff 0 1.5%, transparent 3%),
+    radial-gradient(circle at 85% 18%, var(--character-color) 0 2%, transparent 4%),
+    radial-gradient(circle at 78% 80%, #fff 0 1.5%, transparent 3%);
+  filter: drop-shadow(0 0 5px var(--character-color));
+  animation: avatar-character-stars 4.5s ease-in-out infinite;
+}
+.avatar-character-fx-celestial { --character-color: #fff2ae; --character-soft: rgba(255, 213, 74, 0.52); }
+.avatar-character-fx-celestial::before { animation-duration: 11s; }
+.avatar-character-fx-deidad { --character-color: #ffe084; --character-soft: rgba(45, 226, 230, 0.62); }
+.avatar-character-fx-deidad::after { animation: avatar-legend-lightning 3.7s steps(1, end) infinite; }
+.avatar-character-fx-ronda { --character-color: #ffca69; --character-soft: rgba(255, 46, 147, 0.48); }
+.avatar-character-fx-jefe { --character-color: #ffd54a; --character-soft: rgba(189, 123, 255, 0.58); }
+.avatar-character-fx-jefe::before { animation-direction: reverse; animation-duration: 6.5s; }
+.avatar-character-fx-cronica { --character-color: #f5f1e8; --character-soft: rgba(45, 226, 230, 0.54); }
+.avatar-character-fx-cronica::after { animation: avatar-character-scan 4s ease-in-out infinite; }
+.avatar-character-fx-letal { --character-color: #9bf00b; --character-soft: rgba(45, 226, 230, 0.58); }
+.avatar-character-fx-letal::before { animation: avatar-character-scan 3.2s ease-in-out infinite; }
+.avatar-character-fx-guardian { --character-color: #64e9ff; --character-soft: rgba(124, 58, 237, 0.56); }
+.avatar-character-fx-guardian::before { animation-duration: 5.8s; animation-direction: reverse; }
+
+@keyframes avatar-legend-circuit { to { transform: rotate(360deg); } }
+@keyframes avatar-legend-sparks {
+  0%, 100% { opacity: 0.2; transform: scale(0.92); }
+  35% { opacity: 0.95; transform: scale(1.04); }
+  60% { opacity: 0.35; transform: scale(0.98); }
+}
+@keyframes avatar-legend-lightning {
+  0%, 62%, 70%, 100% { opacity: 0.12; }
+  64%, 68% { opacity: 1; }
+  66% { opacity: 0.2; }
+}
+@keyframes avatar-character-orbit { to { transform: rotate(-360deg); } }
+@keyframes avatar-character-stars {
+  0%, 100% { opacity: 0.18; transform: scale(0.9) rotate(-6deg); }
+  50% { opacity: 0.95; transform: scale(1.06) rotate(6deg); }
+}
+@keyframes avatar-character-scan {
+  0%, 100% { opacity: 0.18; transform: translateY(-7%); }
+  48% { opacity: 0.95; transform: translateY(8%); }
+  55% { opacity: 0.3; transform: translateY(9%); }
+}
+
+.avatar-preview-stage-special {
+  isolation: isolate;
+}
+.avatar-preview-stage-light {
+  position: absolute;
+  inset: -6%;
+  z-index: -1;
+  pointer-events: none;
+  background: conic-gradient(from 0deg, transparent 0 19%, var(--preview-color) 26%, transparent 35% 62%, var(--preview-color) 69%, transparent 78%);
+  -webkit-mask-image: radial-gradient(circle, transparent 38%, #000 58%, transparent 76%);
+  mask-image: radial-gradient(circle, transparent 38%, #000 58%, transparent 76%);
+  opacity: 0.62;
+  animation: avatar-preview-crown 12s linear infinite;
+}
+.avatar-preview-oro { --preview-color: rgba(255, 213, 74, 0.85); }
+.avatar-preview-tormenta { --preview-color: rgba(91, 236, 255, 0.85); }
+.avatar-preview-unico { --preview-color: rgba(189, 123, 255, 0.95); }
+.avatar-preview-unico .avatar-preview-stage-light { animation-duration: 7s; animation-direction: reverse; }
+@keyframes avatar-preview-crown { to { transform: rotate(360deg); } }
+
 @keyframes avatar-aura-lightning {
   0%, 64%, 100% { opacity: 0.12; transform: scale(0.9) rotate(-6deg); }
   67% { opacity: 0.82; transform: scale(1.04) rotate(3deg); }
@@ -687,7 +805,12 @@ body {
   .avatar-frame-spark,
   .avatar-frame-flame,
   .avatar-frame-ray,
-  .avatar-aura { animation: none !important; }
+  .avatar-aura,
+  .avatar-frame-legend-fx::before,
+  .avatar-frame-legend-fx::after,
+  .avatar-character-fx::before,
+  .avatar-character-fx::after,
+  .avatar-preview-stage-light { animation: none !important; }
 }
 
 @keyframes cofre-reward-glow {

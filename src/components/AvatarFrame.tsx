@@ -244,6 +244,8 @@ export default function AvatarFrame({
   const animado = Boolean(marcoInfo.animacion);
   const avatarAnimado = config.avatarAnimacion !== "ninguna";
   const esMarcoLiga = marco.startsWith("liga-");
+  const personajeEspecial = ["celestial", "deidad", "ronda", "jefe", "cronica", "letal", "guardian"].includes(config.avatarAnimacion);
+  const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
 
   return (
     <span
@@ -321,6 +323,7 @@ export default function AvatarFrame({
           <span className="avatar-frame-glitch-line glitch-b" />
         </>
       )}
+      {marcoLegendario && <span className={`avatar-frame-legend-fx avatar-frame-legend-${marco}`} aria-hidden="true" />}
       {!marcoInfo.arte && (
         <svg
           viewBox="0 0 100 100"
@@ -525,6 +528,7 @@ export default function AvatarFrame({
           />
         )}
       </span>
+      {personajeEspecial && <span className={`avatar-character-fx avatar-character-fx-${config.avatarAnimacion}`} aria-hidden="true" />}
     </span>
   );
 }
