@@ -122,14 +122,13 @@ function elegirRuletaBar(random: () => number = Math.random): string {
 // servidor (RPC) para que no se puedan falsificar desde el cliente.
 const CARTAS_RPC_CRUZADAS = new Set(["mano-larga", "cambio-de-vaso"]);
 
-// Estas cartas tienen arte y descripción, pero todavía no tienen resolución
-// en el cliente ni en las migraciones versionadas. No consumirlas en vano.
-const CARTAS_SIN_EFECTO = new Set([
-  "trono-del-campeon",
-  "dado-maldito",
-  "brindis-prohibido",
-  "caliz-final-boss",
-]);
+// Cartas con arte y descripción pero sin resolución todavía (ni aquí ni en
+// finalizar_noche). Trono del Campeón, Dado Maldito, Brindis Prohibido y
+// Cáliz Final Boss SÍ tienen resolución completa en finalizar_noche (ver
+// supabase/README.md, «Cuatro cartas que ya funcionaban sin estar
+// documentadas», y supabase/migrations/20260924173746_documenta_finalizar_noche.sql)
+// y ya no se bloquean aquí.
+const CARTAS_SIN_EFECTO = new Set<string>([]);
 
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
@@ -836,6 +835,12 @@ export default function NocheLive({
     }
     if (carta.id === "copia-de-seguridad" && !cartaADuplicar) {
       setMensajeCarta("Elige qué carta quieres duplicar.");
+      return;
+    }
+    // finalizar_noche solo premia Sombra del After si se usó de madrugada
+    // (antes de las 6h); si no, la consumiría sin dar nada a cambio.
+    if (carta.id === "sombra-del-after" && new Date().getUTCHours() >= 6) {
+      setMensajeCarta("Sombra del After solo funciona de madrugada. Espera a que sea más tarde.");
       return;
     }
 
