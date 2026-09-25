@@ -13,7 +13,9 @@ export type AvatarConfig = {
     | "jefe"
     | "cronica"
     | "letal"
-    | "guardian";
+    | "guardian"
+    | "celestial"
+    | "deidad";
   piel: string;
   caraForma: "redonda" | "cuadrada" | "afilada";
   peloEstilo: number; // 0-9
@@ -175,7 +177,7 @@ export function parseAvatarConfig(raw: unknown): AvatarConfig {
     typeof r.avatarImagen === "string" && r.avatarImagen.startsWith("/avatars/ai/")
       ? r.avatarImagen
       : AVATAR_PREDETERMINADO.avatarImagen;
-  const avatarAnimacion = (
+  const avatarAnimacionGuardada = (
     [
       "ninguna",
       "neon",
@@ -188,10 +190,17 @@ export function parseAvatarConfig(raw: unknown): AvatarConfig {
       "cronica",
       "letal",
       "guardian",
+      "celestial",
+      "deidad",
     ] as const
   ).includes(r.avatarAnimacion ?? "ninguna")
     ? r.avatarAnimacion!
     : AVATAR_PREDETERMINADO.avatarAnimacion;
+  const avatarAnimacion = avatarImagen === "/avatars/ai/items/angel-agua.webp"
+    ? "celestial"
+    : avatarImagen === "/avatars/ai/items/dios-ultimo-trago.webp"
+      ? "deidad"
+      : avatarAnimacionGuardada;
   const caraForma = FORMAS_CARA.includes(r.caraForma ?? "redonda")
     ? r.caraForma!
     : AVATAR_PREDETERMINADO.caraForma;

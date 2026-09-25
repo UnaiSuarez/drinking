@@ -306,7 +306,7 @@ export const TIENDA_AVATARES: TiendaAvatar[] = [
     precio: 520,
     rareza: "legendaria",
     imagen: "/avatars/ai/items/angel-agua.webp",
-    config: avatarIA("/avatars/ai/items/angel-agua.webp", "aura"),
+    config: avatarIA("/avatars/ai/items/angel-agua.webp", "celestial"),
   },
   {
     id: "dios-ultimo-trago",
@@ -315,7 +315,7 @@ export const TIENDA_AVATARES: TiendaAvatar[] = [
     precio: 650,
     rareza: "legendaria",
     imagen: "/avatars/ai/items/dios-ultimo-trago.webp",
-    config: avatarIA("/avatars/ai/items/dios-ultimo-trago.webp", "rayos"),
+    config: avatarIA("/avatars/ai/items/dios-ultimo-trago.webp", "deidad"),
   },
 ];
 

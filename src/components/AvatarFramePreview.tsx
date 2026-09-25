@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import AvatarFrame from "@/components/AvatarFrame";
 import { type AvatarConfig, type EstadoAvatar } from "@/lib/avatar";
 import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
@@ -32,6 +33,12 @@ export default function AvatarFramePreview({
   const [abierto, setAbierto] = useState(false);
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
+  const sinMovimiento = useReducedMotion();
+  const personajeUnico = ["ronda", "jefe", "cronica", "letal", "guardian"].includes(config.avatarAnimacion);
+  const personajeLegendario = config.avatarAnimacion === "celestial" || config.avatarAnimacion === "deidad";
+  const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
+  const especial = personajeUnico || personajeLegendario || marcoLegendario;
+  const tonoEspecial = personajeUnico ? "unico" : config.avatarAnimacion === "deidad" || marco === "tormenta" ? "tormenta" : "oro";
   useModalScrollLock(abierto);
 
   useEffect(() => {
@@ -93,56 +100,63 @@ export default function AvatarFramePreview({
         </button>
       )}
 
-      {abierto && typeof document !== "undefined" && createPortal(
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-fondo/90 p-5 backdrop-blur-sm"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby={tituloId}
-          onClick={() => setAbierto(false)}
-        >
-          <div
-            className="w-full max-w-sm rounded-3xl border border-borde bg-tarjeta p-5 text-center shadow-2xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="mb-4 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setAbierto(false)}
-                className="rounded-xl border border-borde px-3 py-2 text-sm text-texto2 active:scale-95"
+      {typeof document !== "undefined" && createPortal(
+        <AnimatePresence>
+          {abierto && (
+            <motion.div
+              key="avatar-preview"
+              className={`avatar-preview-overlay fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-fondo/90 p-5 backdrop-blur-sm ${especial ? `avatar-preview-${tonoEspecial}` : ""}`}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={tituloId}
+              onClick={() => setAbierto(false)}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: sinMovimiento ? 0.12 : 0.25 }}
+            >
+              <motion.div
+                className="w-full max-w-sm rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
+                onClick={(event) => event.stopPropagation()}
+                initial={sinMovimiento ? { opacity: 0 } : { opacity: 0, y: especial ? 36 : 16, scale: especial ? 0.82 : 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={sinMovimiento ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.96 }}
+                transition={sinMovimiento ? { duration: 0.12 } : { type: "spring", stiffness: especial ? 230 : 320, damping: especial ? 20 : 28 }}
               >
-                Cerrar
-              </button>
-            </div>
-            <div className="mb-4 flex justify-center">
-              {portraitOnly && config.avatarImagen ? (
-                <div className={`relative max-h-[50dvh] max-w-full ${previewClassName}`}>
-                  <Image src={config.avatarImagen} alt={titulo} fill sizes="(max-width: 768px) 80vw, 360px" className="object-contain" />
+                <div className="mb-4 flex justify-end">
+                  <button type="button" onClick={() => setAbierto(false)} className="rounded-lg border border-borde px-3 py-2 text-sm text-texto2 active:scale-95">
+                    Cerrar
+                  </button>
                 </div>
-              ) : (
-                <AvatarFrame
-                  config={config}
-                  estado={estado}
-                  marco={marco}
-                  className={previewClassName}
-                  imageSizes="(max-width: 768px) 80vw, 360px"
-                />
-              )}
-            </div>
-            <h2 id={tituloId} className="font-titulo text-2xl text-texto">
-              {titulo}
-            </h2>
-            {subtitulo && (
-              <p className="mt-1 text-sm text-texto2">{subtitulo}</p>
-            )}
-            {!portraitOnly && (
-              <>
-                <p className="mt-3 font-titulo text-sm text-ambar">{marcoInfo.nombre}</p>
-                <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
-              </>
-            )}
-          </div>
-        </div>,
+                <div className="mb-4 flex justify-center">
+                  <motion.div
+                    className={`avatar-preview-stage relative flex max-w-full items-center justify-center ${especial ? "avatar-preview-stage-special" : ""}`}
+                    initial={sinMovimiento || !especial ? false : { opacity: 0, y: -42, rotate: -5, scale: 1.12 }}
+                    animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
+                    transition={sinMovimiento ? { duration: 0 } : { type: "spring", stiffness: 190, damping: 18, delay: especial ? 0.1 : 0 }}
+                  >
+                    {especial && <span className="avatar-preview-stage-light" aria-hidden="true" />}
+                    {portraitOnly && config.avatarImagen ? (
+                      <div className={`relative max-h-[50dvh] max-w-full ${previewClassName}`}>
+                        <Image src={config.avatarImagen} alt={titulo} fill sizes="(max-width: 768px) 80vw, 360px" className="object-contain" />
+                      </div>
+                    ) : (
+                      <AvatarFrame config={config} estado={estado} marco={marco} className={previewClassName} imageSizes="(max-width: 768px) 80vw, 360px" />
+                    )}
+                  </motion.div>
+                </div>
+                <h2 id={tituloId} className="font-titulo text-2xl text-texto">{titulo}</h2>
+                {subtitulo && <p className="mt-1 text-sm text-texto2">{subtitulo}</p>}
+                {!portraitOnly && (
+                  <>
+                    <p className="mt-3 font-titulo text-sm text-ambar">{marcoInfo.nombre}</p>
+                    <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
+                  </>
+                )}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
         document.body
       )}
     </>
