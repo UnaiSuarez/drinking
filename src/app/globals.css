@@ -259,8 +259,7 @@ body {
   animation: marco-corona-viva 4.8s ease-in-out infinite;
 }
 .avatar-frame-portal::after {
-  background: conic-gradient(from 0deg, transparent 10%, #a78bfa 24%, transparent 36%, #2de2e6 55%, transparent 68%, #ff2e93 84%, transparent);
-  animation: marco-portal-vivo 8s linear infinite;
+  display: none;
 }
 .avatar-frame-tormenta::after,
 .avatar-frame-liga-challenger::after {
@@ -275,9 +274,10 @@ body {
      solo se vea su borde ornamental y el hueco central deje ver el avatar. */
   z-index: 3;
   pointer-events: none;
-  /* El arte IA tiene un fondo azul opaco. Lighten lo integra en la
-     superficie de la tarjeta y deja visibles los metales luminosos. */
-  mix-blend-mode: lighten;
+  /* El arte IA trae fondo azul opaco: el contraste lo oscurece y screen
+     conserva los metales luminosos sobre la base solida de la tarjeta. */
+  mix-blend-mode: screen;
+  filter: contrast(2.6) brightness(1.15) saturate(1.1);
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M0 0H100V100H0V0Z M39 30L30 39V61L39 70H61L70 61V39L61 30Z'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath fill='%23fff' fill-rule='evenodd' d='M0 0H100V100H0V0Z M39 30L30 39V61L39 70H61L70 61V39L61 30Z'/%3E%3C/svg%3E");
   -webkit-mask-size: 100% 100%;
@@ -743,25 +743,127 @@ body {
   55% { opacity: 0.3; transform: translateY(9%); }
 }
 
-.avatar-preview-stage-special {
-  isolation: isolate;
-}
-.avatar-preview-stage-light {
+.avatar-preview-stage { isolation: isolate; }
+.avatar-preview-stage > .avatar-frame,
+.avatar-preview-stage > div { z-index: 1; }
+.avatar-preview-has-element .avatar-aura,
+.avatar-preview-has-element .avatar-frame-shine,
+.avatar-preview-has-element .avatar-frame-rayos-fx,
+.avatar-preview-has-element .avatar-frame-disco-fx,
+.avatar-preview-has-element .avatar-frame-prisma-fx,
+.avatar-preview-has-element .avatar-frame-cristal-fx,
+.avatar-preview-has-element .avatar-frame-halo-fx,
+.avatar-preview-has-element .avatar-frame-portal-fx,
+.avatar-preview-has-element .avatar-frame-gem-glint,
+.avatar-preview-has-element .avatar-frame-dust,
+.avatar-preview-has-element .avatar-frame-ember,
+.avatar-preview-has-element .avatar-frame-legend-fx,
+.avatar-preview-has-element .avatar-character-fx,
+.avatar-preview-has-element .avatar-frame-flame,
+.avatar-preview-has-element .avatar-frame-ray,
+.avatar-preview-has-element .avatar-frame::after { display: none; }
+.avatar-elemental {
   position: absolute;
-  inset: -6%;
-  z-index: -1;
+  inset: -10%;
+  z-index: 0;
   pointer-events: none;
-  background: conic-gradient(from 0deg, transparent 0 19%, var(--preview-color) 26%, transparent 35% 62%, var(--preview-color) 69%, transparent 78%);
-  -webkit-mask-image: radial-gradient(circle, transparent 38%, #000 58%, transparent 76%);
-  mask-image: radial-gradient(circle, transparent 38%, #000 58%, transparent 76%);
-  opacity: 0.62;
-  animation: avatar-preview-crown 12s linear infinite;
+  overflow: hidden;
 }
-.avatar-preview-oro { --preview-color: rgba(255, 213, 74, 0.85); }
-.avatar-preview-tormenta { --preview-color: rgba(91, 236, 255, 0.85); }
-.avatar-preview-unico { --preview-color: rgba(189, 123, 255, 0.95); }
-.avatar-preview-unico .avatar-preview-stage-light { animation-duration: 7s; animation-direction: reverse; }
-@keyframes avatar-preview-crown { to { transform: rotate(360deg); } }
+.avatar-elemental-fire-canvas { display: block; width: 100%; height: 100%; }
+.avatar-elemental-fire-shapes { position: absolute; inset: 0; width: 100%; height: 100%; }
+.avatar-elemental-fire-shapes path {
+  fill: url(#avatar-fire-gradient);
+  filter: drop-shadow(0 0 8px #ff5b1a);
+  transform-origin: 50% 90%;
+  animation: avatar-fire-flicker 1.6s ease-in-out infinite alternate;
+}
+.avatar-elemental-fire-shapes path:nth-child(2) { animation-delay: -0.8s; }
+@keyframes avatar-fire-flicker {
+  from { opacity: 0.55; transform: scaleX(0.92) scaleY(0.91); }
+  to { opacity: 0.95; transform: scaleX(1.05) scaleY(1.06); }
+}
+.avatar-elemental-fire {
+  z-index: 2;
+  -webkit-mask-image: radial-gradient(ellipse at center, transparent 45%, #000 68%, transparent 91%);
+  mask-image: radial-gradient(ellipse at center, transparent 45%, #000 68%, transparent 91%);
+}
+.avatar-elemental-lightning svg { width: 100%; height: 100%; overflow: visible; }
+.avatar-elemental-lightning path {
+  fill: none;
+  stroke: #b7f7ff;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 5px #2de2e6) drop-shadow(0 0 10px #2de2e6);
+  animation: avatar-lightning-strike 4s steps(1, end) infinite;
+}
+@keyframes avatar-lightning-strike {
+  0%, 68%, 74%, 100% { opacity: 0; }
+  69%, 72%, 76% { opacity: 1; }
+  70%, 73% { opacity: 0.17; }
+}
+.avatar-elemental-ice .avatar-elemental-shard {
+  position: absolute;
+  top: -1%;
+  left: calc(3% + var(--shard-index) * 18%);
+  width: 12%;
+  height: 27%;
+  background: linear-gradient(90deg, rgba(184, 247, 255, 0.05), rgba(184, 247, 255, 0.84), rgba(45, 226, 230, 0.18));
+  clip-path: polygon(50% 0, 100% 35%, 55% 100%, 0 35%);
+  transform-origin: top;
+  animation: avatar-ice-breathe 4s ease-in-out infinite alternate;
+  animation-delay: calc(var(--shard-index) * -0.35s);
+}
+.avatar-elemental-shard:nth-child(1) { --shard-index: 0; }
+.avatar-elemental-shard:nth-child(2) { --shard-index: 1; }
+.avatar-elemental-shard:nth-child(3) { --shard-index: 2; }
+.avatar-elemental-shard:nth-child(4) { --shard-index: 3; }
+.avatar-elemental-shard:nth-child(5) { --shard-index: 4; }
+.avatar-elemental-shard:nth-child(6) { --shard-index: 5; }
+@keyframes avatar-ice-breathe {
+  from { opacity: 0.45; transform: scaleY(0.84); }
+  to { opacity: 0.92; transform: scaleY(1.06); }
+}
+.avatar-elemental-light .avatar-elemental-beam {
+  position: absolute;
+  top: -8%;
+  left: 0;
+  width: 65%;
+  height: 105%;
+  background: linear-gradient(to bottom, rgba(255, 246, 184, 0.43), transparent 82%);
+  clip-path: polygon(42% 0, 56% 0, 100% 100%, 0 100%);
+  filter: blur(5px);
+  transform-origin: 50% 0;
+  animation: avatar-light-sweep 6s ease-in-out infinite alternate;
+}
+.avatar-elemental-light .avatar-elemental-beam:nth-child(2) {
+  left: 35%;
+  animation-delay: -3s;
+}
+@keyframes avatar-light-sweep {
+  from { opacity: 0.27; transform: rotate(-13deg); }
+  to { opacity: 0.72; transform: rotate(13deg); }
+}
+.avatar-elemental-portal .avatar-elemental-ring {
+  position: absolute;
+  inset: 4%;
+  border: 4px solid transparent;
+  border-top-color: #2de2e6;
+  border-bottom-color: #bd7bff;
+  border-radius: 50%;
+  filter: drop-shadow(0 0 6px #7c3aed);
+  animation: avatar-portal-turn 8s linear infinite;
+}
+.avatar-elemental-portal { inset: -2%; z-index: 2; overflow: visible; }
+.avatar-elemental-portal .avatar-elemental-ring:nth-child(2) {
+  inset: 0;
+  border-width: 2px;
+  border-top-color: #ff2e93;
+  border-bottom-color: #2de2e6;
+  animation-direction: reverse;
+  animation-duration: 12s;
+}
+@keyframes avatar-portal-turn { to { transform: rotate(360deg); } }
 
 @keyframes avatar-aura-lightning {
   0%, 64%, 100% { opacity: 0.12; transform: scale(0.9) rotate(-6deg); }
@@ -810,7 +912,8 @@ body {
   .avatar-frame-legend-fx::after,
   .avatar-character-fx::before,
   .avatar-character-fx::after,
-  .avatar-preview-stage-light { animation: none !important; }
+  .avatar-elemental *,
+  .avatar-elemental path { animation: none !important; }
 }
 
 @keyframes cofre-reward-glow {
