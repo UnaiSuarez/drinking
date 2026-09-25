@@ -854,7 +854,7 @@ body {
   filter: drop-shadow(0 0 6px #7c3aed);
   animation: avatar-portal-turn 8s linear infinite;
 }
-.avatar-elemental-portal { inset: -2%; }
+.avatar-elemental-portal { inset: -2%; z-index: 2; overflow: visible; }
 .avatar-elemental-portal .avatar-elemental-ring:nth-child(2) {
   inset: 0;
   border-width: 2px;
