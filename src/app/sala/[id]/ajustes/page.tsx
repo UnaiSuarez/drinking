@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BalanceEditor from "@/components/BalanceEditor";
+import ArchivarSalaControl from "@/components/ArchivarSalaControl";
 
 export default async function AjustesSalaPage({
   params,
@@ -13,6 +14,7 @@ export default async function AjustesSalaPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
   const { data: sala } = await supabase
     .from("salas")
@@ -27,7 +29,7 @@ export default async function AjustesSalaPage({
     .from("sala_miembros")
     .select("rol")
     .eq("sala_id", id)
-    .eq("usuario_id", user!.id)
+    .eq("usuario_id", user.id)
     .single();
 
   const esAdmin =
@@ -48,8 +50,9 @@ export default async function AjustesSalaPage({
         ← {sala.nombre}
       </Link>
       <h1 className="mb-2 mt-2 font-titulo text-3xl text-texto">
-        ⚖️ Balance de liga
+        Ajustes de sala
       </h1>
+      <h2 className="mt-8 font-titulo text-xl text-texto">Balance de liga</h2>
       <p className="mb-6 text-sm text-texto2">
         Ajusta cuántos Puntos de Liga da cada cosa en esta sala. Los cambios
         solo afectan a las noches que se cierren a partir de ahora.
@@ -66,6 +69,13 @@ export default async function AjustesSalaPage({
         <BalanceEditor
           salaId={sala.id}
           balanceActual={(sala.balance ?? null) as Record<string, number> | null}
+        />
+      )}
+      {miembro.rol === "fundador" && (
+        <ArchivarSalaControl
+          salaId={sala.id}
+          nombre={sala.nombre}
+          nocheEnCurso={Boolean(nocheEnCurso)}
         />
       )}
     </main>

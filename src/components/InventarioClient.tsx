@@ -27,6 +27,7 @@ import {
 } from "@/lib/inventario";
 import { createClient } from "@/lib/supabase/client";
 import {
+  AVATARES_GRATIS,
   PERSONAJES_OCULTOS,
   TIENDA_AVATARES,
   TIENDA_MARCOS,
@@ -145,8 +146,8 @@ export default function InventarioClient({
 
   async function equiparAvatar(id: string) {
     if (equipando) return;
-    const item = [...TIENDA_AVATARES, ...PERSONAJES_OCULTOS].find((entry) => entry.id === id);
-    if (!item || (!tienda.avatares.includes(id) && !inventario.personajesOcultos.includes(id))) return;
+    const item = [...AVATARES_GRATIS, ...TIENDA_AVATARES, ...PERSONAJES_OCULTOS].find((entry) => entry.id === id);
+    if (!item || (!AVATARES_GRATIS.some((entry) => entry.id === id) && !tienda.avatares.includes(id) && !inventario.personajesOcultos.includes(id))) return;
     setEquipando(id);
     setMensaje(null);
     const ok = await guardarConfig({
@@ -241,18 +242,20 @@ export default function InventarioClient({
       <section className="mb-8">
         <h2 className="mb-3 font-titulo text-xl text-texto">Mis personajes</h2>
         <ul className="grid grid-cols-2 gap-3">
-          {[...TIENDA_AVATARES.filter((item) => tienda.avatares.includes(item.id)),
-            ...PERSONAJES_OCULTOS.filter((item) => inventario.personajesOcultos.includes(item.id))].map((item) => (
-            <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
+          {[...AVATARES_GRATIS,
+            ...TIENDA_AVATARES.filter((item) => tienda.avatares.includes(item.id)),
+            ...PERSONAJES_OCULTOS.filter((item) => inventario.personajesOcultos.includes(item.id))].map((item) => {
+            const equipado = tienda.avatarEquipado === item.id || (!tienda.avatarEquipado && avatar.avatarImagen === item.imagen);
+            return <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
               <AvatarFramePreview config={item.config} marco={marcoActual} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
               <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
-              <button type="button" disabled={Boolean(equipando) || tienda.avatarEquipado === item.id} onClick={() => void equiparAvatar(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
-                {tienda.avatarEquipado === item.id ? "Equipado" : "Equipar"}
+              {AVATARES_GRATIS.some((gratis) => gratis.id === item.id) && <p className="mb-1 text-xs text-cian">Gratis</p>}
+              <button type="button" disabled={Boolean(equipando) || equipado} onClick={() => void equiparAvatar(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
+                {equipado ? "Equipado" : "Equipar"}
               </button>
-            </li>
-          ))}
+            </li>;
+          })}
         </ul>
-        {tienda.avatares.length === 0 && inventario.personajesOcultos.length === 0 && <p className="text-sm text-texto2">Aún no tienes personajes desbloqueados.</p>}
       </section>
 
       <section className="mb-8">

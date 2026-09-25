@@ -169,6 +169,27 @@ export const TIENDA_MARCOS: TiendaMarco[] = [
   },
 ];
 
+export const AVATARES_GRATIS: TiendaAvatar[] = [
+  {
+    id: "anfitrion",
+    nombre: "Anfitrión",
+    descripcion: "El personaje con el que empieza todo.",
+    precio: 0,
+    rareza: "comun",
+    imagen: "/avatars/ai/default-host.webp",
+    config: avatarIA("/avatars/ai/default-host.webp"),
+  },
+  {
+    id: "brindis-agua",
+    nombre: "Brindis de Agua",
+    descripcion: "Siempre tiene un vaso listo para la siguiente ronda.",
+    precio: 0,
+    rareza: "comun",
+    imagen: "/avatars/ai/free-water-host.webp",
+    config: avatarIA("/avatars/ai/free-water-host.webp"),
+  },
+];
+
 export const TIENDA_AVATARES: TiendaAvatar[] = [
   {
     id: "dj-neon",
@@ -358,6 +379,7 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
 
 const MARCOS_COMPRABLES = new Set(TIENDA_MARCOS.map((marco) => marco.id));
 const AVATARES_COMPRABLES = new Set(TIENDA_AVATARES.map((avatar) => avatar.id));
+const AVATARES_LIBRES = new Set(AVATARES_GRATIS.map((avatar) => avatar.id));
 const PERSONAJES_DESBLOQUEABLES = new Set(PERSONAJES_OCULTOS.map((personaje) => personaje.id));
 
 export function calcularChapasGanadas(params: {
@@ -399,7 +421,7 @@ export function parseTiendaState(raw: unknown): TiendaState {
       : null;
   const avatarEquipado =
     tienda.avatarEquipado &&
-    (avatares.includes(tienda.avatarEquipado) || personajes.includes(tienda.avatarEquipado))
+    (AVATARES_LIBRES.has(tienda.avatarEquipado) || avatares.includes(tienda.avatarEquipado) || personajes.includes(tienda.avatarEquipado))
       ? tienda.avatarEquipado
       : null;
 
