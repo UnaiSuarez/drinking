@@ -111,7 +111,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "objetivo",
     imagen: "/cards/ai/items/cubata-obligatorio.webp",
     descripcion: "Elige a alguien y mandale el recado con elegancia.",
-    efecto: "El objetivo debe registrar un cubata como proxima bebida o pierde el bonus de su siguiente registro.",
+    efecto: "El objetivo gana +5 PL extra si su proxima bebida es un cubata. Si no lo es, simplemente no recibe el bonus.",
   },
   {
     id: "chupito-castigo",
@@ -164,8 +164,8 @@ export const CARTAS_COFRES: CartaCofre[] = [
     rareza: "comun",
     alcance: "objetivo",
     imagen: "/cards/ai/items/selfie-obligatoria.webp",
-    descripcion: "Prueba grafica o sospecha razonable.",
-    efecto: "El objetivo debe registrar su proxima bebida con comentario o pierde 2 PL.",
+    descripcion: "Que quede constancia, aunque sea por escrito.",
+    efecto: "El objetivo debe registrar su proxima bebida con un comentario o pierde 2 PL.",
   },
   {
     id: "pirata-del-hielo",
@@ -300,7 +300,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "objetivo",
     imagen: "/cards/ai/items/maldicion-del-lider.webp",
     descripcion: "La corona pesa cuando la mesa se aburre.",
-    efecto: "El lider de la noche pierde 1 PL por cada bebida que registre durante 20 minutos.",
+    efecto: "Elige a alguien: pierde 1 PL por cada bebida que registre durante los proximos 20 minutos, aunque deje de ir en cabeza.",
   },
   {
     id: "inmunidad-vip",
