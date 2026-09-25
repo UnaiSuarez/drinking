@@ -24,14 +24,33 @@ export type TiendaMarco = {
   rareza: TiendaRareza;
 };
 
+/** Variante de un personaje ligada a un momento histórico del grupo. Cada
+ * skin cuenta su propia historia. Todavía no hay ninguna: se rellenará
+ * cuando existan las ilustraciones. */
+export type PersonajeSkin = {
+  id: string;
+  nombre: string;
+  /** Momento histórico que conmemora (p. ej. una noche concreta). */
+  momento: string;
+  historia: string;
+  imagen: string;
+  /** Ilustración de cuerpo completo de la skin, si existe. */
+  ilustracion?: string;
+};
+
 export type TiendaAvatar = {
   id: string;
   nombre: string;
   descripcion: string;
   precio: number;
   rareza: TiendaRareza;
+  /** Retrato cuadrado: es lo único que existe hoy de cada personaje. */
   imagen: string;
   config: AvatarConfig;
+  /** Ilustración de cuerpo completo. Solo se declara cuando el arte existe;
+   * mientras falte, la ficha muestra el retrato entero sin recortar. */
+  ilustracion?: string;
+  skins?: PersonajeSkin[];
 };
 
 export type PersonajeOculto = TiendaAvatar & {
@@ -376,6 +395,17 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     config: avatarIA("/avatars/ai/items/guardian-cubata.webp", "guardian"),
   },
 ];
+
+export type PersonajeCatalogo = TiendaAvatar & { habilidad?: string; placeholderImagen?: string };
+
+export function personajePorImagen(imagen: string | null): PersonajeCatalogo | null {
+  if (!imagen) return null;
+  return (
+    [...AVATARES_GRATIS, ...TIENDA_AVATARES, ...PERSONAJES_OCULTOS].find(
+      (personaje) => personaje.imagen === imagen
+    ) ?? null
+  );
+}
 
 const MARCOS_COMPRABLES = new Set(TIENDA_MARCOS.map((marco) => marco.id));
 const AVATARES_COMPRABLES = new Set(TIENDA_AVATARES.map((avatar) => avatar.id));

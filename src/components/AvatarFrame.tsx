@@ -1,4 +1,6 @@
 import Image from "next/image";
+import AvatarFrameFx from "@/components/AvatarFrameFx";
+import { fxDeMarco } from "@/lib/marcoFx";
 import AvatarSVG from "@/components/AvatarSVG";
 import { type AvatarConfig, type EstadoAvatar } from "@/lib/avatar";
 import { type MarcoPerfil } from "@/lib/marcos";
@@ -39,12 +41,14 @@ const MARCO_CLASES: Record<
     inner: "from-[#eef1f8] via-[#8a8fa8] to-[#34384e]",
     metal: "#c7ccdb",
     gema: "#2de2e6",
+    animacion: "shine",
   },
   oro: {
     base: "avatar-frame-oro",
     inner: "from-[#fff1a8] via-[#ffb627] to-[#8a4d08]",
     metal: "#ffd54a",
     gema: "#ff2e93",
+    animacion: "shine",
   },
   neon: {
     base: "avatar-frame-neon",
@@ -77,12 +81,14 @@ const MARCO_CLASES: Record<
     inner: "from-[#e0fbff] via-[#2de2e6] to-[#33415f]",
     metal: "#b8f7ff",
     gema: "#ffffff",
+    animacion: "cristal",
   },
   vip: {
     base: "avatar-frame-vip",
     inner: "from-[#fff6b8] via-[#ffb627] to-[#8a4d08]",
     metal: "#ffd54a",
     gema: "#ff2e93",
+    animacion: "shine",
   },
   cosmico: {
     base: "avatar-frame-cosmico",
@@ -241,20 +247,22 @@ export default function AvatarFrame({
   imageSizes?: string;
 }) {
   const marcoInfo = MARCO_CLASES[marco];
-  const animado = Boolean(marcoInfo.animacion);
-  const avatarAnimado = config.avatarAnimacion !== "ninguna" && !marcoInfo.animacion && !config.avatarImagen;
+  const fx = fxDeMarco(marco);
   const esMarcoLiga = marco.startsWith("liga-");
-  const personajeEspecial = !marcoInfo.animacion && ["celestial", "deidad", "ronda", "jefe", "cronica", "letal", "guardian"].includes(config.avatarAnimacion);
-  const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
 
   return (
     <span
-      className={`avatar-frame relative inline-flex shrink-0 items-center justify-center ${marcoInfo.base} ${className}`}
+      className={`avatar-frame relative inline-flex shrink-0 items-center justify-center ${marcoInfo.base} ${marcoInfo.arte ? "avatar-frame-has-art" : ""} ${className}`}
       aria-label={`Avatar con marco ${marco}`}
     >
+      {/* El personaje va siempre estático dentro del marco: solo se anima el
+          marco. La animación propia del personaje vive en su ficha. */}
       <span
-        className={marcoInfo.arte ? "absolute inset-0 bg-tarjeta" : `absolute inset-0 bg-gradient-to-br ${marcoInfo.inner}`}
+        className={marcoInfo.arte ? "absolute inset-0 bg-fondo" : `absolute inset-0 bg-gradient-to-br ${marcoInfo.inner}`}
       />
+      {marcoInfo.arte && (
+        <span className="absolute inset-y-0 inset-x-[13%] bg-fondo" />
+      )}
       {marcoInfo.arte && (
         <Image
           src={marcoInfo.arte}
@@ -264,66 +272,7 @@ export default function AvatarFrame({
           className="avatar-frame-art object-cover"
         />
       )}
-      {animado && <span className="avatar-frame-shine absolute inset-0" />}
-      {avatarAnimado && (
-        <span className={`avatar-aura avatar-aura-${config.avatarAnimacion}`} />
-      )}
-      {(marcoInfo.animacion === "rayos" || marcoInfo.animacion === "tormenta") && (
-        <span
-          className={`avatar-frame-rayos-fx ${
-            marcoInfo.animacion === "tormenta" ? "avatar-frame-tormenta-fx" : ""
-          }`}
-        />
-      )}
-      {marcoInfo.animacion === "disco" && (
-        <>
-          <span className="avatar-frame-disco-fx" />
-          <span className="avatar-frame-spark disco-glint-a" />
-          <span className="avatar-frame-spark disco-glint-b" />
-        </>
-      )}
-      {marcoInfo.animacion === "orbita" && (
-        <span className="avatar-frame-orbit-wrap">
-          <span className="avatar-frame-orbit-dot" />
-          <span className="avatar-frame-orbit-dot orbit-dot-2" />
-        </span>
-      )}
-      {marcoInfo.animacion === "prisma" && <span className="avatar-frame-prisma-fx" />}
-      {marcoInfo.animacion === "corona" && (
-        <>
-          <span className="avatar-frame-gem-glint gem-glint-a" />
-          <span className="avatar-frame-gem-glint gem-glint-b" />
-          <span className="avatar-frame-gem-glint gem-glint-c" />
-        </>
-      )}
-      {marcoInfo.animacion === "cristal" && (
-        <>
-          <span className="avatar-frame-cristal-fx" />
-          <span className="avatar-frame-gem-glint gem-glint-a cristal-glint" />
-        </>
-      )}
-      {marcoInfo.animacion === "halo" && <span className="avatar-frame-halo-fx" />}
-      {marcoInfo.animacion === "portal" && !marcoInfo.arte && <span className="avatar-frame-portal-fx" />}
-      {marcoInfo.animacion === "polvo" && (
-        <>
-          <span className="avatar-frame-dust dust-a" />
-          <span className="avatar-frame-dust dust-b" />
-          <span className="avatar-frame-dust dust-c" />
-        </>
-      )}
-      {marcoInfo.animacion === "fuego-intenso" && (
-        <>
-          <span className="avatar-frame-ember ember-a" />
-          <span className="avatar-frame-ember ember-b" />
-        </>
-      )}
-      {marcoInfo.animacion === "glitch" && (
-        <>
-          <span className="avatar-frame-glitch-line glitch-a" />
-          <span className="avatar-frame-glitch-line glitch-b" />
-        </>
-      )}
-      {marcoLegendario && <span className={`avatar-frame-legend-fx avatar-frame-legend-${marco}`} aria-hidden="true" />}
+      {fx && <AvatarFrameFx kind={fx} arte={Boolean(marcoInfo.arte)} />}
       {!marcoInfo.arte && (
         <svg
           viewBox="0 0 100 100"
@@ -511,7 +460,7 @@ export default function AvatarFrame({
         )}
         </svg>
       )}
-      <span className="absolute inset-[18%] z-[2] flex items-center justify-center overflow-hidden bg-fondo/95 [clip-path:polygon(14%_0,86%_0,100%_14%,100%_86%,86%_100%,14%_100%,0_86%,0_14%)]">
+      <span className={`absolute z-[2] ${marcoInfo.arte ? "inset-[27%]" : "inset-[18%]"} flex items-center justify-center overflow-hidden bg-fondo/95 [clip-path:polygon(14%_0,86%_0,100%_14%,100%_86%,86%_100%,14%_100%,0_86%,0_14%)]`}>
         {config.avatarImagen ? (
           <Image
             src={config.avatarImagen}
@@ -528,7 +477,6 @@ export default function AvatarFrame({
           />
         )}
       </span>
-      {personajeEspecial && <span className={`avatar-character-fx avatar-character-fx-${config.avatarAnimacion}`} aria-hidden="true" />}
     </span>
   );
 }

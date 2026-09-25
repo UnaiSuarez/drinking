@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import { PersonajeFichaTrigger } from "@/components/PersonajeFicha";
 import { createClient } from "@/lib/supabase/client";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { COFRES_TIPOS } from "@/lib/cofresDesign";
@@ -373,13 +374,10 @@ export default function TiendaClient({
                 className={`rounded-2xl border bg-tarjeta p-4 ${rareza.borde}`}
               >
                 <div className="mb-3 flex justify-center rounded-2xl bg-fondo/60 p-2">
-                  <AvatarFramePreview
-                    config={{ ...item.config, avatarImagen: item.imagen }}
+                  <PersonajeFichaTrigger
+                    personaje={item}
                     marco="madera"
-                    titulo={item.nombre}
-                    subtitulo={`${rareza.etiqueta} · ${item.precio} chapas`}
                     triggerClassName="h-24 w-24"
-                    previewClassName="h-72 w-72"
                   />
                 </div>
                 <div className="mb-1 flex items-center justify-between gap-2">
@@ -440,9 +438,6 @@ export default function TiendaClient({
               inventario.personajeFragmentos[item.id] ?? 0
             );
             const equipado = tienda.avatarEquipado === item.id;
-            const previewConfig = desbloqueado
-              ? item.config
-              : { ...item.config, avatarImagen: item.placeholderImagen };
 
             return (
               <li
@@ -450,17 +445,13 @@ export default function TiendaClient({
                 className={`rounded-2xl border bg-tarjeta p-4 ${rareza.borde}`}
               >
                 <div className="mb-3 flex justify-center rounded-2xl bg-fondo/60 p-2">
-                  <AvatarFramePreview
-                    config={previewConfig}
+                  <PersonajeFichaTrigger
+                    personaje={item}
+                    bloqueado={!desbloqueado}
+                    fragmentos={fragmentos}
+                    fragmentosNecesarios={FRAGMENTOS_PERSONAJE_NECESARIOS}
                     portraitOnly
-                    titulo={desbloqueado ? item.nombre : "???"}
-                    subtitulo={
-                      desbloqueado
-                        ? `${rareza.etiqueta} · ${item.descripcion}`
-                        : `${rareza.etiqueta} · Reúne ${FRAGMENTOS_PERSONAJE_NECESARIOS} fragmentos en cofres (${fragmentos}/${FRAGMENTOS_PERSONAJE_NECESARIOS})`
-                    }
                     triggerClassName="h-24 w-24"
-                    previewClassName="h-72 w-72"
                   />
                 </div>
                 <div className="mb-1 flex items-center justify-between gap-2">
