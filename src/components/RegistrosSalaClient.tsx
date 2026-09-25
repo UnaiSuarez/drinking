@@ -18,22 +18,99 @@ export type MiembroRanking = {
   total: number;
 };
 
+export type DesgloseItem = {
+  usuarioId: string;
+  bebidaTipoNombre: string;
+  bebidaTipoIcono: string;
+  bebidaCatalogoNombre: string | null;
+  rareza: string | null;
+  cantidad: number;
+};
+
+const PAGINA = 20;
+
+const RAREZA_ETIQUETA: Record<string, string> = {
+  rara: " 🔷",
+  epica: " 💗",
+  legendaria: " 👑",
+};
+
 export default function RegistrosSalaClient({
+  salaId,
   registrosIniciales,
-  ranking: rankingInicial,
+  hayMasInicial,
+  ranking,
+  desglose,
+  miembros,
   userId,
   esAdmin,
+  nombrePorUsuario,
+  tipoPorId,
+  nombrePorCatalogo,
 }: {
+  salaId: string;
   registrosIniciales: RegistroSala[];
+  hayMasInicial: boolean;
   ranking: MiembroRanking[];
+  desglose: DesgloseItem[];
+  miembros: { usuarioId: string; nombre: string }[];
   userId: string;
   esAdmin: boolean;
+  nombrePorUsuario: Record<string, string>;
+  tipoPorId: Record<number, { nombre: string; icono: string }>;
+  nombrePorCatalogo: Record<string, string>;
 }) {
   const supabase = createClient();
   const [registros, setRegistros] = useState(registrosIniciales);
-  const [ranking, setRanking] = useState(rankingInicial);
+  const [rankingLocal, setRanking] = useState(ranking);
+  const [hayMas, setHayMas] = useState(hayMasInicial);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [borrandoId, setBorrandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [jugadorFiltro, setJugadorFiltro] = useState<string>("todos");
+
+  const desglosePorJugador = new Map<string, DesgloseItem[]>();
+  for (const item of desglose) {
+    const lista = desglosePorJugador.get(item.usuarioId) ?? [];
+    lista.push(item);
+    desglosePorJugador.set(item.usuarioId, lista);
+  }
+  const jugadoresConDesglose = miembros.filter(
+    (m) =>
+      (jugadorFiltro === "todos" || jugadorFiltro === m.usuarioId) &&
+      desglosePorJugador.has(m.usuarioId)
+  );
+
+  async function cargarMas() {
+    setCargandoMas(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("registros")
+      .select("id, usuario_id, bebida_tipo_id, bebida_catalogo_id, ts")
+      .eq("sala_id", salaId)
+      .order("ts", { ascending: false })
+      .range(registros.length, registros.length + PAGINA - 1);
+    setCargandoMas(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    const nuevos: RegistroSala[] = (data ?? []).map((r) => {
+      const tipo = tipoPorId[r.bebida_tipo_id];
+      return {
+        id: r.id,
+        usuarioId: r.usuario_id,
+        nombre: nombrePorUsuario[r.usuario_id] ?? "???",
+        bebidaNombre: r.bebida_catalogo_id
+          ? nombrePorCatalogo[r.bebida_catalogo_id] ?? tipo?.nombre ?? "???"
+          : tipo?.nombre ?? "???",
+        icono: tipo?.icono ?? "🥤",
+        ts: r.ts,
+      };
+    });
+    setRegistros((prev) => [...prev, ...nuevos]);
+    setHayMas(nuevos.length === PAGINA);
+  }
 
   async function borrar(registro: RegistroSala) {
     setBorrandoId(registro.id);
@@ -67,13 +144,13 @@ export default function RegistrosSalaClient({
         <h2 className="mb-3 font-titulo text-lg text-texto">
           🏅 Quién lleva más
         </h2>
-        {ranking.length === 0 ? (
+        {rankingLocal.length === 0 ? (
           <p className="text-sm text-texto2">
             Todavía no hay nada registrado.
           </p>
         ) : (
           <ul className="space-y-2">
-            {ranking.map((m, i) => (
+            {rankingLocal.map((m, i) => (
               <li
                 key={m.usuarioId}
                 className="flex items-center justify-between text-sm text-texto"
@@ -91,6 +168,78 @@ export default function RegistrosSalaClient({
         )}
       </section>
 
+      <section className="mb-6">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="font-titulo text-lg text-texto">
+            🥤 Desglose por jugador
+          </h2>
+          <select
+            value={jugadorFiltro}
+            onChange={(e) => setJugadorFiltro(e.target.value)}
+            className="rounded-lg border border-borde bg-tarjeta px-2 py-1 text-xs text-texto"
+          >
+            <option value="todos">Todos</option>
+            {miembros.map((m) => (
+              <option key={m.usuarioId} value={m.usuarioId}>
+                {m.nombre}
+                {m.usuarioId === userId ? " (tú)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        {jugadoresConDesglose.length === 0 ? (
+          <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
+            Nada que desglosar todavía.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {jugadoresConDesglose.map((m) => (
+              <details
+                key={m.usuarioId}
+                className="group rounded-2xl border border-borde bg-tarjeta p-4"
+                open={jugadorFiltro === m.usuarioId}
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between font-titulo text-sm text-texto">
+                  <span>
+                    {m.nombre}
+                    {m.usuarioId === userId && (
+                      <span className="ml-1 text-xs text-texto2">(tú)</span>
+                    )}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="text-texto2 group-open:rotate-180"
+                  >
+                    ⌄
+                  </span>
+                </summary>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {(desglosePorJugador.get(m.usuarioId) ?? []).map((item, i) => (
+                    <span
+                      key={i}
+                      className="rounded-full border border-borde bg-fondo px-2 py-1 text-[11px] text-texto"
+                      title={
+                        item.bebidaCatalogoNombre
+                          ? "Bebida concreta"
+                          : `${item.bebidaTipoNombre} sin especificar (registro rápido)`
+                      }
+                    >
+                      {item.bebidaTipoIcono}{" "}
+                      {item.bebidaCatalogoNombre ?? item.bebidaTipoNombre}
+                      {item.rareza && RAREZA_ETIQUETA[item.rareza]}
+                      {!item.bebidaCatalogoNombre && (
+                        <span className="text-texto2"> (genérica)</span>
+                      )}{" "}
+                      ×{item.cantidad}
+                    </span>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        )}
+      </section>
+
       <section>
         <h2 className="mb-3 font-titulo text-lg text-texto">📋 Historial</h2>
         {registros.length === 0 ? (
@@ -98,43 +247,54 @@ export default function RegistrosSalaClient({
             Nada por aquí todavía.
           </p>
         ) : (
-          <ul className="space-y-2">
-            {registros.map((r) => {
-              const puedeBorrar = r.usuarioId === userId || esAdmin;
-              return (
-                <li
-                  key={r.id}
-                  className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
-                >
-                  <div className="flex items-center gap-2 text-sm text-texto">
-                    <span className="text-lg">{r.icono}</span>
-                    <div>
-                      <p>{r.bebidaNombre}</p>
-                      <p className="text-xs text-texto2">
-                        {r.nombre}
-                        {r.usuarioId === userId && " (tú)"} ·{" "}
-                        {new Date(r.ts).toLocaleString("es-ES", {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
+          <>
+            <ul className="space-y-2">
+              {registros.map((r) => {
+                const puedeBorrar = r.usuarioId === userId || esAdmin;
+                return (
+                  <li
+                    key={r.id}
+                    className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
+                  >
+                    <div className="flex items-center gap-2 text-sm text-texto">
+                      <span className="text-lg">{r.icono}</span>
+                      <div>
+                        <p>{r.bebidaNombre}</p>
+                        <p className="text-xs text-texto2">
+                          {r.nombre}
+                          {r.usuarioId === userId && " (tú)"} ·{" "}
+                          {new Date(r.ts).toLocaleString("es-ES", {
+                            day: "numeric",
+                            month: "short",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  {puedeBorrar && (
-                    <button
-                      onClick={() => borrar(r)}
-                      disabled={borrandoId === r.id}
-                      className="px-2 text-sm text-rosa disabled:opacity-50"
-                    >
-                      {borrandoId === r.id ? "…" : "🗑️"}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+                    {puedeBorrar && (
+                      <button
+                        onClick={() => borrar(r)}
+                        disabled={borrandoId === r.id}
+                        className="px-2 text-sm text-rosa disabled:opacity-50"
+                      >
+                        {borrandoId === r.id ? "…" : "🗑️"}
+                      </button>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+            {hayMas && (
+              <button
+                onClick={cargarMas}
+                disabled={cargandoMas}
+                className="mt-3 w-full rounded-xl border border-borde py-2 text-sm text-texto2 disabled:opacity-50"
+              >
+                {cargandoMas ? "Cargando…" : "Ver más"}
+              </button>
+            )}
+          </>
         )}
       </section>
     </div>

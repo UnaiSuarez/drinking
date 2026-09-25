@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import SitioPicker from "@/components/SitioPicker";
 
 const OPCIONES = [
   { id: "agua", icono: "💧", nombre: "Agua" },
@@ -12,6 +13,7 @@ const OPCIONES = [
 ] as const;
 
 type Resultado = {
+  registro: { id: string };
   total: number;
   xp_ganada: number;
   logros_nuevos: string[];
@@ -32,6 +34,7 @@ export default function SojasLogger({
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [ultimoRegistroId, setUltimoRegistroId] = useState<string | null>(null);
 
   useEffect(() => {
     let activo = true;
@@ -70,6 +73,7 @@ export default function SojasLogger({
         ? `¡Nueva medalla SOJAS! +${resultado.xp_ganada} XP`
         : `+${resultado.xp_ganada} XP · 0 PL`
     );
+    if (!nocheId) setUltimoRegistroId(resultado.registro.id);
   }
 
   return (
@@ -102,6 +106,13 @@ export default function SojasLogger({
           </div>
           {mensaje && <p role="status" className="text-sm text-cian">{mensaje}</p>}
           {error && <p role="alert" className="text-sm text-rosa">{error}</p>}
+          {!nocheId && ultimoRegistroId && (
+            <SitioPicker
+              key={ultimoRegistroId}
+              registroId={ultimoRegistroId}
+              tipo="soja"
+            />
+          )}
         </div>
       )}
     </section>

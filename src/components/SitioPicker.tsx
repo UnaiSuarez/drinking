@@ -11,13 +11,22 @@ type Fase = "inicial" | "buscando" | "eligiendo" | "nuevo" | "confirmado" | "omi
 const ICONOS = ["📍", "🍺", "🍷", "🍸", "🥃", "🎉", "🏠", "⛺", "🌳", "🏖️"];
 
 /**
- * Ofrece marcar el sitio de un registro de bebida suelta recién creado
- * (solo tiene sentido en sala permanente: registrar_bebida_suelta exige
- * sala de tipo "permanente", así que este registroId siempre lo cumple).
- * El padre lo renderiza con `key={registroId}`, así que un registro nuevo
- * lo remonta entero con estado limpio (no hace falta reiniciarlo aquí).
+ * Ofrece marcar el sitio de un registro (bebida suelta o SOJA) recién
+ * creado — solo tiene sentido fuera de una noche: registrar_bebida_suelta
+ * exige sala de tipo "permanente", y registrar_soja exige lo mismo cuando
+ * no se le pasa una noche, así que este registroId siempre lo cumple. El
+ * padre lo renderiza con `key={registroId}`, así que un registro nuevo lo
+ * remonta entero con estado limpio (no hace falta reiniciarlo aquí).
  */
-export default function SitioPicker({ registroId }: { registroId: string }) {
+export default function SitioPicker({
+  registroId,
+  tipo = "bebida",
+}: {
+  registroId: string;
+  tipo?: "bebida" | "soja";
+}) {
+  const rpcMarcar =
+    tipo === "soja" ? "marcar_sitio_de_soja" : "marcar_sitio_de_registro";
   const supabase = createClient();
   const [fase, setFase] = useState<Fase>("inicial");
   const [error, setError] = useState<string | null>(null);
@@ -71,7 +80,7 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
   async function elegirExistente(sitio: SitioCercano) {
     setGuardando(true);
     setError(null);
-    const { error } = await supabase.rpc("marcar_sitio_de_registro", {
+    const { error } = await supabase.rpc(rpcMarcar, {
       p_registro_id: registroId,
       p_sitio_id: sitio.id,
     });
@@ -101,7 +110,7 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
       setError(errorCrear?.message ?? "No se pudo crear el sitio.");
       return;
     }
-    const { error: errorMarcar } = await supabase.rpc("marcar_sitio_de_registro", {
+    const { error: errorMarcar } = await supabase.rpc(rpcMarcar, {
       p_registro_id: registroId,
       p_sitio_id: sitio.id,
     });
@@ -115,7 +124,10 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
   }
 
   // Mapa con marcador arrastrable para ajustar el punto exacto del sitio
-  // nuevo: no hace falta que quede justo donde te pilló el GPS.
+  // nuevo: no hace falta que quede justo donde te pilló el GPS. Usa un
+  // divIcon propio (el icono por defecto de Leaflet depende de rutas de
+  // imagen que el bundler de Next no resuelve, y sale como un recuadro
+  // transparente).
   useEffect(() => {
     if (fase !== "nuevo" || !coords) return;
     let cancelado = false;
@@ -128,9 +140,16 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         maxZoom: 19,
       }).addTo(mapa);
-      const marcador = L.marker([coords.lat, coords.lng], { draggable: true }).addTo(
-        mapa
-      );
+      const icono = L.divIcon({
+        className: "",
+        html: `<div style="width:32px;height:32px;border-radius:50%;background:#ffb627;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;border:2px solid rgba(255,255,255,0.9);box-shadow:0 2px 6px rgba(0,0,0,0.4);">${iconoElegido}</div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+      });
+      const marcador = L.marker([coords.lat, coords.lng], {
+        draggable: true,
+        icon: icono,
+      }).addTo(mapa);
       marcador.on("dragend", () => {
         const pos = marcador.getLatLng();
         setCoordsNuevo({ lat: pos.lat, lng: pos.lng });
@@ -144,7 +163,26 @@ export default function SitioPicker({ registroId }: { registroId: string }) {
       miniMapaInstancia.current = null;
       miniMarcador.current = null;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fase, coords]);
+
+  // Actualiza el emoji del marcador cuando se cambia el icono elegido, sin
+  // tener que recrear el mapa entero (que perdería la posición arrastrada).
+  useEffect(() => {
+    (async () => {
+      const L = await import("leaflet");
+      const marcador = miniMarcador.current;
+      if (!marcador) return;
+      marcador.setIcon(
+        L.divIcon({
+          className: "",
+          html: `<div style="width:32px;height:32px;border-radius:50%;background:#ffb627;display:flex;align-items:center;justify-content:center;font-size:17px;line-height:1;border:2px solid rgba(255,255,255,0.9);box-shadow:0 2px 6px rgba(0,0,0,0.4);">${iconoElegido}</div>`,
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
+        })
+      );
+    })();
+  }, [iconoElegido]);
 
   if (fase === "confirmado") {
     return (
