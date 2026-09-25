@@ -12,6 +12,12 @@ export type RegistroSala = {
   ts: string;
 };
 
+export type RegistroSoja = {
+  id: string;
+  bebida: string;
+  ts: string;
+};
+
 export type MiembroRanking = {
   usuarioId: string;
   nombre: string;
@@ -35,10 +41,20 @@ const RAREZA_ETIQUETA: Record<string, string> = {
   legendaria: " 👑",
 };
 
+const SOJAS_BEBIDAS: Record<string, { nombre: string; icono: string }> = {
+  agua: { nombre: "Agua", icono: "💧" },
+  refresco: { nombre: "Refresco", icono: "🥤" },
+  cerveza_0: { nombre: "Cerveza 0,0", icono: "🍺" },
+  coctel_0: { nombre: "Cóctel 0,0", icono: "🍹" },
+  zumo: { nombre: "Zumo", icono: "🧃" },
+};
+
 export default function RegistrosSalaClient({
   salaId,
   registrosIniciales,
   hayMasInicial,
+  sojasIniciales,
+  sojasTotal,
   ranking,
   desglose,
   miembros,
@@ -51,6 +67,8 @@ export default function RegistrosSalaClient({
   salaId: string;
   registrosIniciales: RegistroSala[];
   hayMasInicial: boolean;
+  sojasIniciales: RegistroSoja[];
+  sojasTotal: number;
   ranking: MiembroRanking[];
   desglose: DesgloseItem[];
   miembros: { usuarioId: string; nombre: string }[];
@@ -64,6 +82,8 @@ export default function RegistrosSalaClient({
   const [registros, setRegistros] = useState(registrosIniciales);
   const [rankingLocal, setRanking] = useState(ranking);
   const [hayMas, setHayMas] = useState(hayMasInicial);
+  const [sojas, setSojas] = useState(sojasIniciales);
+  const [cargandoSojas, setCargandoSojas] = useState(false);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [borrandoId, setBorrandoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -110,6 +130,25 @@ export default function RegistrosSalaClient({
     });
     setRegistros((prev) => [...prev, ...nuevos]);
     setHayMas(nuevos.length === PAGINA);
+  }
+
+  async function cargarMasSojas() {
+    setCargandoSojas(true);
+    setError(null);
+    const { data, error } = await supabase
+      .from("sojas_registros")
+      .select("id, bebida, ts")
+      .eq("sala_id", salaId)
+      .eq("usuario_id", userId)
+      .is("noche_id", null)
+      .order("ts", { ascending: false })
+      .range(sojas.length, sojas.length + PAGINA - 1);
+    setCargandoSojas(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setSojas((prev) => [...prev, ...(data ?? [])]);
   }
 
   async function borrar(registro: RegistroSala) {
@@ -237,6 +276,52 @@ export default function RegistrosSalaClient({
               </details>
             ))}
           </div>
+        )}
+      </section>
+
+      <section className="mb-6">
+        <div className="mb-3 flex items-baseline justify-between gap-3">
+          <h2 className="font-titulo text-lg text-cian">💧 Tus SOJAS ({sojasTotal})</h2>
+          <span className="shrink-0 text-xs text-texto2">0 PL</span>
+        </div>
+        {sojas.length === 0 ? (
+          <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
+            Aún no has registrado bebidas sin alcohol fuera de una noche en esta sala.
+          </p>
+        ) : (
+          <>
+            <ul className="space-y-2">
+              {sojas.map((registro) => {
+                const bebida = SOJAS_BEBIDAS[registro.bebida] ?? {
+                  nombre: registro.bebida,
+                  icono: "💧",
+                };
+                return (
+                  <li key={registro.id} className="flex items-center gap-3 rounded-2xl border border-cian/30 bg-tarjeta px-4 py-3 text-sm text-texto">
+                    <span className="text-lg">{bebida.icono}</span>
+                    <span className="min-w-0 flex-1">{bebida.nombre}</span>
+                    <span className="shrink-0 text-xs text-texto2">
+                      {new Date(registro.ts).toLocaleString("es-ES", {
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+            {sojas.length < sojasTotal && (
+              <button
+                onClick={cargarMasSojas}
+                disabled={cargandoSojas}
+                className="mt-3 w-full rounded-xl border border-borde py-2 text-sm text-texto2 disabled:opacity-50"
+              >
+                {cargandoSojas ? "Cargando…" : "Ver más SOJAS"}
+              </button>
+            )}
+          </>
         )}
       </section>
 

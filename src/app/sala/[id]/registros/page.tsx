@@ -5,6 +5,7 @@ import RegistrosSalaClient, {
   type DesgloseItem,
   type MiembroRanking,
   type RegistroSala,
+  type RegistroSoja,
 } from "@/components/RegistrosSalaClient";
 
 export const PAGINA_REGISTROS = 20;
@@ -94,6 +95,19 @@ export default async function RegistrosSalaPage({
     };
   });
 
+  const { data: sojasRaw, count: sojasTotal, error: errorSojas } = await supabase
+    .from("sojas_registros")
+    .select("id, bebida, ts", { count: "exact" })
+    .eq("sala_id", id)
+    .eq("usuario_id", user.id)
+    .is("noche_id", null)
+    .order("ts", { ascending: false })
+    .range(0, PAGINA_REGISTROS - 1);
+  if (errorSojas) {
+    throw new Error(`No se pudieron cargar las SOJAS: ${errorSojas.message}`);
+  }
+  const sojas: RegistroSoja[] = sojasRaw ?? [];
+
   const { data: rankingRaw } = await supabase.rpc("ranking_bebidas_sala", {
     p_sala: id,
   });
@@ -148,6 +162,8 @@ export default async function RegistrosSalaPage({
         salaId={id}
         registrosIniciales={registros}
         hayMasInicial={(registrosRaw?.length ?? 0) === PAGINA_REGISTROS}
+        sojasIniciales={sojas}
+        sojasTotal={sojasTotal ?? 0}
         ranking={ranking}
         desglose={desglose}
         miembros={miembros}

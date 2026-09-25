@@ -406,6 +406,7 @@ export default function NocheLive({
   const [masUnos, setMasUnos] = useState<{ id: number; icono: string }[]>([]);
   const [cerrando, setCerrando] = useState(false);
   const [errorCierre, setErrorCierre] = useState<string | null>(null);
+  const [errorDeshacer, setErrorDeshacer] = useState<string | null>(null);
   const [confirmandoCierre, setConfirmandoCierre] = useState(false);
   const [cartaDetalle, setCartaDetalle] = useState<CartaCofre | null>(null);
   const [panelExtender, setPanelExtender] = useState(false);
@@ -1012,7 +1013,17 @@ export default function NocheLive({
       .reverse()
       .find((r) => r.usuario_id === userId);
     if (!miUltimo) return;
-    await supabase.from("registros").delete().eq("id", miUltimo.id);
+    setErrorDeshacer(null);
+    const { data, error } = await supabase
+      .from("registros")
+      .delete()
+      .eq("id", miUltimo.id)
+      .select("id")
+      .maybeSingle();
+    if (error || !data) {
+      setErrorDeshacer(error?.message ?? "Ya no se puede deshacer esta bebida.");
+      return;
+    }
     setRegistros((prev) => prev.filter((r) => r.id !== miUltimo.id));
   }
 
@@ -1488,6 +1499,7 @@ export default function NocheLive({
                 ↩️ Deshacer última
               </button>
             )}
+            {errorDeshacer && <p role="alert" className="mt-2 text-sm text-rosa">{errorDeshacer}</p>}
           </div>
 
           {/* Botones de bebida */}

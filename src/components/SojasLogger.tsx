@@ -13,11 +13,14 @@ const OPCIONES = [
 ] as const;
 
 type Resultado = {
-  registro: { id: string };
+  registro: { id: string; bebida: string; ts: string };
   total: number;
   xp_ganada: number;
   logros_nuevos: string[];
 };
+
+type RegistroSoja = Resultado["registro"];
+const PAGINA = 20;
 
 export default function SojasLogger({
   salaId,
@@ -31,6 +34,9 @@ export default function SojasLogger({
   const supabase = useMemo(() => createClient(), []);
   const [abierto, setAbierto] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
+  const [totalContexto, setTotalContexto] = useState<number | null>(null);
+  const [registrosContexto, setRegistrosContexto] = useState<RegistroSoja[]>([]);
+  const [cargandoMas, setCargandoMas] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -41,15 +47,54 @@ export default function SojasLogger({
     async function cargarTotal() {
       const { data: auth } = await supabase.auth.getUser();
       if (!auth.user) return;
-      const { count } = await supabase
+      const consultaContexto = supabase
         .from("sojas_registros")
-        .select("id", { count: "exact", head: true })
-        .eq("usuario_id", auth.user.id);
-      if (activo) setTotal(count ?? 0);
+        .select("id, bebida, ts", { count: "exact" })
+        .eq("usuario_id", auth.user.id)
+        .eq("sala_id", salaId);
+      const [global, contexto] = await Promise.all([
+        supabase
+          .from("sojas_registros")
+          .select("id", { count: "exact", head: true })
+          .eq("usuario_id", auth.user.id),
+        (nocheId
+          ? consultaContexto.eq("noche_id", nocheId)
+          : consultaContexto.is("noche_id", null))
+          .order("ts", { ascending: false })
+          .range(0, PAGINA - 1),
+      ]);
+      if (!activo) return;
+      if (global.error || contexto.error) {
+        setError(global.error?.message ?? contexto.error?.message ?? "No se pudieron cargar las SOJAS");
+        return;
+      }
+      setTotal(global.count ?? 0);
+      setTotalContexto(contexto.count ?? 0);
+      setRegistrosContexto(contexto.data ?? []);
     }
     void cargarTotal();
     return () => { activo = false; };
-  }, [supabase]);
+  }, [supabase, salaId, nocheId]);
+
+  async function cargarMas() {
+    setCargandoMas(true);
+    setError(null);
+    const consulta = supabase
+      .from("sojas_registros")
+      .select("id, bebida, ts")
+      .eq("sala_id", salaId);
+    const { data, error: fallo } = await (nocheId
+      ? consulta.eq("noche_id", nocheId)
+      : consulta.is("noche_id", null))
+      .order("ts", { ascending: false })
+      .range(registrosContexto.length, registrosContexto.length + PAGINA - 1);
+    setCargandoMas(false);
+    if (fallo) {
+      setError(fallo.message);
+      return;
+    }
+    setRegistrosContexto((prev) => [...prev, ...(data ?? [])]);
+  }
 
   async function registrar(bebida: (typeof OPCIONES)[number]) {
     if (guardando || disabled) return;
@@ -68,6 +113,8 @@ export default function SojasLogger({
     }
     const resultado = data as Resultado;
     setTotal(resultado.total);
+    setTotalContexto((prev) => (prev ?? 0) + 1);
+    setRegistrosContexto((prev) => [resultado.registro, ...prev]);
     setMensaje(
       resultado.logros_nuevos.length > 0
         ? `¡Nueva medalla SOJAS! +${resultado.xp_ganada} XP`
@@ -106,6 +153,38 @@ export default function SojasLogger({
           </div>
           {mensaje && <p role="status" className="text-sm text-cian">{mensaje}</p>}
           {error && <p role="alert" className="text-sm text-rosa">{error}</p>}
+          <div className="border-t border-borde pt-3">
+            <h3 className="mb-2 font-titulo text-sm text-cian">
+              {nocheId ? "Esta noche" : "En esta sala"} · {totalContexto ?? "…"} SOJAS
+            </h3>
+            {registrosContexto.length === 0 ? (
+              <p className="text-xs text-texto2">Aún no has registrado ninguna aquí.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {registrosContexto.map((registro) => {
+                  const bebida = OPCIONES.find((opcion) => opcion.id === registro.bebida);
+                  return (
+                    <li key={registro.id} className="flex items-center justify-between rounded-lg border border-borde bg-tarjeta px-3 py-2 text-xs text-texto">
+                      <span>{bebida?.icono ?? "💧"} {bebida?.nombre ?? registro.bebida}</span>
+                      <span className="text-texto2">
+                        {new Date(registro.ts).toLocaleString("es-ES", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {registrosContexto.length < (totalContexto ?? 0) && (
+              <button type="button" onClick={cargarMas} disabled={cargandoMas} className="mt-2 w-full rounded-lg border border-borde py-2 text-xs text-texto2 disabled:opacity-50">
+                {cargandoMas ? "Cargando…" : "Ver más"}
+              </button>
+            )}
+          </div>
           {!nocheId && ultimoRegistroId && (
             <SitioPicker
               key={ultimoRegistroId}
