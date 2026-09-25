@@ -1,4 +1,4 @@
-type SonidoCofre = "abrir" | "revelar" | "legendaria" | "unica";
+type SonidoCofre = "abrir" | "revelar" | "legendaria" | "unica" | "personaje";
 
 let audioContext: AudioContext | null = null;
 
@@ -49,6 +49,16 @@ export function sonarCofre(tipo: SonidoCofre) {
     nota(135, ahora, 0.52, 0.075, "triangle", 0.58);
     [392, 494, 587, 784].forEach((frecuencia, index) => {
       nota(frecuencia, ahora + 0.15 + index * 0.065, 0.9, 0.037, "sine", 1);
+    });
+  } else if (tipo === "personaje") {
+    // Carga ascendente de ~2 s, golpe grave en el impacto y acorde final.
+    [196, 247, 294, 370, 440, 554, 659, 831, 988].forEach((frecuencia, index) => {
+      nota(frecuencia, ahora + index * 0.27, 0.6, 0.03 + index * 0.004, "sine", 1.03);
+    });
+    nota(70, ahora + 2.5, 1.1, 0.11, "triangle", 0.5);
+    nota(140, ahora + 2.5, 0.7, 0.07, "sawtooth", 0.6);
+    [392, 494, 587, 784, 988].forEach((frecuencia, index) => {
+      nota(frecuencia, ahora + 2.55 + index * 0.05, 1.6, 0.045, "sine", 1);
     });
   } else {
     [330, 440, 554, 740, 988].forEach((frecuencia, index) => {

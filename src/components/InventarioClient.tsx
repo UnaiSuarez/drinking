@@ -16,6 +16,7 @@ import {
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CofreAperturaModal from "@/components/CofreAperturaModal";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import { PersonajeFichaTrigger } from "@/components/PersonajeFicha";
 import { prepararAudioCofre } from "@/lib/cofreAudio";
 import {
   aplicarRecompensas,
@@ -247,7 +248,7 @@ export default function InventarioClient({
             ...PERSONAJES_OCULTOS.filter((item) => inventario.personajesOcultos.includes(item.id))].map((item) => {
             const equipado = tienda.avatarEquipado === item.id || (!tienda.avatarEquipado && avatar.avatarImagen === item.imagen);
             return <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
-              <AvatarFramePreview config={item.config} marco={marcoActual} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
+              <PersonajeFichaTrigger personaje={item} marco={marcoActual} triggerClassName="mx-auto h-20 w-20" />
               <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
               {AVATARES_GRATIS.some((gratis) => gratis.id === item.id) && <p className="mb-1 text-xs text-cian">Gratis</p>}
               <button type="button" disabled={Boolean(equipando) || equipado} onClick={() => void equiparAvatar(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
@@ -335,17 +336,24 @@ export default function InventarioClient({
                     : "border-borde opacity-70"
                 }`}
               >
-                <div className="relative mb-2 overflow-hidden rounded-xl bg-fondo/70">
-                  {desbloqueado && <span className="cofre-reward-aura" />}
-                  <Image
-                    src={desbloqueado ? personaje.imagen : personaje.placeholderImagen}
-                    alt={desbloqueado ? personaje.nombre : "Personaje oculto"}
-                    width={1024}
-                    height={1024}
-                    className="relative z-10 aspect-square w-full object-cover"
-                    sizes="180px"
-                  />
-                </div>
+                <PersonajeFichaTrigger
+                  personaje={personaje}
+                  bloqueado={!desbloqueado}
+                  fragmentos={fragmentos}
+                  fragmentosNecesarios={FRAGMENTOS_PERSONAJE_NECESARIOS}
+                >
+                  <span className="relative mb-2 block w-full overflow-hidden rounded-xl bg-fondo/70">
+                    {desbloqueado && <span className="cofre-reward-aura" />}
+                    <Image
+                      src={desbloqueado ? personaje.imagen : personaje.placeholderImagen}
+                      alt=""
+                      width={1024}
+                      height={1024}
+                      className="relative z-10 aspect-square w-full object-cover"
+                      sizes="180px"
+                    />
+                  </span>
+                </PersonajeFichaTrigger>
                 <p className="font-titulo text-sm text-texto">
                   {desbloqueado ? personaje.nombre : "???"}
                 </p>

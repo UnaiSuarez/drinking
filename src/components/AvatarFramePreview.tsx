@@ -2,11 +2,11 @@
 
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import AvatarFrame from "@/components/AvatarFrame";
-import AvatarElementalEffect, { type AvatarElement } from "@/components/AvatarElementalEffect";
 import { type AvatarConfig, type EstadoAvatar } from "@/lib/avatar";
+import PersonajeFichaModal from "@/components/PersonajeFicha";
+import { personajePorImagen } from "@/lib/tienda";
 import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
@@ -19,7 +19,6 @@ export default function AvatarFramePreview({
   triggerClassName = "h-12 w-12",
   previewClassName = "h-64 w-64",
   asSpan = false,
-  portraitOnly = false,
 }: {
   config: AvatarConfig;
   estado?: EstadoAvatar;
@@ -29,41 +28,27 @@ export default function AvatarFramePreview({
   triggerClassName?: string;
   previewClassName?: string;
   asSpan?: boolean;
-  portraitOnly?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [fichaAbierta, setFichaAbierta] = useState(false);
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
   const sinMovimiento = useReducedMotion();
-  const personajeUnico = ["ronda", "jefe", "cronica", "letal", "guardian"].includes(config.avatarAnimacion);
-  const personajeLegendario = config.avatarAnimacion === "celestial" || config.avatarAnimacion === "deidad";
+  const personaje = personajePorImagen(config.avatarImagen);
   const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
-  const especial = personajeUnico || personajeLegendario || marcoLegendario;
-  const elementoMarco: AvatarElement | null =
-    marco === "llamas" || marco === "magma" || marco === "liga-maestro" ? "fire" :
-    marco === "challenger" || marco === "tormenta" || marco === "liga-challenger" ? "lightning" :
-    marco === "hielo" || marco === "liga-diamante" || marco === "reliquia" ? "ice" :
-    marco === "trono" || marco === "aureola" || marco === "liga-oro" ? "light" :
-    marco === "portal" ? "portal" : null;
-  const elementoPersonaje: AvatarElement | null =
-    config.avatarAnimacion === "deidad" || config.avatarAnimacion === "letal" ? "lightning" :
-    config.avatarAnimacion === "celestial" || config.avatarAnimacion === "guardian" ? "ice" :
-    config.avatarAnimacion === "jefe" || config.avatarAnimacion === "ronda" ? "fire" :
-    config.avatarAnimacion === "cronica" ? "light" : null;
-  const marcoTieneAnimacion = ["disco", "prisma", "glitch", "cosmico", "aureola", "reliquia", "liga-plata"].includes(marco);
-  const elemento = elementoMarco ?? (marcoTieneAnimacion ? null : elementoPersonaje);
+  const especial = marcoLegendario;
   useModalScrollLock(abierto);
 
   useEffect(() => {
     if (!abierto) return;
     function cerrarConEscape(event: KeyboardEvent) {
-      if (event.key === "Escape") setAbierto(false);
+      if (event.key === "Escape" && !fichaAbierta) setAbierto(false);
     }
     window.addEventListener("keydown", cerrarConEscape);
     return () => {
       window.removeEventListener("keydown", cerrarConEscape);
     };
-  }, [abierto]);
+  }, [abierto, fichaAbierta]);
 
   function abrir(event: React.MouseEvent | React.KeyboardEvent) {
     event.preventDefault();
@@ -71,11 +56,7 @@ export default function AvatarFramePreview({
     setAbierto(true);
   }
 
-  const trigger = portraitOnly && config.avatarImagen ? (
-    <span className={`relative inline-flex overflow-hidden ${triggerClassName}`}>
-      <Image src={config.avatarImagen} alt="" fill sizes="128px" className="object-contain" />
-    </span>
-  ) : (
+  const trigger = (
     <AvatarFrame
       config={config}
       estado={estado}
@@ -123,6 +104,7 @@ export default function AvatarFramePreview({
               aria-modal="true"
               aria-labelledby={tituloId}
               onClick={() => setAbierto(false)}
+              style={fichaAbierta ? { display: "none" } : undefined}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -143,34 +125,35 @@ export default function AvatarFramePreview({
                 </div>
                 <div className="mb-4 flex justify-center">
                   <motion.div
-                    className={`avatar-preview-stage relative flex max-w-full items-center justify-center ${elemento ? "avatar-preview-has-element" : ""}`}
+                    className={`avatar-preview-stage relative flex max-w-full items-center justify-center`}
                     initial={sinMovimiento || !especial ? false : { opacity: 0, y: -42, rotate: -5, scale: 1.12 }}
                     animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
                     transition={sinMovimiento ? { duration: 0 } : { type: "spring", stiffness: 190, damping: 18, delay: especial ? 0.1 : 0 }}
                   >
-                    {elemento && <AvatarElementalEffect element={elemento} />}
-                    {portraitOnly && config.avatarImagen ? (
-                      <div className={`relative max-h-[50dvh] max-w-full ${previewClassName}`}>
-                        <Image src={config.avatarImagen} alt={titulo} fill sizes="(max-width: 768px) 80vw, 360px" className="object-contain" />
-                      </div>
-                    ) : (
-                      <AvatarFrame config={config} estado={estado} marco={marco} className={previewClassName} imageSizes="(max-width: 768px) 80vw, 360px" />
-                    )}
+                    <AvatarFrame config={config} estado={estado} marco={marco} className={previewClassName} imageSizes="(max-width: 768px) 80vw, 360px" />
                   </motion.div>
                 </div>
                 <h2 id={tituloId} className="font-titulo text-2xl text-texto">{titulo}</h2>
                 {subtitulo && <p className="mt-1 text-sm text-texto2">{subtitulo}</p>}
-                {!portraitOnly && (
-                  <>
-                    <p className="mt-3 font-titulo text-sm text-ambar">{marcoInfo.nombre}</p>
-                    <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
-                  </>
+                <p className="mt-3 font-titulo text-sm text-ambar">{marcoInfo.nombre}</p>
+                <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
+                {personaje && (
+                  <button
+                    type="button"
+                    onClick={() => setFichaAbierta(true)}
+                    className="mt-4 w-full rounded-xl border border-cian/60 bg-cian/10 px-3 py-2 font-titulo text-sm text-cian active:scale-95"
+                  >
+                    Ver ficha de {personaje.nombre}
+                  </button>
                 )}
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>,
         document.body
+      )}
+      {personaje && (
+        <PersonajeFichaModal personaje={personaje} abierto={fichaAbierta} onCerrar={() => setFichaAbierta(false)} />
       )}
     </>
   );

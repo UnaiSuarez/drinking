@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import AdminPruebasAnimacion from "@/components/AdminPruebasAnimacion";
 import BackButton from "@/components/BackButton";
 import { createClient } from "@/lib/supabase/client";
 import { CARTAS_COFRES, COFRES_TIPOS } from "@/lib/cofresDesign";
@@ -333,6 +334,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
           </section>
         </div>
       )}
+      <AdminPruebasAnimacion />
     </main>
   );
 }

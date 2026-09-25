@@ -72,6 +72,14 @@ export type RecompensaCofre =
       descripcion: string;
       fragmentos: number;
       necesarios: number;
+      /** Trozo (0-based) que aporta este fragmento. */
+      indice: number;
+      /** Fragmentos que ya tenías antes de esta apertura. */
+      previos: number;
+      /** True si este fragmento desbloquea al personaje. */
+      completa: boolean;
+      /** True si ya tenías al personaje (el fragmento se cambia por chapas). */
+      yaTenido: boolean;
     };
 
 function numeroSeguro(valor: unknown) {
@@ -251,12 +259,17 @@ function recompensaPersonaje(
     id: `fragmento-${personaje.id}-${crypto.randomUUID()}`,
     tipo: "fragmentoPersonaje",
     personajeId: personaje.id,
-    nombre: `Fragmento: ${personaje.nombre}`,
+    // La identidad no se revela hasta que el fragmento completa al personaje.
+    nombre: "Fragmento de personaje oculto",
     rareza: "unica",
     imagen: personaje.imagen,
-    descripcion: "Fragmento de personaje oculto. Reune 3 para desbloquearlo.",
+    descripcion: `Reune ${FRAGMENTOS_PERSONAJE_NECESARIOS} para desbloquearlo.`,
     fragmentos: 1,
     necesarios: FRAGMENTOS_PERSONAJE_NECESARIOS,
+    indice: 0,
+    previos: 0,
+    completa: false,
+    yaTenido: false,
   };
 }
 
@@ -286,6 +299,39 @@ function resultadoSlot(
   return recompensaCarta(tipo, random);
 }
 
+/** Calcula, en el orden de la apertura, qué trozo aporta cada fragmento y si
+ * alguno completa al personaje (solo entonces se revela su nombre). */
+export function marcarProgresoFragmentos(
+  recompensas: RecompensaCofre[],
+  inventario: InventarioState
+): RecompensaCofre[] {
+  const corriendo = { ...inventario.personajeFragmentos };
+  const desbloqueados = new Set(inventario.personajesOcultos);
+  return recompensas.map((recompensa) => {
+    if (recompensa.tipo !== "fragmentoPersonaje") return recompensa;
+    const personaje = PERSONAJES_OCULTOS.find((item) => item.id === recompensa.personajeId);
+    const yaTenido = desbloqueados.has(recompensa.personajeId);
+    const previos = corriendo[recompensa.personajeId] ?? 0;
+    const total = previos + recompensa.fragmentos;
+    if (!yaTenido) {
+      corriendo[recompensa.personajeId] = total;
+      if (total >= recompensa.necesarios) desbloqueados.add(recompensa.personajeId);
+    }
+    const completa = !yaTenido && total >= recompensa.necesarios;
+    return {
+      ...recompensa,
+      previos,
+      indice: Math.min(previos, recompensa.necesarios - 1),
+      completa,
+      yaTenido,
+      nombre: completa && personaje ? personaje.nombre : "Fragmento de personaje oculto",
+      descripcion: completa && personaje
+        ? personaje.descripcion
+        : `Reune ${recompensa.necesarios} para desbloquearlo (${Math.min(total, recompensa.necesarios)}/${recompensa.necesarios}).`,
+    };
+  });
+}
+
 export function generarAperturaCofre(
   cofreId: CofreTipo["id"],
   inventario: InventarioState,
@@ -294,9 +340,10 @@ export function generarAperturaCofre(
   const cofre = COFRES_TIPOS.find((item) => item.id === cofreId);
   if (!cofre) throw new Error(`Cofre desconocido: ${cofreId}`);
 
-  return Array.from({ length: cofre.cartas }, (_, index) =>
+  const recompensas = Array.from({ length: cofre.cartas }, (_, index) =>
     resultadoSlot(cofre, inventario, cofre.id === "legendario" && index === 0, random)
   );
+  return marcarProgresoFragmentos(recompensas, inventario);
 }
 
 export function aplicarRecompensas(params: {
