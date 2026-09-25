@@ -6,6 +6,7 @@ import { progresoNivel } from "@/lib/niveles";
 import { marcoPorNivel } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 import NivelCelebracion from "@/components/NivelCelebracion";
+import VisitaDiaria from "@/components/VisitaDiaria";
 
 const ADMIN_EMAIL = "unaisucar64535@gmail.com";
 
@@ -77,6 +78,7 @@ export default async function AppHeader() {
       </span>
       </header>
       <NivelCelebracion userId={user.id} nivelInicial={nivel.nivel} />
+      <VisitaDiaria userId={user.id} />
     </>
   );
 }

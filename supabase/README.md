@@ -31,6 +31,7 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260925150000` | `admin_ajustar_skin` | **Aplicada el 25/09/2026** (vía MCP, proyecto `el-ranking`; la versión registrada por Supabase puede diferir de la del archivo). Nueva RPC `admin_ajustar_skin(p_usuario, p_skin_id, p_dar)`, solo super admin: añade o quita un id en `perfiles.avatar_config → inventario → skins`. Mismo patrón que `admin_ajustar_carta`/`admin_ajustar_cofre`; sin permiso para `anon`. Solo añade una función. |
 | `20260925214323` | `recompensas_nivel_medallas` | **Aplicada el 25/09/2026**. Cofre común por nivel 2+; en múltiplos de 5 solo épico y en múltiplos de 10 solo legendario. Medalla común → común, rara/épica → épico, legendaria → legendario. Incluye recompensas retroactivas y un historial que impide duplicados al recuperar niveles tras perder XP. |
 | `20260925215918` | `constancia_semanal` | **Aplicada el 25/09/2026**. Nuevo reto por registrar actividad en tres días distintos de una semana UTC; las SOJAS cuentan. Al reclamarlo entrega +30 XP, +20 chapas y un cofre común una sola vez por semana. |
+| `20260925223601` | `retos_diarios` | **Aplicada el 26/09/2026 (hora de Madrid)**. Registra la visita diaria y comprueba una actividad del día (bebida o SOJA). Al completar ambos pasos se puede reclamar un cofre común una sola vez por día. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). El resto se aplicaron con

@@ -43,6 +43,7 @@ export default function RetosClient({
 
   return (
     <div className="space-y-4">
+      <p className="text-sm text-texto2">Se reinician cada semana. Reclama los premios antes de que empiece la siguiente.</p>
       {mensaje && (
         <p className="rounded-2xl bg-tarjeta px-4 py-3 text-center text-sm text-cian">
           {mensaje}
