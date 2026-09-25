@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import AvatarFrame from "@/components/AvatarFrame";
+import AvatarElementalEffect, { type AvatarElement } from "@/components/AvatarElementalEffect";
 import { type AvatarConfig, type EstadoAvatar } from "@/lib/avatar";
 import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
@@ -38,7 +39,19 @@ export default function AvatarFramePreview({
   const personajeLegendario = config.avatarAnimacion === "celestial" || config.avatarAnimacion === "deidad";
   const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
   const especial = personajeUnico || personajeLegendario || marcoLegendario;
-  const tonoEspecial = personajeUnico ? "unico" : config.avatarAnimacion === "deidad" || marco === "tormenta" ? "tormenta" : "oro";
+  const elementoMarco: AvatarElement | null =
+    marco === "llamas" || marco === "magma" || marco === "liga-maestro" ? "fire" :
+    marco === "challenger" || marco === "tormenta" || marco === "liga-challenger" ? "lightning" :
+    marco === "hielo" || marco === "liga-diamante" || marco === "reliquia" ? "ice" :
+    marco === "trono" || marco === "aureola" || marco === "liga-oro" ? "light" :
+    marco === "portal" ? "portal" : null;
+  const elementoPersonaje: AvatarElement | null =
+    config.avatarAnimacion === "deidad" || config.avatarAnimacion === "letal" ? "lightning" :
+    config.avatarAnimacion === "celestial" || config.avatarAnimacion === "guardian" ? "ice" :
+    config.avatarAnimacion === "jefe" || config.avatarAnimacion === "ronda" ? "fire" :
+    config.avatarAnimacion === "cronica" ? "light" : null;
+  const marcoTieneAnimacion = ["disco", "prisma", "glitch", "cosmico", "aureola", "reliquia", "liga-plata"].includes(marco);
+  const elemento = elementoMarco ?? (marcoTieneAnimacion ? null : elementoPersonaje);
   useModalScrollLock(abierto);
 
   useEffect(() => {
@@ -105,7 +118,7 @@ export default function AvatarFramePreview({
           {abierto && (
             <motion.div
               key="avatar-preview"
-              className={`avatar-preview-overlay fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-fondo/90 p-5 backdrop-blur-sm ${especial ? `avatar-preview-${tonoEspecial}` : ""}`}
+              className="avatar-preview-overlay fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-fondo/90 p-5 backdrop-blur-sm"
               role="dialog"
               aria-modal="true"
               aria-labelledby={tituloId}
@@ -130,12 +143,12 @@ export default function AvatarFramePreview({
                 </div>
                 <div className="mb-4 flex justify-center">
                   <motion.div
-                    className={`avatar-preview-stage relative flex max-w-full items-center justify-center ${especial ? "avatar-preview-stage-special" : ""}`}
+                    className={`avatar-preview-stage relative flex max-w-full items-center justify-center ${elemento ? "avatar-preview-has-element" : ""}`}
                     initial={sinMovimiento || !especial ? false : { opacity: 0, y: -42, rotate: -5, scale: 1.12 }}
                     animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
                     transition={sinMovimiento ? { duration: 0 } : { type: "spring", stiffness: 190, damping: 18, delay: especial ? 0.1 : 0 }}
                   >
-                    {especial && <span className="avatar-preview-stage-light" aria-hidden="true" />}
+                    {elemento && <AvatarElementalEffect element={elemento} />}
                     {portraitOnly && config.avatarImagen ? (
                       <div className={`relative max-h-[50dvh] max-w-full ${previewClassName}`}>
                         <Image src={config.avatarImagen} alt={titulo} fill sizes="(max-width: 768px) 80vw, 360px" className="object-contain" />

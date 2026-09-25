@@ -242,9 +242,9 @@ export default function AvatarFrame({
 }) {
   const marcoInfo = MARCO_CLASES[marco];
   const animado = Boolean(marcoInfo.animacion);
-  const avatarAnimado = config.avatarAnimacion !== "ninguna";
+  const avatarAnimado = config.avatarAnimacion !== "ninguna" && !marcoInfo.animacion && !config.avatarImagen;
   const esMarcoLiga = marco.startsWith("liga-");
-  const personajeEspecial = ["celestial", "deidad", "ronda", "jefe", "cronica", "letal", "guardian"].includes(config.avatarAnimacion);
+  const personajeEspecial = !marcoInfo.animacion && ["celestial", "deidad", "ronda", "jefe", "cronica", "letal", "guardian"].includes(config.avatarAnimacion);
   const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
 
   return (
@@ -303,7 +303,7 @@ export default function AvatarFrame({
         </>
       )}
       {marcoInfo.animacion === "halo" && <span className="avatar-frame-halo-fx" />}
-      {marcoInfo.animacion === "portal" && <span className="avatar-frame-portal-fx" />}
+      {marcoInfo.animacion === "portal" && !marcoInfo.arte && <span className="avatar-frame-portal-fx" />}
       {marcoInfo.animacion === "polvo" && (
         <>
           <span className="avatar-frame-dust dust-a" />
