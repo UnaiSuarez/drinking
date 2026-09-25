@@ -47,6 +47,10 @@ export type PersonajeSkin = {
   /** Ilustración de cuerpo completo para la ficha. */
   ilustracion: string;
   descripcion?: string;
+  /** Precio en chapas. Solo las skins normales se compran; los momentos históricos no. */
+  precio?: number;
+  /** Aún sin arte: no sale en cofres, tienda ni fichas. Se quita al añadir las imágenes. */
+  pendiente?: boolean;
   /** Solo momentos históricos. */
   fecha?: string;
   historia?: string;
@@ -440,14 +444,19 @@ function rutasSkin(personajeId: string, id: string) {
   return { imagen: `${base}.webp`, ilustracion: `${base}-completo.webp` };
 }
 
+/** Precio de compra de una skin normal según su rareza. */
+export const PRECIO_SKIN: Record<CartaRareza, number> = { comun: 100, rara: 180, epica: 300, legendaria: 600 };
+
 export function skinNormal(datos: {
   id: string;
   personajeId: string;
   nombre: string;
   rareza: CartaRareza;
   descripcion?: string;
+  /** true mientras no exista el arte (no se muestra ni se sortea). */
+  pendiente?: boolean;
 }): PersonajeSkin {
-  return { ...datos, tipo: "normal", ...rutasSkin(datos.personajeId, datos.id) };
+  return { ...datos, tipo: "normal", precio: PRECIO_SKIN[datos.rareza], ...rutasSkin(datos.personajeId, datos.id) };
 }
 
 export function momentoHistorico(datos: {
@@ -470,10 +479,39 @@ export const SKINS_PERSONAJES: PersonajeSkin[] = [
   skinNormal({ id: "samurai", personajeId: "guardian-cubata", nombre: "Samurái", rareza: "legendaria" }),
   skinNormal({ id: "militar-eeuu", personajeId: "narrador-noche", nombre: "Militar EE. UU.", rareza: "legendaria" }),
   skinNormal({ id: "fisico", personajeId: "silencioso-letal", nombre: "Físico", rareza: "legendaria" }),
+
+  // ── Ranuras reservadas: 2 comunes + 2 épicas por personaje (la legendaria es la de arriba). ──
+  // Para activar una: copia sus 2 imágenes (ver public/personajes/README.md), cambia
+  // id/nombre si quieres y borra `pendiente: true`. Hasta entonces no aparece en la app.
+  skinNormal({ id: "ultimo-ronda-comun-1", personajeId: "ultimo-ronda", nombre: "Skin común 1", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "ultimo-ronda-comun-2", personajeId: "ultimo-ronda", nombre: "Skin común 2", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "ultimo-ronda-epica-1", personajeId: "ultimo-ronda", nombre: "Skin épica 1", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "ultimo-ronda-epica-2", personajeId: "ultimo-ronda", nombre: "Skin épica 2", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "jefe-after-comun-1", personajeId: "jefe-after", nombre: "Skin común 1", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "jefe-after-comun-2", personajeId: "jefe-after", nombre: "Skin común 2", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "jefe-after-epica-1", personajeId: "jefe-after", nombre: "Skin épica 1", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "jefe-after-epica-2", personajeId: "jefe-after", nombre: "Skin épica 2", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "narrador-noche-comun-1", personajeId: "narrador-noche", nombre: "Skin común 1", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "narrador-noche-comun-2", personajeId: "narrador-noche", nombre: "Skin común 2", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "narrador-noche-epica-1", personajeId: "narrador-noche", nombre: "Skin épica 1", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "narrador-noche-epica-2", personajeId: "narrador-noche", nombre: "Skin épica 2", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "silencioso-letal-comun-1", personajeId: "silencioso-letal", nombre: "Skin común 1", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "silencioso-letal-comun-2", personajeId: "silencioso-letal", nombre: "Skin común 2", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "silencioso-letal-epica-1", personajeId: "silencioso-letal", nombre: "Skin épica 1", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "silencioso-letal-epica-2", personajeId: "silencioso-letal", nombre: "Skin épica 2", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "guardian-cubata-comun-1", personajeId: "guardian-cubata", nombre: "Skin común 1", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "guardian-cubata-comun-2", personajeId: "guardian-cubata", nombre: "Skin común 2", rareza: "comun", pendiente: true }),
+  skinNormal({ id: "guardian-cubata-epica-1", personajeId: "guardian-cubata", nombre: "Skin épica 1", rareza: "epica", pendiente: true }),
+  skinNormal({ id: "guardian-cubata-epica-2", personajeId: "guardian-cubata", nombre: "Skin épica 2", rareza: "epica", pendiente: true }),
 ];
 
+/** Skins con arte listo (las pendientes no se muestran a los jugadores). */
+export function skinsDisponibles() {
+  return SKINS_PERSONAJES.filter((skin) => !skin.pendiente);
+}
+
 export function skinsDe(personajeId: string, tipo?: SkinTipo) {
-  return SKINS_PERSONAJES.filter((skin) => skin.personajeId === personajeId && (!tipo || skin.tipo === tipo));
+  return skinsDisponibles().filter((skin) => skin.personajeId === personajeId && (!tipo || skin.tipo === tipo));
 }
 
 export function skinPorId(id: string | null | undefined) {

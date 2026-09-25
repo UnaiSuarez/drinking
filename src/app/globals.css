@@ -1018,6 +1018,10 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(189, 123, 255, 0.5), rgba(255, 46, 147, 0.15) 45%, transparent 68%);
 }
+/* El anillo de portal (momentos) es para retratos cuadrados: con una skin
+   de cuerpo completo taparía la ilustración. */
+.cofre-grand-reveal[data-skin] .cofre-grand-reveal__prize::before { display: none; }
+
 /* Skin: ilustración de cuerpo completo (vertical), sin la máscara redonda. */
 .gr-figura--completa {
   width: min(66vw, 250px);

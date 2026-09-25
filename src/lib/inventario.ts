@@ -310,6 +310,7 @@ const PESO_RAREZA_SKIN: Record<CartaRareza, number> = { comun: 6, rara: 4, epica
 export function skinsPendientes(inventario: InventarioState, excluir: Set<string> = new Set()) {
   return SKINS_PERSONAJES.filter(
     (skin) =>
+      !skin.pendiente &&
       inventario.personajesOcultos.includes(skin.personajeId) &&
       !inventario.skins.includes(skin.id) &&
       !excluir.has(skin.id)

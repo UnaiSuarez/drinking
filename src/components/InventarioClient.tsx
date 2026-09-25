@@ -31,6 +31,7 @@ import {
   AVATARES_GRATIS,
   PERSONAJES_OCULTOS,
   SKINS_PERSONAJES,
+  skinsDisponibles,
   type PersonajeSkin,
   TIENDA_AVATARES,
   TIENDA_MARCOS,
@@ -278,7 +279,7 @@ export default function InventarioClient({
         </ul>
       </section>
 
-      {inventario.personajesOcultos.length > 0 && SKINS_PERSONAJES.length > 0 && (
+      {inventario.personajesOcultos.length > 0 && skinsDisponibles().length > 0 && (
         <section className="mb-8">
           <h2 className="mb-1 font-titulo text-xl text-texto">Mis skins</h2>
           <p className="mb-3 text-xs text-texto2">

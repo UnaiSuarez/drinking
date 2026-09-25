@@ -6,7 +6,7 @@ import BackButton from "@/components/BackButton";
 import { createClient } from "@/lib/supabase/client";
 import { CARTAS_COFRES, COFRES_TIPOS } from "@/lib/cofresDesign";
 import { parseInventarioState, totalItems } from "@/lib/inventario";
-import { SKINS_PERSONAJES, PERSONAJES_OCULTOS, calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
+import { PERSONAJES_OCULTOS, calcularSaldoChapas, parseTiendaState, skinsDisponibles } from "@/lib/tienda";
 import { progresoNivel } from "@/lib/niveles";
 
 type LogroInfo = { slug: string; nombre: string; icono: string; rareza: string };
@@ -37,7 +37,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
   const [deltaCarta, setDeltaCarta] = useState("1");
   const [cofreId, setCofreId] = useState<string>(COFRES_TIPOS[0]?.id ?? "");
   const [deltaCofre, setDeltaCofre] = useState("1");
-  const [skinId, setSkinId] = useState(SKINS_PERSONAJES[0]?.id ?? "");
+  const [skinId, setSkinId] = useState(skinsDisponibles()[0]?.id ?? "");
   const [logroSlug, setLogroSlug] = useState(logros[0]?.slug ?? "");
 
   async function buscar() {
@@ -296,7 +296,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
               onChange={(e) => setSkinId(e.target.value)}
               className="mb-2 w-full rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
             >
-              {SKINS_PERSONAJES.map((s) => (
+              {skinsDisponibles().map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.nombre} · {PERSONAJES_OCULTOS.find((p) => p.id === s.personajeId)?.nombre} ({s.rareza})
                 </option>
