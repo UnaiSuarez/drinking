@@ -18,3 +18,9 @@ export function progresoNivel(xp: number): {
   const siguiente = xpTotalParaNivel(nivel + 1);
   return { nivel, actual: xp - base, necesario: siguiente - base };
 }
+
+export function cofrePorNivel(nivel: number): "comun" | "epico" | "legendario" {
+  if (nivel % 10 === 0) return "legendario";
+  if (nivel % 5 === 0) return "epico";
+  return "comun";
+}

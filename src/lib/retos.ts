@@ -24,6 +24,12 @@ export const RETOS_SEMANALES: RetoInfo[] = [
     nombre: "Sube al podio",
     descripcion: "Termina alguna noche cerrada esta semana entre los 3 primeros.",
   },
+  {
+    slug: "constancia_semanal",
+    icono: "📅",
+    nombre: "Constancia semanal",
+    descripcion: "Registra algo en 3 días distintos. Las SOJAS también cuentan.",
+  },
 ];
 
 export const RECOMPENSA_RETO = { chapas: 20, xp: 30 };

@@ -36,7 +36,7 @@ export default function RetosClient({
       prev.map((e) => (e.slug === slug ? { ...e, reclamado: true } : e))
     );
     setMensaje(
-      `✅ Reto completado: +${RECOMPENSA_RETO.chapas} chapas, +${RECOMPENSA_RETO.xp} XP`
+      `Reto completado: +${RECOMPENSA_RETO.chapas} chapas, +${RECOMPENSA_RETO.xp} XP${slug === "constancia_semanal" ? " y un cofre común" : ""}`
     );
     router.refresh();
   }
@@ -74,6 +74,10 @@ export default function RetosClient({
               </span>
             </div>
             <p className="mb-3 text-xs text-texto2">{reto.descripcion}</p>
+            <p className="mb-3 text-xs font-bold text-ambar">
+              +{RECOMPENSA_RETO.chapas} chapas · +{RECOMPENSA_RETO.xp} XP
+              {reto.slug === "constancia_semanal" ? " · Cofre común" : ""}
+            </p>
             <div className="mb-3 h-2 overflow-hidden rounded-full bg-fondo">
               <div
                 className="h-full rounded-full bg-ambar transition-all"
@@ -92,7 +96,7 @@ export default function RetosClient({
               >
                 {reclamando === reto.slug
                   ? "Reclamando..."
-                  : `Reclamar +${RECOMPENSA_RETO.chapas} chapas / +${RECOMPENSA_RETO.xp} XP`}
+                  : "Reclamar premio"}
               </button>
             ) : (
               <p className="text-center text-xs text-texto2">

@@ -5,6 +5,7 @@ import { parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel } from "@/lib/niveles";
 import { marcoPorNivel } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
+import NivelCelebracion from "@/components/NivelCelebracion";
 
 const ADMIN_EMAIL = "unaisucar64535@gmail.com";
 
@@ -29,7 +30,8 @@ export default async function AppHeader() {
   const marco = parseTiendaState(perfil.avatar_config).marcoEquipado ?? marcoPorNivel(nivel.nivel);
 
   return (
-    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-borde bg-fondo/95 px-4 py-2 backdrop-blur">
+    <>
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-borde bg-fondo/95 px-4 py-2 backdrop-blur">
       <Link href="/" className="font-titulo text-sm text-ambar">
         🍻 El Ranking
       </Link>
@@ -73,6 +75,8 @@ export default async function AppHeader() {
           />
         </Link>
       </span>
-    </header>
+      </header>
+      <NivelCelebracion userId={user.id} nivelInicial={nivel.nivel} />
+    </>
   );
 }
