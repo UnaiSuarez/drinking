@@ -6,7 +6,7 @@ import BackButton from "@/components/BackButton";
 import { createClient } from "@/lib/supabase/client";
 import { CARTAS_COFRES, COFRES_TIPOS } from "@/lib/cofresDesign";
 import { parseInventarioState, totalItems } from "@/lib/inventario";
-import { calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
+import { SKINS_PERSONAJES, PERSONAJES_OCULTOS, calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
 import { progresoNivel } from "@/lib/niveles";
 
 type LogroInfo = { slug: string; nombre: string; icono: string; rareza: string };
@@ -37,6 +37,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
   const [deltaCarta, setDeltaCarta] = useState("1");
   const [cofreId, setCofreId] = useState<string>(COFRES_TIPOS[0]?.id ?? "");
   const [deltaCofre, setDeltaCofre] = useState("1");
+  const [skinId, setSkinId] = useState(SKINS_PERSONAJES[0]?.id ?? "");
   const [logroSlug, setLogroSlug] = useState(logros[0]?.slug ?? "");
 
   async function buscar() {
@@ -286,6 +287,53 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
             >
               Aplicar
             </button>
+          </section>
+
+          <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+            <p className="mb-2 font-titulo text-sm text-texto">✨ Skins</p>
+            <select
+              value={skinId}
+              onChange={(e) => setSkinId(e.target.value)}
+              className="mb-2 w-full rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+            >
+              {SKINS_PERSONAJES.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nombre} · {PERSONAJES_OCULTOS.find((p) => p.id === s.personajeId)?.nombre} ({s.rareza})
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2">
+              <button
+                disabled={aplicando || !skinId}
+                onClick={() =>
+                  aplicar(() =>
+                    supabase.rpc("admin_ajustar_skin", {
+                      p_usuario: seleccionado.id,
+                      p_skin_id: skinId,
+                      p_dar: true,
+                    })
+                  )
+                }
+                className="flex-1 rounded-xl bg-lima py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
+              >
+                Dar
+              </button>
+              <button
+                disabled={aplicando || !skinId}
+                onClick={() =>
+                  aplicar(() =>
+                    supabase.rpc("admin_ajustar_skin", {
+                      p_usuario: seleccionado.id,
+                      p_skin_id: skinId,
+                      p_dar: false,
+                    })
+                  )
+                }
+                className="flex-1 rounded-xl border border-rosa py-2 font-titulo text-sm text-rosa active:scale-95 disabled:opacity-50"
+              >
+                Quitar
+              </button>
+            </div>
           </section>
 
           <section className="rounded-2xl border border-borde bg-tarjeta p-4">

@@ -4,17 +4,16 @@ import { useState } from "react";
 import CofreAperturaModal from "@/components/CofreAperturaModal";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CartaUsoCelebracion from "@/components/CartaUsoCelebracion";
-import PersonajeFichaModal from "@/components/PersonajeFicha";
+import Link from "next/link";
 import { CARTAS_COFRES, COFRES_TIPOS, MONEDA_COFRES, type CartaCofre } from "@/lib/cofresDesign";
 import { FRAGMENTOS_PERSONAJE_NECESARIOS, type RecompensaCofre } from "@/lib/inventario";
-import { PERSONAJES_OCULTOS } from "@/lib/tienda";
+import { PERSONAJES_OCULTOS, SKINS_PERSONAJES, rutaCompletoPersonaje, type PersonajeSkin } from "@/lib/tienda";
 import { prepararAudioCofre } from "@/lib/cofreAudio";
 
 type Prueba =
   | { tipo: "cofre"; cofreId: (typeof COFRES_TIPOS)[number]["id"]; recompensas: RecompensaCofre[] }
   | { tipo: "uso"; carta: CartaCofre }
-  | { tipo: "detalle"; carta: CartaCofre; bloqueada: boolean }
-  | { tipo: "ficha"; personajeId: string; bloqueado: boolean };
+  | { tipo: "detalle"; carta: CartaCofre; bloqueada: boolean };
 
 let contador = 0;
 
@@ -42,6 +41,8 @@ export default function AdminPruebasAnimacion() {
   const [cofreId, setCofreId] = useState<(typeof COFRES_TIPOS)[number]["id"]>("legendario");
   const [cartaId, setCartaId] = useState(CARTAS_COFRES[0]?.id ?? "");
   const [personajeId, setPersonajeId] = useState(PERSONAJES_OCULTOS[0]?.id ?? "");
+  const [skinRealId, setSkinRealId] = useState(SKINS_PERSONAJES[0]?.id ?? "");
+  const skinReal = SKINS_PERSONAJES.find((s) => s.id === skinRealId) ?? SKINS_PERSONAJES[0];
   const carta = CARTAS_COFRES.find((c) => c.id === cartaId) ?? CARTAS_COFRES[0];
   const personaje = PERSONAJES_OCULTOS.find((p) => p.id === personajeId) ?? PERSONAJES_OCULTOS[0];
 
@@ -77,6 +78,38 @@ export default function AdminPruebasAnimacion() {
     descripcion: "Chapas de prueba.",
   });
 
+  // Skin real del catálogo: usa su avatar y su ilustración completa de verdad.
+  const desdeSkin = (s: PersonajeSkin): RecompensaCofre => ({
+    id: `prueba-${++contador}`,
+    tipo: "skin",
+    skinId: s.id,
+    personajeId: s.personajeId,
+    personajeNombre: PERSONAJES_OCULTOS.find((p) => p.id === s.personajeId)?.nombre ?? "",
+    skinTipo: s.tipo,
+    nombre: s.nombre,
+    rareza: s.rareza,
+    imagen: s.imagen,
+    ilustracion: s.ilustracion,
+    descripcion: s.descripcion ?? `Skin de ${PERSONAJES_OCULTOS.find((p) => p.id === s.personajeId)?.nombre ?? "personaje"}.`,
+    fecha: s.fecha,
+  });
+
+  // Momento de prueba (aún no hay momentos reales): usa el arte del personaje elegido.
+  const skin = (momento: boolean): RecompensaCofre => ({
+    id: `prueba-${++contador}`,
+    tipo: "skin",
+    skinId: `prueba-${momento ? "momento" : "skin"}`,
+    personajeId: personaje.id,
+    personajeNombre: personaje.nombre,
+    skinTipo: momento ? "momento" : "normal",
+    nombre: momento ? "Momento de prueba" : "Skin de prueba",
+    rareza: "legendaria",
+    imagen: personaje.imagen,
+    ilustracion: rutaCompletoPersonaje(personaje.id),
+    descripcion: "Recompensa de prueba.",
+    fecha: momento ? "1 de enero de 2025" : undefined,
+  });
+
   const presets: { nombre: string; crear: () => RecompensaCofre[] }[] = [
     { nombre: "Común", crear: () => [recompensaCarta(primeraCarta("comun"))] },
     { nombre: "Rara + Épica", crear: () => [recompensaCarta(primeraCarta("rara")), recompensaCarta(primeraCarta("epica"))] },
@@ -85,6 +118,8 @@ export default function AdminPruebasAnimacion() {
     { nombre: "Fragmento 1/3", crear: () => [fragmento(0)] },
     { nombre: "Fragmento 2/3", crear: () => [fragmento(1)] },
     { nombre: "Personaje completo", crear: () => [fragmento(FRAGMENTOS_PERSONAJE_NECESARIOS - 1, true)] },
+    { nombre: "Skin", crear: () => [skinReal ? desdeSkin(skinReal) : skin(false)] },
+    { nombre: "Momento histórico", crear: () => [skin(true)] },
     { nombre: "Chapas", crear: () => [monedas(), monedas()] },
     { nombre: "Todo junto", crear: () => [recompensaCarta(primeraCarta("comun")), recompensaCarta(primeraCarta("epica")), recompensaCarta(primeraCarta("legendaria")), fragmento(1)] },
   ];
@@ -123,6 +158,20 @@ export default function AdminPruebasAnimacion() {
         <button type="button" onClick={() => setPrueba({ tipo: "detalle", carta, bloqueada: true })} className={botonClase}>Detalle bloqueada</button>
       </div>
 
+      <p className="mb-1 text-xs text-texto2">Skin real (con su arte de verdad)</p>
+      <select value={skinRealId} onChange={(e) => setSkinRealId(e.target.value)} className={`${selectClase} mb-2`}>
+        {SKINS_PERSONAJES.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.nombre} · {PERSONAJES_OCULTOS.find((p) => p.id === s.personajeId)?.nombre} ({s.rareza})
+          </option>
+        ))}
+      </select>
+      <div className="mb-4 flex flex-wrap gap-2">
+        <button type="button" disabled={!skinReal} onClick={() => skinReal && lanzarCofre([desdeSkin(skinReal)])} className={botonClase}>Aparición en cofre</button>
+        <button type="button" disabled={SKINS_PERSONAJES.length === 0} onClick={() => lanzarCofre(SKINS_PERSONAJES.map(desdeSkin))} className={botonClase}>Todas las skins</button>
+        {skinReal && <Link href={`/personaje/${skinReal.personajeId}`} className={botonClase}>Ver ficha</Link>}
+      </div>
+
       <p className="mb-1 text-xs text-texto2">Personaje</p>
       <select value={personajeId} onChange={(e) => setPersonajeId(e.target.value)} className={`${selectClase} mb-2`}>
         {PERSONAJES_OCULTOS.map((p) => (
@@ -130,8 +179,8 @@ export default function AdminPruebasAnimacion() {
         ))}
       </select>
       <div className="flex flex-wrap gap-2">
-        <button type="button" onClick={() => setPrueba({ tipo: "ficha", personajeId, bloqueado: false })} className={botonClase}>Ficha</button>
-        <button type="button" onClick={() => setPrueba({ tipo: "ficha", personajeId, bloqueado: true })} className={botonClase}>Ficha bloqueada</button>
+        <Link href={`/personaje/${personajeId}`} className={botonClase}>Ficha</Link>
+        <Link href={`/personaje/${personajeId}?demo=bloqueado`} className={botonClase}>Ficha bloqueada</Link>
         <button type="button" onClick={() => lanzarCofre([fragmento(0)])} className={botonClase}>Fragmento 1/3</button>
         <button type="button" onClick={() => lanzarCofre([fragmento(FRAGMENTOS_PERSONAJE_NECESARIOS - 1, true)])} className={botonClase}>Desbloquear</button>
       </div>
@@ -146,16 +195,6 @@ export default function AdminPruebasAnimacion() {
       )}
       {prueba?.tipo === "uso" && <CartaUsoCelebracion carta={prueba.carta} detalle="Prueba de animación" onClose={() => setPrueba(null)} />}
       {prueba?.tipo === "detalle" && <CartaDetalleModal carta={prueba.carta} cantidad={2} bloqueada={prueba.bloqueada} onClose={() => setPrueba(null)} />}
-      {prueba?.tipo === "ficha" && (
-        <PersonajeFichaModal
-          personaje={PERSONAJES_OCULTOS.find((p) => p.id === prueba.personajeId) ?? PERSONAJES_OCULTOS[0]}
-          abierto
-          bloqueado={prueba.bloqueado}
-          fragmentos={1}
-          fragmentosNecesarios={FRAGMENTOS_PERSONAJE_NECESARIOS}
-          onCerrar={() => setPrueba(null)}
-        />
-      )}
     </section>
   );
 }

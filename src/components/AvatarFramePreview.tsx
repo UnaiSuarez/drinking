@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import AvatarFrame from "@/components/AvatarFrame";
 import { type AvatarConfig, type EstadoAvatar } from "@/lib/avatar";
-import PersonajeFichaModal from "@/components/PersonajeFicha";
+import Link from "next/link";
 import { personajePorImagen } from "@/lib/tienda";
 import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
@@ -30,7 +30,6 @@ export default function AvatarFramePreview({
   asSpan?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
-  const [fichaAbierta, setFichaAbierta] = useState(false);
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
   const sinMovimiento = useReducedMotion();
@@ -42,13 +41,13 @@ export default function AvatarFramePreview({
   useEffect(() => {
     if (!abierto) return;
     function cerrarConEscape(event: KeyboardEvent) {
-      if (event.key === "Escape" && !fichaAbierta) setAbierto(false);
+      if (event.key === "Escape") setAbierto(false);
     }
     window.addEventListener("keydown", cerrarConEscape);
     return () => {
       window.removeEventListener("keydown", cerrarConEscape);
     };
-  }, [abierto, fichaAbierta]);
+  }, [abierto]);
 
   function abrir(event: React.MouseEvent | React.KeyboardEvent) {
     event.preventDefault();
@@ -104,7 +103,6 @@ export default function AvatarFramePreview({
               aria-modal="true"
               aria-labelledby={tituloId}
               onClick={() => setAbierto(false)}
-              style={fichaAbierta ? { display: "none" } : undefined}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -138,22 +136,18 @@ export default function AvatarFramePreview({
                 <p className="mt-3 font-titulo text-sm text-ambar">{marcoInfo.nombre}</p>
                 <p className="mt-1 text-xs text-texto2">{marcoInfo.descripcion}</p>
                 {personaje && (
-                  <button
-                    type="button"
-                    onClick={() => setFichaAbierta(true)}
-                    className="mt-4 w-full rounded-xl border border-cian/60 bg-cian/10 px-3 py-2 font-titulo text-sm text-cian active:scale-95"
+                  <Link
+                    href={`/personaje/${personaje.id}`}
+                    className="mt-4 block w-full rounded-xl border border-cian/60 bg-cian/10 px-3 py-2 font-titulo text-sm text-cian active:scale-95"
                   >
                     Ver ficha de {personaje.nombre}
-                  </button>
+                  </Link>
                 )}
               </motion.div>
             </motion.div>
           )}
         </AnimatePresence>,
         document.body
-      )}
-      {personaje && (
-        <PersonajeFichaModal personaje={personaje} abierto={fichaAbierta} onCerrar={() => setFichaAbierta(false)} />
       )}
     </>
   );

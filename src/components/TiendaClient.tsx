@@ -163,6 +163,7 @@ export default function TiendaClient({
       gastadas: yaComprado ? tienda.gastadas : tienda.gastadas + precio,
       avatares: yaComprado ? tienda.avatares : [...tienda.avatares, id],
       avatarEquipado: id,
+      skinEquipada: null,
     };
     const nextConfig = {
       ...objetoConfig(rawConfig),
@@ -181,6 +182,7 @@ export default function TiendaClient({
     const nextTienda: TiendaState = {
       ...tienda,
       avatarEquipado: id,
+      skinEquipada: null,
     };
     const nextConfig = {
       ...objetoConfig(rawConfig),
@@ -448,8 +450,6 @@ export default function TiendaClient({
                   <PersonajeFichaTrigger
                     personaje={item}
                     bloqueado={!desbloqueado}
-                    fragmentos={fragmentos}
-                    fragmentosNecesarios={FRAGMENTOS_PERSONAJE_NECESARIOS}
                     portraitOnly
                     triggerClassName="h-24 w-24"
                   />

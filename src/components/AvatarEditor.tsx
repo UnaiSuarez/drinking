@@ -104,6 +104,7 @@ function limpiarAvatarPremium(raw: Record<string, unknown>) {
   return {
     ...tienda,
     avatarEquipado: null,
+    skinEquipada: null,
   };
 }
 

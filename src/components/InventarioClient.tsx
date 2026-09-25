@@ -30,6 +30,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   AVATARES_GRATIS,
   PERSONAJES_OCULTOS,
+  SKINS_PERSONAJES,
+  type PersonajeSkin,
   TIENDA_AVATARES,
   TIENDA_MARCOS,
   calcularChapasGanadas,
@@ -155,9 +157,26 @@ export default function InventarioClient({
       ...objetoConfig(rawConfig),
       ...item.config,
       avatarImagen: item.imagen,
-      tienda: { ...tienda, avatarEquipado: id },
+      tienda: { ...tienda, avatarEquipado: id, skinEquipada: null },
     });
     if (ok) setMensaje(`${item.nombre} equipado.`);
+    setEquipando(null);
+  }
+
+  // La skin se equipa sobre su personaje: avatarEquipado sigue siendo el
+  // personaje (el servidor resuelve su habilidad leyendo ese campo).
+  async function equiparSkin(skin: PersonajeSkin) {
+    const personaje = PERSONAJES_OCULTOS.find((item) => item.id === skin.personajeId);
+    if (equipando || !personaje || !inventario.skins.includes(skin.id)) return;
+    setEquipando(skin.id);
+    setMensaje(null);
+    const ok = await guardarConfig({
+      ...objetoConfig(rawConfig),
+      ...personaje.config,
+      avatarImagen: skin.imagen,
+      tienda: { ...tienda, avatarEquipado: personaje.id, skinEquipada: skin.id },
+    });
+    if (ok) setMensaje(`${skin.nombre} equipado.`);
     setEquipando(null);
   }
 
@@ -259,6 +278,39 @@ export default function InventarioClient({
         </ul>
       </section>
 
+      {inventario.personajesOcultos.length > 0 && SKINS_PERSONAJES.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-1 font-titulo text-xl text-texto">Mis skins</h2>
+          <p className="mb-3 text-xs text-texto2">
+            Salen en cofres, solo de personajes secretos que ya has desbloqueado.
+          </p>
+          {inventario.skins.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-borde px-3 py-4 text-center text-xs text-texto2">
+              Aún no has conseguido ninguna skin.
+            </p>
+          ) : (
+            <ul className="grid grid-cols-2 gap-3">
+              {SKINS_PERSONAJES.filter((skin) => inventario.skins.includes(skin.id)).map((skin) => {
+                const personaje = PERSONAJES_OCULTOS.find((item) => item.id === skin.personajeId);
+                const equipada = tienda.skinEquipada === skin.id && tienda.avatarEquipado === skin.personajeId;
+                return (
+                  <li key={skin.id} className="rounded-lg border border-oro/60 bg-tarjeta p-3 text-center">
+                    <Link href={`/personaje/${skin.personajeId}`} aria-label={`Ver ficha de ${personaje?.nombre ?? "personaje"}`} className="relative mx-auto block h-24 w-24 overflow-hidden rounded-xl bg-fondo/70">
+                      <Image src={skin.imagen} alt={skin.nombre} fill sizes="96px" className="object-contain" />
+                    </Link>
+                    <p className="mt-2 font-titulo text-sm text-texto">{skin.nombre}</p>
+                    <p className="text-[11px] text-texto2">{personaje?.nombre}</p>
+                    <button type="button" disabled={Boolean(equipando) || equipada} onClick={() => void equiparSkin(skin)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
+                      {equipada ? "Equipada" : "Equipar"}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      )}
+
       <section className="mb-8">
         <h2 className="mb-3 font-titulo text-xl text-texto">Mis marcos</h2>
         <ul className="grid grid-cols-2 gap-3">
@@ -339,8 +391,6 @@ export default function InventarioClient({
                 <PersonajeFichaTrigger
                   personaje={personaje}
                   bloqueado={!desbloqueado}
-                  fragmentos={fragmentos}
-                  fragmentosNecesarios={FRAGMENTOS_PERSONAJE_NECESARIOS}
                 >
                   <span className="relative mb-2 block w-full overflow-hidden rounded-xl bg-fondo/70">
                     {desbloqueado && <span className="cofre-reward-aura" />}

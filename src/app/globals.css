@@ -1018,6 +1018,27 @@ body {
   border-radius: 50%;
   background: radial-gradient(circle, rgba(189, 123, 255, 0.5), rgba(255, 46, 147, 0.15) 45%, transparent 68%);
 }
+/* Skin: ilustración de cuerpo completo (vertical), sin la máscara redonda. */
+.gr-figura--completa {
+  width: min(66vw, 250px);
+  aspect-ratio: 2 / 3;
+}
+.gr-figura--completa .cofre-grand-reveal__image {
+  mask-image: none;
+  border-radius: 14px;
+}
+.gr-piso {
+  position: absolute;
+  z-index: 0;
+  left: -18%;
+  right: -18%;
+  bottom: -6%;
+  height: 16%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, var(--grand-color), transparent 70%);
+  filter: blur(6px);
+  opacity: 0;
+}
 .cofre-grand-reveal__image {
   position: absolute;
   inset: 0;

@@ -28,6 +28,7 @@ Esta carpeta empieza a corregirlo, sin secretos y sin datos personales.
 | `20260924235000` | `ranking_bebidas_sala` | **Aplicada el 24/09/2026 (23:32 UTC).** Nueva RPC para el ranking de `/sala/[id]/registros`, que deja de tener que cargar todo el historial solo para sumarlo; ver «Bebidas de la sala: listado y borrado» más abajo. |
 | `20260925001500` | `sojas_en_el_mapa_y_desglose_sala` | **Aplicada el 24/09/2026 (23:44 UTC).** Las SOJAS también se pueden marcar en el mapa (`sojas_registros.sitio_id`, `marcar_sitio_de_soja`), `mis_sitios_mapa`/`detalle_sitio` combinan ambas fuentes, y nueva RPC `desglose_bebidas_sala` para el desglose por jugador; ver «Mapa de sitios» y «Bebidas de la sala: listado y borrado» más abajo. |
 | `20260925003000` | `amplia_catalogo_bebidas_de_nuevo` | **Aplicada el 24/09/2026 (23:57 UTC).** Segunda ampliación del catálogo global (134 → 195 entradas), sobre todo «Pinta» (0 → 10); ver «Catálogo ampliado y rareza fija al añadir» más abajo. |
+| `20260925150000` | `admin_ajustar_skin` | **Aplicada el 25/09/2026** (vía MCP, proyecto `el-ranking`; la versión registrada por Supabase puede diferir de la del archivo). Nueva RPC `admin_ajustar_skin(p_usuario, p_skin_id, p_dar)`, solo super admin: añade o quita un id en `perfiles.avatar_config → inventario → skins`. Mismo patrón que `admin_ajustar_carta`/`admin_ajustar_cofre`; sin permiso para `anon`. Solo añade una función. |
 
 Las siete primeras conservan en el historial de Supabase la versión de su fichero y el
 contenido idéntico byte a byte (mismo md5). El resto se aplicaron con

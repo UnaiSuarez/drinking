@@ -31,9 +31,20 @@ const COFRE_COLOR: Record<CofreTipo["id"], string> = {
   legendario: "#ffd54a",
 };
 
+/** Las recompensas "secretas" usan el estilo único (morado): exclusivas,
+ * fragmentos de personaje y momentos históricos. */
+function esSecreta(recompensa: RecompensaCofre) {
+  return (
+    recompensa.tipo === "fragmentoPersonaje" ||
+    (recompensa.tipo === "carta" && recompensa.oculta) ||
+    (recompensa.tipo === "skin" && recompensa.skinTipo === "momento")
+  );
+}
+
 function reversoPorRecompensa(recompensa: RecompensaCofre) {
   if (recompensa.tipo === "fragmentoPersonaje") return REVERSOS_CARTA.personaje;
-  if (recompensa.tipo === "carta" && recompensa.oculta) return REVERSOS_CARTA.exclusiva;
+  if (recompensa.tipo === "skin") return recompensa.skinTipo === "momento" ? REVERSOS_CARTA.momento : REVERSOS_CARTA.skin;
+  if (esSecreta(recompensa)) return REVERSOS_CARTA.exclusiva;
   const rareza = recompensa.rareza;
   if (rareza === "legendaria") return REVERSOS_CARTA.legendaria;
   if (rareza === "epica") return REVERSOS_CARTA.epica;
@@ -43,12 +54,14 @@ function reversoPorRecompensa(recompensa: RecompensaCofre) {
 function etiquetaRecompensa(recompensa: RecompensaCofre) {
   if (recompensa.tipo === "monedas") return `${recompensa.cantidad} chapas`;
   if (recompensa.tipo === "fragmentoPersonaje") return "Personaje · fragmento";
+  if (recompensa.tipo === "skin") return recompensa.skinTipo === "momento" ? "Momento histórico" : `Skin · ${recompensa.personajeNombre}`;
   if (recompensa.oculta) return "Carta exclusiva";
   return `Carta ${recompensa.rareza}`;
 }
 
 function categoriaRecompensa(recompensa: RecompensaCofre) {
   if (recompensa.tipo === "fragmentoPersonaje") return "PERSONAJE";
+  if (recompensa.tipo === "skin") return recompensa.skinTipo === "momento" ? "MOMENTO" : "SKIN";
   if (recompensa.tipo === "carta" && recompensa.oculta) return "EXCLUSIVA";
   if (recompensa.tipo === "monedas") return "CHAPAS";
   return ({ comun: "COMÚN", rara: "RARA", epica: "ÉPICA", legendaria: "LEGENDARIA" } as const)[recompensa.rareza];
@@ -173,14 +186,13 @@ export default function CofreAperturaModal({
     const recompensa = recompensas[index];
     const el = raiz.current;
     if (etapa !== "lista" || !recompensa || fases[index] !== "oculta" || !el) return;
-    const secreta =
-      recompensa.tipo === "fragmentoPersonaje" ||
-      (recompensa.tipo === "carta" && recompensa.oculta);
+    const secreta = esSecreta(recompensa);
     const rareza = secreta ? "unica" : recompensa.rareza;
-    const nivel = rareza === "legendaria" || rareza === "unica" ? 3 : rareza === "epica" ? 2 : rareza === "rara" ? 1 : 0;
+    // Toda skin (sea cual sea su rareza) abre la pantalla grande con la imagen completa.
+    const nivel = recompensa.tipo === "skin" || rareza === "legendaria" || rareza === "unica" ? 3 : rareza === "epica" ? 2 : rareza === "rara" ? 1 : 0;
     const colores = RAREZA_COLOR[rareza];
     const frag = recompensa.tipo === "fragmentoPersonaje" ? recompensa : null;
-    const modo: ModoPremio = frag ? (frag.completa ? "personaje" : "fragmento") : rareza === "unica" ? "unica" : "legendaria";
+    const modo: ModoPremio = frag ? (frag.completa ? "personaje" : "fragmento") : recompensa.tipo === "skin" ? "skin" : rareza === "unica" ? "unica" : "legendaria";
     const pantallaPropia = modo === "personaje" || modo === "fragmento";
 
     if (sinMovimiento()) {
@@ -310,9 +322,7 @@ export default function CofreAperturaModal({
         >
           {recompensas.map((recompensa, index) => {
             const fase = fases[index];
-            const secreta =
-              recompensa.tipo === "fragmentoPersonaje" ||
-              (recompensa.tipo === "carta" && recompensa.oculta);
+            const secreta = esSecreta(recompensa);
             const rareza = secreta ? "unica" : recompensa.rareza;
 
             return (
@@ -325,14 +335,14 @@ export default function CofreAperturaModal({
                 aria-label={fase === "revelada" ? recompensa.nombre : `Revelar recompensa ${index + 1}`}
                 className={`cofre-reward-slot gacha-scene fase-${fase}`}
                 data-rarity={rareza}
-                data-kind={recompensa.tipo === "fragmentoPersonaje" ? "personaje" : secreta ? "exclusiva" : rareza}
+                data-kind={recompensa.tipo === "fragmentoPersonaje" ? "personaje" : recompensa.tipo === "skin" ? recompensa.skinTipo : secreta ? "exclusiva" : rareza}
                 style={{ "--reward-color": RAREZA_COLOR[rareza][0] } as CSSProperties}
               >
                 <span className="cofre-reward-halo" aria-hidden="true" />
                 <span className={`gacha-card relative block aspect-[3/4] ${secreta ? "cofre-reveal-secret" : ""}`}>
                   <span className="cofre-reveal-face absolute inset-0">
                     <Image src={reversoPorRecompensa(recompensa)} alt="Carta boca abajo" fill className="object-contain" sizes="120px" />
-                    {rareza !== "legendaria" && rareza !== "unica" && (
+                    {rareza !== "legendaria" && rareza !== "unica" && recompensa.tipo !== "skin" && (
                       <span className="absolute inset-0 flex items-center justify-center font-titulo text-3xl text-oro drop-shadow-lg">?</span>
                     )}
                     <span className="cofre-card-category">{categoriaRecompensa(recompensa)}</span>
@@ -399,7 +409,7 @@ function PiezaPersonaje({ recompensa, desvelada }: { recompensa: Extract<Recompe
   );
 }
 
-type ModoPremio = "legendaria" | "unica" | "fragmento" | "personaje";
+type ModoPremio = "legendaria" | "unica" | "fragmento" | "personaje" | "skin";
 
 /** Premio grande de una legendaria, única o personaje; siempre con partículas
  * de luz (sin confeti).
@@ -419,13 +429,16 @@ function PremioGrande({
   onClose: () => void;
 }) {
   const raiz = useRef<HTMLButtonElement>(null);
-  const unica = modo !== "legendaria";
+  // Los momentos históricos usan la paleta morada; el resto de skins, la dorada.
+  const unica = modo === "skin" ? recompensa.tipo === "skin" && recompensa.skinTipo === "momento" : modo !== "legendaria";
+  const [fallo, setFallo] = useState(false);
   const frag = recompensa.tipo === "fragmentoPersonaje" ? recompensa : null;
   const total = frag?.necesarios ?? 3;
   const habilidad = frag ? PERSONAJES_OCULTOS.find((p) => p.id === frag.personajeId)?.habilidad : undefined;
   const titulo =
     modo === "personaje" ? "¡Personaje desbloqueado!"
     : modo === "fragmento" ? (frag?.yaTenido ? "Ya lo tenías · +250 chapas" : `Fragmento ${Math.min((frag?.previos ?? 0) + 1, total)}/${total}`)
+    : recompensa.tipo === "skin" ? (recompensa.skinTipo === "momento" ? "Momento histórico" : `Skin de ${recompensa.personajeNombre}`)
     : modo === "unica" ? "Recompensa única" : "Legendaria";
 
   useEffect(() => {
@@ -544,6 +557,33 @@ function PremioGrande({
           tl.addLabel("texto", 0.9);
         }
         tl.fromTo(q(".cofre-grand-reveal__rays"), { opacity: 0, scale: 0.3 }, { opacity: 0.55, scale: 1, duration: 0.9, ease: "power2.out" }, 1.0);
+      } else if (modo === "skin") {
+        // Revelación de la ilustración completa: la luz sube desde el suelo y
+        // va descubriendo al personaje de los pies a la cabeza.
+        const img = q(".cofre-grand-reveal__image")[0];
+        const c = () => centroEn(figura, el);
+        gsap.set(img, { clipPath: "inset(100% 0 0 0)", filter: "brightness(0.25) saturate(0.4)", yPercent: 4 });
+        gsap.set(q(".gr-barrido"), { opacity: 0, top: "100%" });
+        gsap.set(q(".gr-piso"), { opacity: 0, scaleX: 0.2 });
+        tl.fromTo(figura, { scale: 0.92, opacity: 0 }, { scale: 1, opacity: 1, duration: 0.5, ease: "power2.out" }, 0.05)
+          .to(q(".gr-piso"), { opacity: 1, scaleX: 1, duration: 0.7, ease: "power2.out" }, 0.1)
+          .to(q(".gr-barrido"), { opacity: 1, duration: 0.1 }, 0.35)
+          .to(q(".gr-barrido"), { top: "0%", duration: 1.1, ease: "power2.inOut" }, 0.35)
+          .to(img, { clipPath: "inset(0% 0 0 0)", yPercent: 0, duration: 1.1, ease: "power2.inOut" }, 0.35)
+          .to(img, { filter: "brightness(1) saturate(1)", duration: 0.9, ease: "power1.in" }, 0.55)
+          .to(q(".gr-barrido"), { opacity: 0, duration: 0.2 }, 1.35)
+          .call(() => {
+            const p = c();
+            fogonazo(el, unica ? "#e6d4ff" : "#fff6d0", 0.5);
+            onda(el, { x: p.x, y: p.y + (figura as HTMLElement).clientHeight * 0.42, color, tam: 90, escala: 5, duracion: 1.1 });
+            chispas(el, { x: p.x, y: p.y, colores: luz, cantidad: n(70), distancia: 240, tam: 8, gravedad: 110, duracion: 1.5, arco: [-2.6, -0.5] });
+            temblor(escena, 8, 0.5);
+            if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
+            detener = particulasAscendentes(el, { colores: luz, cantidad: n(32), tam: 9 });
+          }, undefined, 1.4)
+          .fromTo(figura, { scale: 1 }, { scale: 1.05, duration: 0.14, ease: "power4.out" }, 1.4)
+          .to(figura, { scale: 1, duration: 0.9, ease: "elastic.out(1,0.4)" }, ">")
+          .addLabel("texto", 1.5);
       } else if (modo === "unica") {
         tl.fromTo(premio, { y: 50, scale: 0.12, opacity: 0, rotation: -200 }, { y: 0, scale: 1, opacity: 1, rotation: 0, duration: 1, ease: "elastic.out(1,0.55)" }, 0.2)
           .call(() => impacto(false), undefined, 0.45)
@@ -555,7 +595,7 @@ function PremioGrande({
           .to(premio, { scaleY: 1, scaleX: 1, duration: 0.8, ease: "elastic.out(1,0.35)" }, ">")
           .addLabel("texto", 0.85);
       }
-      if (modo === "legendaria" || modo === "unica") {
+      if (modo === "legendaria" || modo === "unica" || modo === "skin") {
         tl.fromTo(q(".cofre-grand-reveal__rays"), { opacity: 0, scale: 0.3 }, { opacity: 0.75, scale: 1, duration: 0.9, ease: "power2.out" }, "texto-=0.5");
       }
       const fuerte = modo === "personaje";
@@ -580,7 +620,7 @@ function PremioGrande({
       if (modo === "personaje") tl.to(q(".gr-habilidad"), { opacity: 1, y: 0, duration: 0.5 }, ">0.1");
       tl.to(q(".cofre-grand-reveal__continue"), { opacity: 1, duration: 0.4 }, ">0.2");
       gsap.to(q(".cofre-grand-reveal__rays"), { rotation: 360, duration: 40, ease: "none", repeat: -1 });
-      if (modo !== "fragmento") gsap.to(q(".cofre-grand-reveal__image"), { y: -7, duration: 2.1, ease: "sine.inOut", yoyo: true, repeat: -1, delay: modo === "personaje" ? 5 : 1.8 });
+      if (modo !== "fragmento" && modo !== "skin") gsap.to(q(".cofre-grand-reveal__image"), { y: -7, duration: 2.1, ease: "sine.inOut", yoyo: true, repeat: -1, delay: modo === "personaje" ? 5 : 1.8 });
       gsap.to(q(".cofre-grand-reveal__continue"), { opacity: 0.45, duration: 0.9, ease: "sine.inOut", yoyo: true, repeat: -1, delay: modo === "personaje" ? 7 : 2.6 });
       if (sonido) sonarCofre(modo === "personaje" ? "personaje" : modo === "fragmento" || modo === "unica" ? "unica" : "legendaria");
       return () => detener?.();
@@ -614,7 +654,7 @@ function PremioGrande({
               <span className="gr-orbita gr-orbita-2" aria-hidden="true" />
             </>
           )}
-          <span className={`gr-figura ${modo === "personaje" || modo === "fragmento" ? "gr-figura--luz" : ""}`}>
+          <span className={`gr-figura ${modo === "personaje" || modo === "fragmento" ? "gr-figura--luz" : ""} ${modo === "skin" ? "gr-figura--completa" : ""}`}>
             {modo === "fragmento" && frag && (
               <>
                 {Array.from({ length: total }, (_, i) => (
@@ -643,14 +683,21 @@ function PremioGrande({
                 <span className="gr-barrido" aria-hidden="true" />
               </>
             )}
+            {modo === "skin" && (
+              <>
+                <span className="gr-piso" aria-hidden="true" />
+                <span className="gr-barrido" aria-hidden="true" />
+              </>
+            )}
             {modo !== "fragmento" && (
               <Image
-                src={recompensa.imagen}
+                src={modo === "skin" && recompensa.tipo === "skin" && !fallo ? recompensa.ilustracion : recompensa.imagen}
+                onError={() => setFallo(true)}
                 alt=""
-                width={768}
-                height={768}
+                width={modo === "skin" ? 1024 : 768}
+                height={modo === "skin" ? 1536 : 768}
                 className="cofre-grand-reveal__image"
-                sizes="240px"
+                sizes="300px"
                 priority
               />
             )}
