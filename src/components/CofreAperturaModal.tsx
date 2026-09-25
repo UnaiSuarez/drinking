@@ -438,7 +438,7 @@ function PremioGrande({
   const titulo =
     modo === "personaje" ? "¡Personaje desbloqueado!"
     : modo === "fragmento" ? (frag?.yaTenido ? "Ya lo tenías · +250 chapas" : `Fragmento ${Math.min((frag?.previos ?? 0) + 1, total)}/${total}`)
-    : recompensa.tipo === "skin" ? (recompensa.skinTipo === "momento" ? "Momento histórico" : `Skin de ${recompensa.personajeNombre}`)
+    : recompensa.tipo === "skin" ? (recompensa.skinTipo === "momento" ? (recompensa.fecha ? `Momento histórico · ${recompensa.fecha}` : "Momento histórico") : `Skin de ${recompensa.personajeNombre}`)
     : modo === "unica" ? "Recompensa única" : "Legendaria";
 
   useEffect(() => {
@@ -635,6 +635,7 @@ function PremioGrande({
       className="cofre-grand-reveal"
       data-rarity={unica ? "unica" : "legendaria"}
       data-personaje={modo === "personaje" || undefined}
+      data-skin={modo === "skin" || undefined}
       aria-label={`Cerrar premio ${recompensa.nombre}`}
       onClick={onClose}
       onKeyDown={(event) => {

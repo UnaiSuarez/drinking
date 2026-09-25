@@ -35,3 +35,19 @@ momentoHistorico({
 Solo en cofres y **solo con el personaje ya desbloqueado**. Entran al sorteo
 automáticamente en cuanto existan en `SKINS_PERSONAJES`; sin skins el reparto de
 los cofres no cambia. Los momentos son `legendaria` por defecto.
+
+## Ranuras reservadas (2 comunes + 2 épicas + 1 legendaria por personaje)
+Cada personaje secreto tiene 5 skins normales. La legendaria ya existe; las
+otras 4 están reservadas en `SKINS_PERSONAJES` con `pendiente: true`
+(ids `<personaje>-comun-1`, `-comun-2`, `-epica-1`, `-epica-2`).
+
+Para activar una:
+1. Copia `<skin-id>.webp` y `<skin-id>-completo.webp` en `public/personajes/<personaje-id>/skins/`.
+2. En `src/lib/tienda.ts` borra `pendiente: true` de esa línea (y cambia `nombre`; si cambias `id`, usa el mismo en los nombres de archivo).
+3. Comprueba con `npm run skins:arte`.
+
+Mientras sea `pendiente` no aparece en cofres, tienda, inventario ni fichas.
+
+## Precio y obtención
+- **Skins normales:** se pueden comprar en la tienda (común 100 · épica 300 · legendaria 600 chapas) y también salen en cofres. Solo con el personaje ya desbloqueado.
+- **Momentos históricos:** no se compran, solo salen en cofres.

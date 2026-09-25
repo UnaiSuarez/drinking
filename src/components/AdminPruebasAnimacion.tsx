@@ -7,7 +7,7 @@ import CartaUsoCelebracion from "@/components/CartaUsoCelebracion";
 import Link from "next/link";
 import { CARTAS_COFRES, COFRES_TIPOS, MONEDA_COFRES, type CartaCofre } from "@/lib/cofresDesign";
 import { FRAGMENTOS_PERSONAJE_NECESARIOS, type RecompensaCofre } from "@/lib/inventario";
-import { PERSONAJES_OCULTOS, SKINS_PERSONAJES, rutaCompletoPersonaje, type PersonajeSkin } from "@/lib/tienda";
+import { PERSONAJES_OCULTOS, rutaCompletoPersonaje, skinsDisponibles, type PersonajeSkin } from "@/lib/tienda";
 import { prepararAudioCofre } from "@/lib/cofreAudio";
 
 type Prueba =
@@ -41,8 +41,8 @@ export default function AdminPruebasAnimacion() {
   const [cofreId, setCofreId] = useState<(typeof COFRES_TIPOS)[number]["id"]>("legendario");
   const [cartaId, setCartaId] = useState(CARTAS_COFRES[0]?.id ?? "");
   const [personajeId, setPersonajeId] = useState(PERSONAJES_OCULTOS[0]?.id ?? "");
-  const [skinRealId, setSkinRealId] = useState(SKINS_PERSONAJES[0]?.id ?? "");
-  const skinReal = SKINS_PERSONAJES.find((s) => s.id === skinRealId) ?? SKINS_PERSONAJES[0];
+  const [skinRealId, setSkinRealId] = useState(skinsDisponibles()[0]?.id ?? "");
+  const skinReal = skinsDisponibles().find((s) => s.id === skinRealId) ?? skinsDisponibles()[0];
   const carta = CARTAS_COFRES.find((c) => c.id === cartaId) ?? CARTAS_COFRES[0];
   const personaje = PERSONAJES_OCULTOS.find((p) => p.id === personajeId) ?? PERSONAJES_OCULTOS[0];
 
@@ -160,7 +160,7 @@ export default function AdminPruebasAnimacion() {
 
       <p className="mb-1 text-xs text-texto2">Skin real (con su arte de verdad)</p>
       <select value={skinRealId} onChange={(e) => setSkinRealId(e.target.value)} className={`${selectClase} mb-2`}>
-        {SKINS_PERSONAJES.map((s) => (
+        {skinsDisponibles().map((s) => (
           <option key={s.id} value={s.id}>
             {s.nombre} · {PERSONAJES_OCULTOS.find((p) => p.id === s.personajeId)?.nombre} ({s.rareza})
           </option>
@@ -168,7 +168,7 @@ export default function AdminPruebasAnimacion() {
       </select>
       <div className="mb-4 flex flex-wrap gap-2">
         <button type="button" disabled={!skinReal} onClick={() => skinReal && lanzarCofre([desdeSkin(skinReal)])} className={botonClase}>Aparición en cofre</button>
-        <button type="button" disabled={SKINS_PERSONAJES.length === 0} onClick={() => lanzarCofre(SKINS_PERSONAJES.map(desdeSkin))} className={botonClase}>Todas las skins</button>
+        <button type="button" disabled={skinsDisponibles().length === 0} onClick={() => lanzarCofre(skinsDisponibles().map(desdeSkin))} className={botonClase}>Todas las skins</button>
         {skinReal && <Link href={`/personaje/${skinReal.personajeId}`} className={botonClase}>Ver ficha</Link>}
       </div>
 

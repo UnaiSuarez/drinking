@@ -10,7 +10,8 @@
     "medals:generate": "node scripts/generate-medal-items.mjs",
     "avatars:generate": "node scripts/generate-avatar-items.mjs",
     "frames:generate": "node scripts/generate-frame-items.mjs",
-    "rewards:generate": "node scripts/generate-reward-assets.mjs"
+    "rewards:generate": "node scripts/generate-reward-assets.mjs",
+    "skins:arte": "node scripts/skins-arte.mjs"
   },
   "dependencies": {
     "@gsap/react": "^2.1.2",
