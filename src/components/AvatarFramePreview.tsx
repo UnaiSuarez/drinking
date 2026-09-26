@@ -99,7 +99,7 @@ export default function AvatarFramePreview({
           {abierto && (
             <motion.div
               key="avatar-preview"
-              className="avatar-preview-overlay fixed inset-0 z-50 flex items-center justify-center overflow-x-hidden overflow-y-auto bg-fondo/90 p-5 backdrop-blur-sm"
+              className="avatar-preview-overlay fixed inset-0 z-50 overflow-hidden bg-fondo/95"
               role="dialog"
               aria-modal="true"
               aria-labelledby={tituloId}
@@ -110,7 +110,7 @@ export default function AvatarFramePreview({
               transition={{ duration: sinMovimiento ? 0.12 : 0.25 }}
             >
               <motion.div
-                className="w-full max-w-sm max-h-[calc(100svh-2.5rem)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
+                className="avatar-preview-panel w-full max-w-sm overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
@@ -123,8 +123,10 @@ export default function AvatarFramePreview({
                   </button>
                 </div>
                 <div className="mb-4 flex justify-center">
-                  <div className={`avatar-preview-stage relative flex shrink-0 items-center justify-center ${previewClassName} max-w-full !h-auto aspect-square`}>
-                    <AvatarFrame config={config} estado={estado} marco={marco} className="h-4/5 w-4/5" imageSizes="(max-width: 400px) 60vw, 240px" />
+                  <div className={`avatar-preview-stage relative shrink-0 ${previewClassName} max-w-full !h-auto aspect-square`}>
+                    <div className="absolute inset-[10%]">
+                      <AvatarFrame config={config} estado={estado} marco={marco} className="h-full w-full" imageSizes="(max-width: 400px) 60vw, 240px" />
+                    </div>
                   </div>
                 </div>
                 <h2 id={tituloId} className="font-titulo text-2xl text-texto">{titulo}</h2>

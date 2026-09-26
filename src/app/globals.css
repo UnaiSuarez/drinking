@@ -480,7 +480,26 @@ body {
   55% { opacity: 0.3; transform: translateY(9%); }
 }
 
-.avatar-preview-stage { isolation: isolate; }
+.avatar-preview-stage {
+  isolation: isolate;
+  contain: layout paint;
+}
+
+/* Keep browser toolbar changes and animated overflow out of modal layout. */
+.avatar-preview-panel {
+  position: absolute;
+  left: 50%;
+  top: 50svh;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 2.5rem);
+  max-height: calc(100svh - 2.5rem);
+  scrollbar-gutter: stable;
+  touch-action: pan-y pinch-zoom;
+}
+
+.avatar-preview-overlay button {
+  touch-action: manipulation;
+}
 
 .avatar-frame-static,
 .avatar-frame-static *,
