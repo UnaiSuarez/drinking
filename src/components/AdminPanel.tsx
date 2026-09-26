@@ -39,6 +39,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
   const [deltaCofre, setDeltaCofre] = useState("1");
   const [skinId, setSkinId] = useState(skinsDisponibles()[0]?.id ?? "");
   const [logroSlug, setLogroSlug] = useState(logros[0]?.slug ?? "");
+  const [confirmacionReset, setConfirmacionReset] = useState("");
 
   async function buscar() {
     if (!busqueda.trim()) return;
@@ -54,6 +55,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
 
   async function cargarDetalle(id: string, nombre: string) {
     setMensaje(null);
+    setConfirmacionReset("");
     const { data } = await supabase
       .from("perfiles")
       .select("avatar_config, xp")
@@ -379,6 +381,37 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
                 Quitar
               </button>
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-rosa/50 bg-tarjeta p-4">
+            <p className="mb-2 font-titulo text-sm text-rosa">
+              ⚠️ Resetear cuenta a cero
+            </p>
+            <p className="mb-2 text-xs text-texto2">
+              Pone XP, chapas, inventario (cartas/cofres/skins/marcos) y
+              medallas a cero. No toca su historial de noches ni sus salas
+              o amistades. No se puede deshacer.
+            </p>
+            <input
+              value={confirmacionReset}
+              onChange={(e) => setConfirmacionReset(e.target.value)}
+              placeholder={`Escribe "${seleccionado.nombre}" para confirmar`}
+              className="mb-2 w-full rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+            />
+            <button
+              disabled={aplicando || confirmacionReset !== seleccionado.nombre}
+              onClick={() => {
+                setConfirmacionReset("");
+                void aplicar(() =>
+                  supabase.rpc("admin_resetear_cuenta", {
+                    p_usuario: seleccionado.id,
+                  })
+                );
+              }}
+              className="w-full rounded-xl border border-rosa py-2 font-titulo text-sm text-rosa active:scale-95 disabled:opacity-50"
+            >
+              Resetear cuenta
+            </button>
           </section>
         </div>
       )}
