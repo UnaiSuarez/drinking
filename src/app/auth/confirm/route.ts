@@ -7,7 +7,9 @@ export async function GET(request: NextRequest) {
   const token_hash = searchParams.get("token_hash");
   const type = searchParams.get("type") as EmailOtpType | null;
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  // Only known local destinations may follow an authentication link.
+  const recuperacion = type === "recovery" || searchParams.get("next") === "/auth/nueva-password";
+  const next = recuperacion ? "/auth/nueva-password" : "/";
 
   const supabase = await createClient();
 
@@ -25,5 +27,8 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.redirect(new URL("/login?error=enlace", request.url));
+  return NextResponse.redirect(new URL(
+    recuperacion ? "/auth/recuperar?error=enlace" : "/login?error=enlace",
+    request.url
+  ));
 }

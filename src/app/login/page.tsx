@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 type Modo = "entrar" | "registro";
@@ -124,6 +125,11 @@ export default function LoginPage() {
               className="mb-4 w-full rounded-2xl border border-borde bg-fondo px-5 py-4 text-lg text-texto placeholder-texto2 outline-none focus:border-ambar"
             />
             {error && <p className="mb-4 text-sm text-rosa">{error}</p>}
+            {modo === "entrar" && (
+              <Link href="/auth/recuperar" className="mb-3 flex min-h-11 items-center justify-center text-sm text-cian underline">
+                He olvidado mi contraseña
+              </Link>
+            )}
             <button
               type="submit"
               disabled={cargando}
