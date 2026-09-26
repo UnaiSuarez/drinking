@@ -32,6 +32,7 @@ export default function AvatarFramePreview({
   animateTrigger?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
+  const [panelWidth, setPanelWidth] = useState(384);
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
   const sinMovimiento = useReducedMotion();
@@ -52,6 +53,8 @@ export default function AvatarFramePreview({
   function abrir(event: React.MouseEvent | React.KeyboardEvent) {
     event.preventDefault();
     event.stopPropagation();
+    // Snapshot before locking scroll: animated overflow must not resize the dialog.
+    setPanelWidth(Math.max(1, Math.min(384, document.documentElement.clientWidth - 40)));
     setAbierto(true);
   }
 
@@ -111,6 +114,7 @@ export default function AvatarFramePreview({
             >
               <div
                 className="avatar-preview-panel overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
+                style={{ width: panelWidth }}
                 onClick={(event) => event.stopPropagation()}
               >
                 <div className="mb-4 flex justify-end">

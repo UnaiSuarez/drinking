@@ -494,8 +494,9 @@ body {
   top: 50svh;
   transform: translateY(-50%);
   width: min(24rem, calc(100svw - 2.5rem));
+  max-width: calc(100svw - 2.5rem);
   min-width: 0;
-  contain: inline-size;
+  contain: inline-size layout paint;
   max-height: calc(100svh - 2.5rem);
   touch-action: pan-y pinch-zoom;
 }
