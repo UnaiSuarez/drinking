@@ -179,6 +179,14 @@ export default async function PerfilPage({
   );
 
   const esMiPerfil = user?.id === id;
+  let esAmigoAceptado = false;
+  if (user && !esMiPerfil) {
+    const { data: amistades } = await supabase.rpc("mis_amigos");
+    esAmigoAceptado = ((amistades ?? []) as { amigo_id: string; estado: string }[]).some(
+      (a) => a.amigo_id === id && a.estado === "aceptada"
+    );
+  }
+  const puedeVerPrivado = esMiPerfil || esAmigoAceptado;
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
@@ -226,7 +234,13 @@ export default async function PerfilPage({
           })}
         </p>
 
-        <div className={`mb-5 grid gap-3 text-left ${rankingSala ? "grid-cols-2" : "grid-cols-1"}`}>
+        {!puedeVerPrivado && (
+          <p className="mb-5 rounded-2xl border border-borde bg-tarjeta p-4 text-center text-xs text-texto2">
+            El nivel, la liga y las estadísticas de {perfil.nombre} solo se ven
+            si acepta tu solicitud de amistad.
+          </p>
+        )}
+        {puedeVerPrivado && <div className={`mb-5 grid gap-3 text-left ${rankingSala ? "grid-cols-2" : "grid-cols-1"}`}>
           <section className="rounded-2xl border border-cian/50 bg-tarjeta p-3">
             <p className="mb-2 font-titulo text-xs uppercase text-cian">
               Nivel personal
@@ -309,9 +323,9 @@ export default async function PerfilPage({
               </>
             )}
           </section>}
-        </div>
+        </div>}
 
-        {rankingSala && (
+        {puedeVerPrivado && rankingSala && (
           <div className="mb-5 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-left">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -378,12 +392,14 @@ export default async function PerfilPage({
               🗺️ Mapa de sitios
             </Link>
           </>}
-          <Link
-            href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}
-            className="rounded-xl border border-lima px-4 py-2 text-xs text-lima active:scale-95"
-          >
-            📊 Estadísticas
-          </Link>
+          {puedeVerPrivado && (
+            <Link
+              href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}
+              className="rounded-xl border border-lima px-4 py-2 text-xs text-lima active:scale-95"
+            >
+              📊 Estadísticas
+            </Link>
+          )}
         </div>
         {esMiPerfil && (
           <PerfilCustomizer
@@ -400,7 +416,7 @@ export default async function PerfilPage({
       </header>
 
       {/* Colección de medallas */}
-      <section className="mb-8">
+      {puedeVerPrivado && <section className="mb-8">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-titulo text-xl text-texto">
             🏅 Medallas ({medallasOrdenadas.length})
@@ -442,7 +458,7 @@ export default async function PerfilPage({
             ))}
           </ul>
         )}
-      </section>
+      </section>}
     </main>
   );
 }

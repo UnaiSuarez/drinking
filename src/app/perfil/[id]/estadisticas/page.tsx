@@ -28,6 +28,14 @@ export default async function EstadisticasPerfilPage({
     .maybeSingle();
   if (!perfil) notFound();
 
+  if (user.id !== id) {
+    const { data: amistades } = await supabase.rpc("mis_amigos");
+    const esAmigo = ((amistades ?? []) as { amigo_id: string; estado: string }[]).some(
+      (a) => a.amigo_id === id && a.estado === "aceptada"
+    );
+    if (!esAmigo) redirect(`/perfil/${id}`);
+  }
+
   const { data: miembroSala } = salaParam
     ? await supabase.from("sala_miembros").select("salas(id, nombre)").eq("usuario_id", id).eq("sala_id", salaParam).maybeSingle()
     : { data: null };
