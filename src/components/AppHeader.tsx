@@ -30,7 +30,7 @@ export default async function AppHeader() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-borde bg-fondo/95 px-4 py-2 backdrop-blur">
+      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-borde bg-fondo/95 px-4 py-2 backdrop-blur [contain:paint]">
       <Link href="/" className="font-titulo text-sm text-ambar">
         🍻 El Ranking
       </Link>

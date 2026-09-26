@@ -20,10 +20,11 @@
 
 html {
   background: var(--color-fondo);
-  overflow-x: clip;
+  overflow-x: hidden;
 }
 
 body {
+  overflow-x: clip;
   background: var(--color-fondo);
   color: var(--color-texto);
   font-family: var(--font-cuerpo);
@@ -126,6 +127,10 @@ body {
 
 /* Marcos de avatar estilo insignia/rango */
 .avatar-frame {
+  /* Masks only clip paint; also contain the scrollable overflow of FX. */
+  overflow: clip;
+  overflow-clip-margin: 12px;
+  contain: layout paint;
   clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0 82%, 0 18%);
   isolation: isolate;
 }
