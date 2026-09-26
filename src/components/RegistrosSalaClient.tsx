@@ -83,9 +83,11 @@ export default function RegistrosSalaClient({
   const [rankingLocal, setRanking] = useState(ranking);
   const [hayMas, setHayMas] = useState(hayMasInicial);
   const [sojas, setSojas] = useState(sojasIniciales);
+  const [sojasTotalLocal, setSojasTotalLocal] = useState(sojasTotal);
   const [cargandoSojas, setCargandoSojas] = useState(false);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [borrandoId, setBorrandoId] = useState<string | null>(null);
+  const [borrandoSoja, setBorrandoSoja] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jugadorFiltro, setJugadorFiltro] = useState<string>("todos");
 
@@ -173,6 +175,28 @@ export default function RegistrosSalaClient({
         .filter((m) => m.total > 0)
         .sort((a, b) => b.total - a.total)
     );
+  }
+
+  async function borrarSoja(registro: RegistroSoja) {
+    setBorrandoSoja(registro.id);
+    setError(null);
+    const { error } = await supabase.rpc("borrar_soja_suelta", {
+      p_registro_id: registro.id,
+    });
+    setBorrandoSoja(null);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    setSojas((prev) => prev.filter((r) => r.id !== registro.id));
+    setSojasTotalLocal((prev) => Math.max(0, prev - 1));
+  }
+
+  const sojasAgrupadas = new Map<string, RegistroSoja[]>();
+  for (const registro of sojas) {
+    const lista = sojasAgrupadas.get(registro.bebida) ?? [];
+    lista.push(registro);
+    sojasAgrupadas.set(registro.bebida, lista);
   }
 
   return (
@@ -281,7 +305,7 @@ export default function RegistrosSalaClient({
 
       <section className="mb-6">
         <div className="mb-3 flex items-baseline justify-between gap-3">
-          <h2 className="font-titulo text-lg text-cian">💧 Tus SOJAS ({sojasTotal})</h2>
+          <h2 className="font-titulo text-lg text-cian">💧 Tus SOJAS ({sojasTotalLocal})</h2>
           <span className="shrink-0 text-xs text-texto2">0 PL</span>
         </div>
         {sojas.length === 0 ? (
@@ -290,29 +314,32 @@ export default function RegistrosSalaClient({
           </p>
         ) : (
           <>
-            <ul className="space-y-2">
-              {sojas.map((registro) => {
-                const bebida = SOJAS_BEBIDAS[registro.bebida] ?? {
-                  nombre: registro.bebida,
+            <div className="flex flex-wrap gap-1.5">
+              {[...sojasAgrupadas.entries()].map(([bebidaId, registros]) => {
+                const bebida = SOJAS_BEBIDAS[bebidaId] ?? {
+                  nombre: bebidaId,
                   icono: "💧",
                 };
+                const masReciente = registros[0];
                 return (
-                  <li key={registro.id} className="flex items-center gap-3 rounded-2xl border border-cian/30 bg-tarjeta px-4 py-3 text-sm text-texto">
-                    <span className="text-lg">{bebida.icono}</span>
-                    <span className="min-w-0 flex-1">{bebida.nombre}</span>
-                    <span className="shrink-0 text-xs text-texto2">
-                      {new Date(registro.ts).toLocaleString("es-ES", {
-                        day: "numeric",
-                        month: "short",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </li>
+                  <span
+                    key={bebidaId}
+                    className="flex items-center gap-1 rounded-full border border-cian/30 bg-tarjeta px-2 py-1 text-[11px] text-texto"
+                  >
+                    {bebida.icono} {bebida.nombre} ×{registros.length}
+                    <button
+                      onClick={() => void borrarSoja(masReciente)}
+                      disabled={borrandoSoja === masReciente.id}
+                      className="ml-0.5 text-rosa disabled:opacity-50"
+                      aria-label={`Borrar un registro de ${bebida.nombre}`}
+                    >
+                      {borrandoSoja === masReciente.id ? "…" : "✕"}
+                    </button>
+                  </span>
                 );
               })}
-            </ul>
-            {sojas.length < sojasTotal && (
+            </div>
+            {sojas.length < sojasTotalLocal && (
               <button
                 onClick={cargarMasSojas}
                 disabled={cargandoSojas}
