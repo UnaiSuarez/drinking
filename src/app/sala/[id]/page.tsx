@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import SalaView, {
   type EntradaLiga,
   type Miembro,
@@ -15,9 +15,7 @@ export default async function SalaPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   const { data: sala } = await supabase
     .from("salas")
@@ -32,20 +30,63 @@ export default async function SalaPage({
   const esTemporada = configSala.tipo === "temporada";
   const esPermanente = configSala.tipo === "permanente";
 
-  const { data: bebidasSueltas } = esPermanente
-    ? await supabase
+  const [
+    { data: bebidasSueltas },
+    { data: catalogoRaw },
+    { data: miembrosRaw },
+    { data: nocheActiva },
+    { data: nochesCerradasRaw },
+    { data: temporada },
+    { data: misRegistros },
+  ] = await Promise.all([
+    esPermanente
+    ? supabase
         .from("bebidas_tipo")
         .select("id, nombre, icono")
         .or(`sala_id.is.null,sala_id.eq.${id}`)
         .order("orden")
-    : { data: null };
-
-  const { data: catalogoRaw } = esPermanente
-    ? await supabase
+    : { data: null },
+    esPermanente
+    ? supabase
         .from("bebidas_catalogo")
         .select("id, nombre, rareza, categoria_id")
         .or(`sala_id.is.null,sala_id.eq.${id}`)
-    : { data: null };
+    : { data: null },
+    supabase
+      .from("sala_miembros")
+      .select("rol, usuario_id, perfiles(nombre, avatar_config)")
+      .eq("sala_id", id)
+      .order("joined_at"),
+    supabase
+      .from("noches")
+      .select("id, inicio, fin_programado, estado")
+      .eq("sala_id", id)
+      .in("estado", ["activa", "cerrando", "pendiente"])
+      .maybeSingle(),
+    supabase
+      .from("noches")
+      .select("id, inicio, noche_jugadores(usuario_id, posicion_final)")
+      .eq("sala_id", id)
+      .eq("estado", "cerrada")
+      .order("inicio", { ascending: false })
+      .limit(10),
+    supabase
+      .from("temporadas")
+      .select("id, nombre, fin")
+      .eq("sala_id", id)
+      .eq("estado", "activa")
+      .gt("fin", new Date().toISOString())
+      .maybeSingle(),
+    esPermanente && user
+      ? supabase
+          .from("registros_sala")
+          .select("ts")
+          .eq("sala_id", id)
+          .eq("usuario_id", user.id)
+          .eq("anulado", false)
+      : { data: null },
+  ]);
+
   const catalogo = (catalogoRaw ?? []).map((c) => ({
     id: c.id,
     nombre: c.nombre,
@@ -53,22 +94,7 @@ export default async function SalaPage({
     categoriaId: c.categoria_id,
   }));
 
-  let racha = { actual: 0, mejor: 0 };
-  if (esPermanente) {
-    const { data: misRegistros } = await supabase
-      .from("registros_sala")
-      .select("ts")
-      .eq("sala_id", id)
-      .eq("usuario_id", user!.id)
-      .eq("anulado", false);
-    racha = calcularRacha((misRegistros ?? []).map((r) => r.ts));
-  }
-
-  const { data: miembrosRaw } = await supabase
-    .from("sala_miembros")
-    .select("rol, usuario_id, perfiles(nombre, avatar_config)")
-    .eq("sala_id", id)
-    .order("joined_at");
+  const racha = calcularRacha((misRegistros ?? []).map((r) => r.ts));
 
   const miembros: Miembro[] = (miembrosRaw ?? []).map((m) => {
     const p = m.perfiles as unknown as {
@@ -85,21 +111,6 @@ export default async function SalaPage({
 
   const miRol = miembros.find((m) => m.id === user!.id)?.rol ?? "miembro";
 
-  const { data: nocheActiva } = await supabase
-    .from("noches")
-    .select("id, inicio, fin_programado, estado")
-    .eq("sala_id", id)
-    .in("estado", ["activa", "cerrando", "pendiente"])
-    .maybeSingle();
-
-  const { data: nochesCerradasRaw } = await supabase
-    .from("noches")
-    .select("id, inicio, noche_jugadores(usuario_id, posicion_final)")
-    .eq("sala_id", id)
-    .eq("estado", "cerrada")
-    .order("inicio", { ascending: false })
-    .limit(10);
-
   const nochesCerradas: NocheResumen[] = (nochesCerradasRaw ?? []).map((n) => {
     const jugadores = (n.noche_jugadores ?? []) as {
       usuario_id: string;
@@ -115,13 +126,6 @@ export default async function SalaPage({
   });
 
   // Liga de la temporada activa
-  const { data: temporada } = await supabase
-    .from("temporadas")
-    .select("id, nombre, fin")
-    .eq("sala_id", id)
-    .eq("estado", "activa")
-    .gt("fin", new Date().toISOString())
-    .maybeSingle();
 
   let liga: EntradaLiga[] = [];
   if (temporada) {

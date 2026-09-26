@@ -1,4 +1,5 @@
 import { medalSpriteFor } from "@/lib/medalSprites";
+import Image from "next/image";
 
 type RarezaVisual = {
   cinta: string;
@@ -336,11 +337,17 @@ export default function MedalIcon({
         }`}
         title={nombre}
       >
-        <span
+        {sprite.src ? <Image
+          src={sprite.src}
+          alt=""
+          fill
+          sizes="96px"
+          className="z-[1] object-contain drop-shadow-[0_0_14px_rgba(0,0,0,0.38)]"
+        /> : <span
           className="relative z-[1] h-full w-full bg-contain bg-center bg-no-repeat drop-shadow-[0_0_14px_rgba(0,0,0,0.38)]"
           style={spriteStyle}
           aria-hidden="true"
-        />
+        />}
         {brilloLegendario}
         {contadorEl}
       </span>

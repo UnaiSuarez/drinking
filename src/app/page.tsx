@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import SalasHome from "@/components/SalasHome";
 
 type SalaResumen = {
@@ -12,20 +12,22 @@ type SalaResumen = {
 
 export default async function HomePage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
-  const { data: perfil } = await supabase
-    .from("perfiles")
-    .select("nombre")
-    .eq("id", user!.id)
-    .single();
-
-  const { data: membresias } = await supabase
-    .from("sala_miembros")
-    .select("rol, salas(id, nombre, codigo, archivada_at)")
-    .eq("usuario_id", user!.id);
+  const [
+    { data: perfil },
+    { data: membresias },
+  ] = await Promise.all([
+    supabase
+      .from("perfiles")
+      .select("nombre")
+      .eq("id", user!.id)
+      .single(),
+    supabase
+      .from("sala_miembros")
+      .select("rol, salas(id, nombre, codigo, archivada_at)")
+      .eq("usuario_id", user!.id),
+  ]);
 
   const salaIds = (membresias ?? []).flatMap((m) => {
     const sala = m.salas as unknown as { id: string; archivada_at: string | null } | null;

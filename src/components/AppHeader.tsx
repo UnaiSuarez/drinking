@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import AvatarFrame from "@/components/AvatarFrame";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel } from "@/lib/niveles";
@@ -12,9 +12,7 @@ const ADMIN_EMAIL = "unaisucar64535@gmail.com";
 
 export default async function AppHeader() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) return null;
 

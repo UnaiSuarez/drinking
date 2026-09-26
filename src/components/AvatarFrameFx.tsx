@@ -206,13 +206,28 @@ export default function AvatarFrameFx({ kind, arte }: { kind: FxKind; arte: bool
       }
 
       // Solo animar cuando el marco es visible: listas largas no cuestan nada.
-      const observer = new IntersectionObserver(([entry]) => {
-        const paused = !entry.isIntersecting;
-        gsap.getTweensOf(el.querySelectorAll("*")).forEach((t) => t.paused(paused));
+      let visible = false;
+      const actualizarPausa = () => {
+        const paused = !visible || document.hidden;
+        const animations = new Set<gsap.core.Animation>();
+        _context.getTweens().forEach((tween: gsap.core.Tween) => {
+          const parent = tween.parent;
+          animations.add(parent && parent !== gsap.globalTimeline ? parent : tween);
+        });
+        animations.forEach((animation) => animation.paused(paused));
         timers.forEach((t) => t.pause(paused));
+      };
+      const observer = new IntersectionObserver(([entry]) => {
+        visible = entry.isIntersecting;
+        actualizarPausa();
       });
+      document.addEventListener("visibilitychange", actualizarPausa);
+      actualizarPausa();
       observer.observe(el);
-      return () => observer.disconnect();
+      return () => {
+        observer.disconnect();
+        document.removeEventListener("visibilitychange", actualizarPausa);
+      };
     },
     { scope: root, dependencies: [kind, arte] }
   );

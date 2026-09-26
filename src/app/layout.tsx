@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Lilita_One, Nunito_Sans } from "next/font/google";
 import AppHeader from "@/components/AppHeader";
+import WebUpdates from "@/components/WebUpdates";
 import "./globals.css";
 
 const lilita = Lilita_One({
@@ -19,6 +20,7 @@ export const metadata: Metadata = {
   description:
     "¿Quién bebe más? Que se entere el grupo, que se ría, y que no se olvide.",
   manifest: "/manifest.webmanifest",
+  icons: { apple: "/apple-touch-icon.png" },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
@@ -30,8 +32,6 @@ export const viewport: Viewport = {
   themeColor: "#0d0e1a",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export default function RootLayout({
@@ -44,6 +44,7 @@ export default function RootLayout({
       <body className="antialiased">
         <AppHeader />
         {children}
+        <WebUpdates />
       </body>
     </html>
   );

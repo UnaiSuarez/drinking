@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import NochePendiente from "@/components/NochePendiente";
 import NocheLive, {
   type Bebida,
@@ -18,9 +18,7 @@ export default async function NochePage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   const { data: noche } = await supabase
     .from("noches")
@@ -79,16 +77,53 @@ export default async function NochePage({
     );
   }
 
-  const { data: bebidas } = await supabase
-    .from("bebidas_tipo")
-    .select("id, nombre, icono, puntos")
-    .or(`sala_id.is.null,sala_id.eq.${noche.sala_id}`)
-    .order("orden");
-
-  const { data: jugadoresRaw } = await supabase
-    .from("noche_jugadores")
-    .select("usuario_id, perfiles(nombre, avatar_config)")
-    .eq("noche_id", id);
+  const [
+    { data: bebidas },
+    { data: jugadoresRaw },
+    { data: registros },
+    { data: votos },
+    { data: confirmaciones },
+    { data: penalizacionesTipo },
+    { data: penalizaciones },
+    { data: logrosNocheRaw },
+  ] = await Promise.all([
+    supabase
+      .from("bebidas_tipo")
+      .select("id, nombre, icono, puntos")
+      .or(`sala_id.is.null,sala_id.eq.${noche.sala_id}`)
+      .order("orden"),
+    supabase
+      .from("noche_jugadores")
+      .select("usuario_id, perfiles(nombre, avatar_config)")
+      .eq("noche_id", id),
+    supabase
+      .from("registros")
+      .select("id, usuario_id, bebida_tipo_id, ts, retroactivo")
+      .eq("noche_id", id)
+      .eq("anulado", false)
+      .order("ts"),
+    supabase
+      .from("noche_votos")
+      .select("votante_id, votado_id")
+      .eq("noche_id", id),
+    supabase
+      .from("noche_confirmaciones")
+      .select("usuario_id")
+      .eq("noche_id", id),
+    supabase
+      .from("penalizaciones_tipo")
+      .select("id, slug, nombre, icono, pl")
+      .order("id"),
+    supabase
+      .from("noche_penalizaciones")
+      .select("id, usuario_id, penalizacion_id, otorgada_por")
+      .eq("noche_id", id),
+    supabase
+      .from("logros_usuario")
+      .select("logros(nombre)")
+      .eq("usuario_id", user!.id)
+      .eq("noche_id", id),
+  ]);
 
   const jugadores: Jugador[] = (jugadoresRaw ?? []).map((j) => {
     const p = j.perfiles as unknown as {
@@ -102,39 +137,6 @@ export default async function NochePage({
       avatarConfigRaw: p?.avatar_config ?? null,
     };
   });
-
-  const { data: registros } = await supabase
-    .from("registros")
-    .select("id, usuario_id, bebida_tipo_id, ts, retroactivo")
-    .eq("noche_id", id)
-    .eq("anulado", false)
-    .order("ts");
-
-  const { data: votos } = await supabase
-    .from("noche_votos")
-    .select("votante_id, votado_id")
-    .eq("noche_id", id);
-
-  const { data: confirmaciones } = await supabase
-    .from("noche_confirmaciones")
-    .select("usuario_id")
-    .eq("noche_id", id);
-
-  const { data: penalizacionesTipo } = await supabase
-    .from("penalizaciones_tipo")
-    .select("id, slug, nombre, icono, pl")
-    .order("id");
-
-  const { data: penalizaciones } = await supabase
-    .from("noche_penalizaciones")
-    .select("id, usuario_id, penalizacion_id, otorgada_por")
-    .eq("noche_id", id);
-
-  const { data: logrosNocheRaw } = await supabase
-    .from("logros_usuario")
-    .select("logros(nombre)")
-    .eq("usuario_id", user!.id)
-    .eq("noche_id", id);
 
   const logrosVistosIniciales = (logrosNocheRaw ?? [])
     .map((l) => (l.logros as unknown as { nombre: string } | null)?.nombre)

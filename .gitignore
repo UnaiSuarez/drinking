@@ -19,6 +19,7 @@
 
 # production
 /build
+/public/sw-build.js
 
 # misc
 .DS_Store
