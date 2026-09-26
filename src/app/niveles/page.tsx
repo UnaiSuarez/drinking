@@ -3,10 +3,19 @@ import BackButton from "@/components/BackButton";
 import AvatarFrame from "@/components/AvatarFrame";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
-import { MARCO_INFO, marcoPorNivel, marcoPorLiga } from "@/lib/marcos";
+import { MARCO_INFO, marcoPorNivel, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
 import { calcularDivision } from "@/lib/liga";
 
 const HITOS = [1, 5, 10, 25, 50];
+
+const LIGA_HITOS: { pl: number; esTop1: boolean; marco: MarcoPerfil }[] = [
+  { pl: 0, esTop1: false, marco: "liga-bronce" },
+  { pl: 50, esTop1: false, marco: "liga-plata" },
+  { pl: 125, esTop1: false, marco: "liga-oro" },
+  { pl: 210, esTop1: false, marco: "liga-diamante" },
+  { pl: 300, esTop1: false, marco: "liga-maestro" },
+  { pl: 300, esTop1: true, marco: "liga-challenger" },
+];
 
 export default async function NivelesPage({
   searchParams,
@@ -159,6 +168,50 @@ export default async function NivelesPage({
                   {info.nombre}
                 </p>
                 <p className="text-[11px] text-texto2">{info.descripcion}</p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
+      <h2 className="mb-3 mt-8 font-titulo text-xl text-texto">🏆 Divisiones de liga</h2>
+      <p className="mb-3 text-xs text-texto2">
+        La liga se juega por temporada en cada sala: sube subiendo tu PL.
+        {!ligaInfo && " Entra desde una sala con liga activa para ver tu progreso aquí."}
+      </p>
+      <ul className="space-y-3">
+        {LIGA_HITOS.map((hito) => {
+          const division = calcularDivision(hito.pl, hito.esTop1);
+          const conseguido = ligaInfo
+            ? hito.esTop1
+              ? ligaInfo.esTop1 && ligaInfo.pl >= hito.pl
+              : ligaInfo.pl >= hito.pl
+            : false;
+          return (
+            <li
+              key={hito.marco}
+              className={`flex items-center gap-4 rounded-2xl border p-4 ${
+                conseguido
+                  ? "border-oro/60 bg-tarjeta"
+                  : "border-borde bg-tarjeta opacity-80"
+              }`}
+            >
+              <AvatarFrame
+                config={avatarConfig}
+                marco={hito.marco}
+                className="h-16 w-16"
+                imageSizes="64px"
+              />
+              <div className="min-w-0 flex-1">
+                <p className={`font-titulo text-lg ${division.color}`}>
+                  {division.icono} {division.nombre}
+                  {conseguido && (
+                    <span className="ml-2 text-xs text-lima">✓ conseguido</span>
+                  )}
+                </p>
+                <p className="text-xs text-texto2">
+                  {hito.esTop1 ? "Nº1 de la sala con 300+ PL" : `${hito.pl}+ PL`}
+                </p>
               </div>
             </li>
           );
