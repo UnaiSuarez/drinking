@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export type RegistroSala = {
@@ -79,6 +80,7 @@ export default function RegistrosSalaClient({
   nombrePorCatalogo: Record<string, string>;
 }) {
   const supabase = createClient();
+  const router = useRouter();
   const [registros, setRegistros] = useState(registrosIniciales);
   const [rankingLocal, setRanking] = useState(ranking);
   const [hayMas, setHayMas] = useState(hayMasInicial);
@@ -90,6 +92,28 @@ export default function RegistrosSalaClient({
   const [borrandoSoja, setBorrandoSoja] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jugadorFiltro, setJugadorFiltro] = useState<string>("todos");
+
+  // Tiempo real: si alguien más añade o borra una bebida/SOJA de la sala
+  // mientras tienes esta página abierta, se refresca sola (historial,
+  // desglose y ranking, que salen de RPCs en el servidor).
+  useEffect(() => {
+    const canal = supabase
+      .channel(`registros-sala-${salaId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "registros", filter: `sala_id=eq.${salaId}` },
+        () => router.refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sojas_registros", filter: `sala_id=eq.${salaId}` },
+        () => router.refresh()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [supabase, salaId, router]);
 
   const desglosePorJugador = new Map<string, DesgloseItem[]>();
   for (const item of desglose) {
