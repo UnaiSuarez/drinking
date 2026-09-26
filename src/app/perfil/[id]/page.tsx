@@ -73,7 +73,7 @@ export default async function PerfilPage({
   // Colección de medallas (repetibles: COUNT = contador ×N)
   const { data: medallas } = await supabase
     .from("logros_usuario")
-    .select("noche_id, logros(slug, nombre, icono, descripcion, rareza)")
+    .select("noche_id, logros(slug, nombre, icono, descripcion, rareza, repetible)")
     .eq("usuario_id", id);
 
   const noches = participaciones ?? [];
@@ -151,6 +151,7 @@ export default async function PerfilPage({
       icono: string;
       descripcion: string;
       rareza: string;
+      repetible: boolean;
       n: number;
       fechas: string[];
     }
@@ -162,6 +163,7 @@ export default async function PerfilPage({
       icono: string;
       descripcion: string;
       rareza: string;
+      repetible: boolean;
     } | null;
     if (!l) continue;
     const e = coleccion.get(l.slug) ?? { ...l, n: 0, fechas: [] };
