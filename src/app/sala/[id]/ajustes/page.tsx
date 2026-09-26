@@ -3,6 +3,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import BalanceEditor from "@/components/BalanceEditor";
 import ArchivarSalaControl from "@/components/ArchivarSalaControl";
+import RenombrarSalaControl from "@/components/RenombrarSalaControl";
+import MiembrosSalaControl from "@/components/MiembrosSalaControl";
+import TemporadasSalaControl from "@/components/TemporadasSalaControl";
 
 export default async function AjustesSalaPage({
   params,
@@ -44,6 +47,31 @@ export default async function AjustesSalaPage({
     .in("estado", ["activa", "cerrando"])
     .maybeSingle();
 
+  const { data: miembrosRaw } = await supabase
+    .from("sala_miembros")
+    .select("usuario_id, rol, perfiles(nombre)")
+    .eq("sala_id", id)
+    .order("joined_at");
+  const miembros = (miembrosRaw ?? []).map((m) => ({
+    usuarioId: m.usuario_id,
+    rol: m.rol,
+    nombre: (m.perfiles as unknown as { nombre: string } | null)?.nombre ?? "???",
+  }));
+
+  const { data: temporadasRaw } = await supabase
+    .from("temporadas")
+    .select("id, nombre, inicio, fin, estado, premio")
+    .eq("sala_id", id)
+    .order("inicio", { ascending: false });
+  const temporadas = (temporadasRaw ?? []).map((t) => ({
+    id: t.id,
+    nombre: t.nombre,
+    inicio: t.inicio,
+    fin: t.fin,
+    estado: t.estado,
+    premio: t.premio as string | null,
+  }));
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
       <Link href={`/sala/${id}`} className="text-sm text-texto2">
@@ -52,6 +80,17 @@ export default async function AjustesSalaPage({
       <h1 className="mb-2 mt-2 font-titulo text-3xl text-texto">
         Ajustes de sala
       </h1>
+      <RenombrarSalaControl salaId={sala.id} nombreActual={sala.nombre} />
+
+      <MiembrosSalaControl
+        salaId={sala.id}
+        miMiembroId={user.id}
+        miRol={miembro.rol}
+        miembros={miembros}
+      />
+
+      <TemporadasSalaControl salaId={sala.id} temporadas={temporadas} />
+
       <h2 className="mt-8 font-titulo text-xl text-texto">Balance de liga</h2>
       <p className="mb-6 text-sm text-texto2">
         Ajusta cuántos Puntos de Liga da cada cosa en esta sala. Los cambios

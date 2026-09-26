@@ -13,6 +13,7 @@ export type LogroCatalogo = {
   rareza: string;
   pl: number;
   secreto: boolean;
+  repetible: boolean;
   n: number;
 };
 
@@ -255,6 +256,9 @@ export default function LogrosCatalog({
                     {RAREZA_NOMBRE[l.rareza]}
                   </p>
                   <p className="text-xs text-lima">+{l.pl} PL</p>
+                  <p className="text-[10px] text-texto2">
+                    {l.repetible ? "Repetible" : "Única"}
+                  </p>
                 </div>
               </button>
             </li>
@@ -408,7 +412,8 @@ export default function LogrosCatalog({
                 colorRareza(seleccionado.rareza)
               }`}
             >
-              {RAREZA_NOMBRE[seleccionado.rareza]} · +{seleccionado.pl} PL
+              {RAREZA_NOMBRE[seleccionado.rareza]} · +{seleccionado.pl} PL ·{" "}
+              {seleccionado.repetible ? "Repetible" : "Única"}
             </p>
             <h2
               id={`logro-modal-${seleccionado.slug}`}

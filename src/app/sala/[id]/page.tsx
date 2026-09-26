@@ -26,6 +26,8 @@ export default async function SalaPage({
 
   if (!sala) notFound();
 
+  await supabase.rpc("marcar_visita_sala", { p_sala: id });
+
   const configSala = (sala.config ?? {}) as Record<string, unknown>;
   const esTemporada = configSala.tipo === "temporada";
   const esPermanente = configSala.tipo === "permanente";

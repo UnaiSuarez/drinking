@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -77,6 +77,46 @@ export default function SalaView({
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const esAdmin = miRol === "fundador" || miRol === "admin";
+
+  // Tiempo real: si alguien se une/sale, añade una bebida/SOJA suelta, o
+  // arranca una noche mientras estás viendo la sala, se refresca sola en
+  // vez de tener que recargar a mano. router.refresh() vuelve a pedir esta
+  // página al servidor (sin perder el estado de los <details> abiertos ni
+  // hacer un reload completo) y trae ya todo recalculado.
+  useEffect(() => {
+    const supabase = createClient();
+    const canal = supabase
+      .channel(`sala-${sala.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "sala_miembros", filter: `sala_id=eq.${sala.id}` },
+        () => router.refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "noches", filter: `sala_id=eq.${sala.id}` },
+        () => router.refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "noches", filter: `sala_id=eq.${sala.id}` },
+        () => router.refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "registros", filter: `sala_id=eq.${sala.id}` },
+        () => router.refresh()
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "sojas_registros", filter: `sala_id=eq.${sala.id}` },
+        () => router.refresh()
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+  }, [sala.id, router]);
 
   async function compartirCodigo() {
     const texto = `¡Únete a "${sala.nombre}" en El Ranking! 🍻 Código: ${sala.codigo}`;

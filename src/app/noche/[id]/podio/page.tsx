@@ -8,8 +8,6 @@ import { parseAvatarConfig } from "@/lib/avatar";
 import { cofrePorPodio } from "@/lib/cofresDesign";
 import { parseInventarioState } from "@/lib/inventario";
 import { parseTiendaState } from "@/lib/tienda";
-import { marcoPorNivel } from "@/lib/marcos";
-import { progresoNivel } from "@/lib/niveles";
 
 const XP_POR_RAREZA: Record<string, number> = {
   comun: 25,
@@ -198,8 +196,7 @@ export default async function PodioPage({
       id: j.usuario_id,
       nombre,
       avatarConfig: parseAvatarConfig(p?.avatar_config),
-      marcoPersonal: parseTiendaState(p?.avatar_config).marcoEquipado
-        ?? marcoPorNivel(progresoNivel(p?.xp ?? 0).nivel),
+      marcoPersonal: parseTiendaState(p?.avatar_config).marcoEquipado ?? "madera",
       posicion: j.posicion_final ?? 99,
       bebidas: t?.bebidas ?? 0,
       puntos: t?.puntos ?? 0,

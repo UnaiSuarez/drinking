@@ -215,6 +215,7 @@ function crearProgresosEscalonados(params: {
             rareza,
             pl: familia.id === "sojas" ? 0 : plPorRareza(rareza),
             secreto: false,
+            repetible: false,
             n: 0,
           } satisfies LogroCatalogo);
         const conseguida =
@@ -275,7 +276,7 @@ export default async function LogrosPage() {
     await Promise.all([
       supabase
         .from("logros")
-        .select("id, slug, nombre, icono, descripcion, rareza, pl, secreto")
+        .select("id, slug, nombre, icono, descripcion, rareza, pl, secreto, repetible")
         .order("id"),
       supabase
         .from("logros_usuario")
@@ -320,6 +321,7 @@ export default async function LogrosPage() {
     rareza: l.rareza,
     pl: l.pl,
     secreto: l.secreto,
+    repetible: l.repetible,
     n: conteo.get(l.id) ?? 0,
   }));
   const registros = (registrosRaw ?? []) as RegistroHistorico[];

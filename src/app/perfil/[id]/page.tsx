@@ -5,13 +5,12 @@ import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import ProfileAchievementDetails from "@/components/ProfileAchievementDetails";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
-import CumpleanosEditor from "@/components/CumpleanosEditor";
 import NombreEditor from "@/components/NombreEditor";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
-import { MARCO_INFO, marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
+import { marcoPorLiga } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 
 const RAREZA_ESTILO: Record<string, string> = {
@@ -37,7 +36,7 @@ export default async function PerfilPage({
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina, cumpleanos")
+    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina")
     .eq("id", id)
     .single();
 
@@ -45,8 +44,7 @@ export default async function PerfilPage({
   const avatar = parseAvatarConfig(perfil.avatar_config);
   const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
-  const marcoNivel = marcoPorNivel(nivel.nivel);
-  const marcoPersonal = tienda.marcoEquipado ?? marcoNivel;
+  const marcoPersonal = tienda.marcoEquipado ?? "madera";
   const vitrinaSlugs = (perfil.vitrina ?? []) as string[];
 
   const { data: salasPerfilRaw } = await supabase
@@ -74,7 +72,7 @@ export default async function PerfilPage({
   // Colección de medallas (repetibles: COUNT = contador ×N)
   const { data: medallas } = await supabase
     .from("logros_usuario")
-    .select("noche_id, logros(slug, nombre, icono, descripcion, rareza)")
+    .select("noche_id, logros(slug, nombre, icono, descripcion, rareza, repetible)")
     .eq("usuario_id", id);
 
   const noches = participaciones ?? [];
@@ -152,6 +150,7 @@ export default async function PerfilPage({
       icono: string;
       descripcion: string;
       rareza: string;
+      repetible: boolean;
       n: number;
       fechas: string[];
     }
@@ -163,6 +162,7 @@ export default async function PerfilPage({
       icono: string;
       descripcion: string;
       rareza: string;
+      repetible: boolean;
     } | null;
     if (!l) continue;
     const e = coleccion.get(l.slug) ?? { ...l, n: 0, fechas: [] };
@@ -178,6 +178,14 @@ export default async function PerfilPage({
   );
 
   const esMiPerfil = user?.id === id;
+  let esAmigoAceptado = false;
+  if (user && !esMiPerfil) {
+    const { data: amistades } = await supabase.rpc("mis_amigos");
+    esAmigoAceptado = ((amistades ?? []) as { amigo_id: string; estado: string }[]).some(
+      (a) => a.amigo_id === id && a.estado === "aceptada"
+    );
+  }
+  const puedeVerPrivado = esMiPerfil || esAmigoAceptado;
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
@@ -189,18 +197,13 @@ export default async function PerfilPage({
             config={avatar}
             marco={marcoPersonal}
             titulo={perfil.nombre}
-            subtitulo={`Nivel ${nivel.nivel} · ${MARCO_INFO[marcoPersonal].nombre}`}
+            subtitulo={`Nivel ${nivel.nivel}`}
             triggerClassName="h-32 w-32"
             previewClassName="h-80 w-80"
           />
           <p className="mt-3 font-titulo text-sm text-cian">
-            Nivel {nivel.nivel} · {MARCO_INFO[marcoPersonal].nombre}
+            Nivel {nivel.nivel}
           </p>
-          {tienda.marcoEquipado && tienda.marcoEquipado !== marcoNivel && (
-            <p className="text-[11px] text-texto2">
-              Marco de nivel: {MARCO_INFO[marcoNivel].nombre}
-            </p>
-          )}
         </div>
 
         <h1 className="font-titulo text-3xl text-texto">
@@ -230,7 +233,13 @@ export default async function PerfilPage({
           })}
         </p>
 
-        <div className={`mb-5 grid gap-3 text-left ${rankingSala ? "grid-cols-2" : "grid-cols-1"}`}>
+        {!puedeVerPrivado && (
+          <p className="mb-5 rounded-2xl border border-borde bg-tarjeta p-4 text-center text-xs text-texto2">
+            El nivel, la liga y las estadísticas de {perfil.nombre} solo se ven
+            si acepta tu solicitud de amistad.
+          </p>
+        )}
+        {puedeVerPrivado && <div className={`mb-5 grid gap-3 text-left ${rankingSala ? "grid-cols-2" : "grid-cols-1"}`}>
           <section className="rounded-2xl border border-cian/50 bg-tarjeta p-3">
             <p className="mb-2 font-titulo text-xs uppercase text-cian">
               Nivel personal
@@ -245,11 +254,8 @@ export default async function PerfilPage({
                 previewClassName="h-72 w-72"
               />
             </div>
-            <p className="text-center font-titulo text-xl text-texto">
+            <p className="mb-2 text-center font-titulo text-xl text-texto">
               Nivel {nivel.nivel}
-            </p>
-            <p className="mb-2 text-center text-[11px] text-texto2">
-              {MARCO_INFO[marcoPersonal].nombre}
             </p>
             <div className="mb-1 flex justify-between text-[11px] text-texto2">
               <span>XP</span>
@@ -316,9 +322,9 @@ export default async function PerfilPage({
               </>
             )}
           </section>}
-        </div>
+        </div>}
 
-        {rankingSala && (
+        {puedeVerPrivado && rankingSala && (
           <div className="mb-5 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-left">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -385,14 +391,23 @@ export default async function PerfilPage({
               🗺️ Mapa de sitios
             </Link>
           </>}
-          <Link
-            href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}
-            className="rounded-xl border border-lima px-4 py-2 text-xs text-lima active:scale-95"
-          >
-            📊 Estadísticas
-          </Link>
+          {esAmigoAceptado && (
+            <Link
+              href={`/mapa/amigo/${id}`}
+              className="rounded-xl border border-rosa px-4 py-2 text-xs text-rosa active:scale-95"
+            >
+              🗺️ Sus sitios
+            </Link>
+          )}
+          {puedeVerPrivado && (
+            <Link
+              href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}
+              className="rounded-xl border border-lima px-4 py-2 text-xs text-lima active:scale-95"
+            >
+              📊 Estadísticas
+            </Link>
+          )}
         </div>
-        {esMiPerfil && <CumpleanosEditor actual={perfil.cumpleanos} />}
         {esMiPerfil && (
           <PerfilCustomizer
             tituloActual={perfil.titulo}
@@ -408,7 +423,7 @@ export default async function PerfilPage({
       </header>
 
       {/* Colección de medallas */}
-      <section className="mb-8">
+      {puedeVerPrivado && <section className="mb-8">
         <div className="mb-3 flex items-baseline justify-between">
           <h2 className="font-titulo text-xl text-texto">
             🏅 Medallas ({medallasOrdenadas.length})
@@ -450,7 +465,7 @@ export default async function PerfilPage({
             ))}
           </ul>
         )}
-      </section>
+      </section>}
     </main>
   );
 }

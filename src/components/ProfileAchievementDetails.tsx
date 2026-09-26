@@ -11,8 +11,23 @@ export type ProfileAchievement = {
   icono: string;
   descripcion: string;
   rareza: string;
+  repetible: boolean;
   n: number;
   fechas?: string[];
+};
+
+const RAREZA_NOMBRE: Record<string, string> = {
+  comun: "Común",
+  rara: "Rara",
+  epica: "Épica",
+  legendaria: "Legendaria",
+};
+
+const RAREZA_COLOR: Record<string, string> = {
+  comun: "text-texto2",
+  rara: "text-cian",
+  epica: "text-rosa",
+  legendaria: "text-oro",
 };
 
 export default function ProfileAchievementDetails({
@@ -69,6 +84,11 @@ export default function ProfileAchievementDetails({
             <div className="mb-3 flex justify-center">
               <MedalIcon icono={achievement.icono} nombre={achievement.nombre} slug={achievement.slug} rareza={achievement.rareza} className="h-36 w-36" />
             </div>
+            <p className={`font-titulo text-xs uppercase ${RAREZA_COLOR[achievement.rareza] ?? "text-texto2"}`}>
+              {RAREZA_NOMBRE[achievement.rareza] ?? achievement.rareza}
+              {" · "}
+              {achievement.repetible ? "Se puede repetir" : "Única"}
+            </p>
             <h2 id={titleId} className="font-titulo text-xl text-texto">{achievement.nombre}</h2>
             <p className="mt-2 text-sm text-texto2">{achievement.descripcion}</p>
             <p className="mt-3 text-xs text-ambar">Conseguida {achievement.n} {achievement.n === 1 ? "vez" : "veces"}</p>

@@ -3,10 +3,17 @@ import BackButton from "@/components/BackButton";
 import AvatarFrame from "@/components/AvatarFrame";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
-import { MARCO_INFO, marcoPorNivel, marcoPorLiga } from "@/lib/marcos";
+import { MARCO_INFO, MARCO_NIVEL_HITOS, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
 import { calcularDivision } from "@/lib/liga";
 
-const HITOS = [1, 5, 10, 25, 50];
+const LIGA_HITOS: { pl: number; esTop1: boolean; marco: MarcoPerfil }[] = [
+  { pl: 0, esTop1: false, marco: "liga-bronce" },
+  { pl: 50, esTop1: false, marco: "liga-plata" },
+  { pl: 125, esTop1: false, marco: "liga-oro" },
+  { pl: 210, esTop1: false, marco: "liga-diamante" },
+  { pl: 300, esTop1: false, marco: "liga-maestro" },
+  { pl: 300, esTop1: true, marco: "liga-challenger" },
+];
 
 export default async function NivelesPage({
   searchParams,
@@ -37,6 +44,7 @@ export default async function NivelesPage({
 
   let ligaInfo: {
     nombreTemporada: string;
+    premio: string | null;
     pl: number;
     posicion: number;
     total: number;
@@ -46,7 +54,7 @@ export default async function NivelesPage({
   if (user && salaId) {
     const { data: temporada } = await supabase
       .from("temporadas")
-      .select("id, nombre, fin")
+      .select("id, nombre, fin, premio")
       .eq("sala_id", salaId)
       .eq("estado", "activa")
       .gt("fin", new Date().toISOString())
@@ -63,6 +71,7 @@ export default async function NivelesPage({
       if (idx !== -1) {
         ligaInfo = {
           nombreTemporada: temporada.nombre,
+          premio: temporada.premio as string | null,
           pl: lista[idx].pl,
           posicion: idx + 1,
           total: lista.length,
@@ -83,8 +92,9 @@ export default async function NivelesPage({
         <p className="font-titulo text-3xl text-ambar">📈 Niveles</p>
         <p className="mt-2 text-sm text-texto2">
           El nivel sube con la XP que ganas registrando bebidas, ganando
-          noches y desbloqueando logros. Cada hito da un marco de perfil
-          nuevo para siempre.
+          noches y desbloqueando logros. Cada 10 niveles se añade un marco
+          nuevo a tu inventario para siempre; equípalo cuando quieras desde
+          ahí.
         </p>
         {miNivel && (
           <p className="mt-3 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-sm text-texto">
@@ -119,14 +129,16 @@ export default async function NivelesPage({
                 {" · "}
                 {ligaInfo.posicion}º de {ligaInfo.total}
               </p>
+              {ligaInfo.premio && (
+                <p className="mt-1 text-xs text-ambar">🏆 {ligaInfo.premio}</p>
+              )}
             </div>
           </div>
         </section>
       )}
 
       <ul className="space-y-3">
-        {HITOS.map((nivel) => {
-          const marco = marcoPorNivel(nivel);
+        {MARCO_NIVEL_HITOS.map(({ nivel, marco }) => {
           const info = MARCO_INFO[marco];
           const xpNecesaria = xpTotalParaNivel(nivel);
           const conseguido = miNivel ? miNivel.nivel >= nivel : false;
@@ -149,7 +161,7 @@ export default async function NivelesPage({
                 <p className="font-titulo text-lg text-texto">
                   Nivel {nivel}
                   {conseguido && (
-                    <span className="ml-2 text-xs text-lima">✓ conseguido</span>
+                    <span className="ml-2 text-xs text-lima">✓ en tu inventario</span>
                   )}
                 </p>
                 <p className="text-xs text-texto2">
@@ -165,9 +177,53 @@ export default async function NivelesPage({
         })}
       </ul>
 
+      <h2 className="mb-3 mt-8 font-titulo text-xl text-texto">🏆 Divisiones de liga</h2>
+      <p className="mb-3 text-xs text-texto2">
+        La liga se juega por temporada en cada sala: sube subiendo tu PL.
+        {!ligaInfo && " Entra desde una sala con liga activa para ver tu progreso aquí."}
+      </p>
+      <ul className="space-y-3">
+        {LIGA_HITOS.map((hito) => {
+          const division = calcularDivision(hito.pl, hito.esTop1);
+          const conseguido = ligaInfo
+            ? hito.esTop1
+              ? ligaInfo.esTop1 && ligaInfo.pl >= hito.pl
+              : ligaInfo.pl >= hito.pl
+            : false;
+          return (
+            <li
+              key={hito.marco}
+              className={`flex items-center gap-4 rounded-2xl border p-4 ${
+                conseguido
+                  ? "border-oro/60 bg-tarjeta"
+                  : "border-borde bg-tarjeta opacity-80"
+              }`}
+            >
+              <AvatarFrame
+                config={avatarConfig}
+                marco={hito.marco}
+                className="h-16 w-16"
+                imageSizes="64px"
+              />
+              <div className="min-w-0 flex-1">
+                <p className={`font-titulo text-lg ${division.color}`}>
+                  {division.icono} {division.nombre}
+                  {conseguido && (
+                    <span className="ml-2 text-xs text-lima">✓ conseguido</span>
+                  )}
+                </p>
+                <p className="text-xs text-texto2">
+                  {hito.esTop1 ? "Nº1 de la sala con 300+ PL" : `${hito.pl}+ PL`}
+                </p>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+
       <p className="mt-6 rounded-2xl border border-borde bg-tarjeta/60 p-4 text-center text-xs text-texto2">
-        A partir del nivel 50 el marco de llamas es para siempre, aunque
-        sigas subiendo de nivel.
+        Ningún marco se equipa solo: elige el que quieras llevar desde tu
+        inventario.
       </p>
     </main>
   );
