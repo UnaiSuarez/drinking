@@ -44,6 +44,7 @@ export default async function NivelesPage({
 
   let ligaInfo: {
     nombreTemporada: string;
+    premio: string | null;
     pl: number;
     posicion: number;
     total: number;
@@ -53,7 +54,7 @@ export default async function NivelesPage({
   if (user && salaId) {
     const { data: temporada } = await supabase
       .from("temporadas")
-      .select("id, nombre, fin")
+      .select("id, nombre, fin, premio")
       .eq("sala_id", salaId)
       .eq("estado", "activa")
       .gt("fin", new Date().toISOString())
@@ -70,6 +71,7 @@ export default async function NivelesPage({
       if (idx !== -1) {
         ligaInfo = {
           nombreTemporada: temporada.nombre,
+          premio: temporada.premio as string | null,
           pl: lista[idx].pl,
           posicion: idx + 1,
           total: lista.length,
@@ -127,6 +129,9 @@ export default async function NivelesPage({
                 {" · "}
                 {ligaInfo.posicion}º de {ligaInfo.total}
               </p>
+              {ligaInfo.premio && (
+                <p className="mt-1 text-xs text-ambar">🏆 {ligaInfo.premio}</p>
+              )}
             </div>
           </div>
         </section>

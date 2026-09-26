@@ -5,6 +5,7 @@ import BalanceEditor from "@/components/BalanceEditor";
 import ArchivarSalaControl from "@/components/ArchivarSalaControl";
 import RenombrarSalaControl from "@/components/RenombrarSalaControl";
 import MiembrosSalaControl from "@/components/MiembrosSalaControl";
+import TemporadasSalaControl from "@/components/TemporadasSalaControl";
 
 export default async function AjustesSalaPage({
   params,
@@ -57,6 +58,20 @@ export default async function AjustesSalaPage({
     nombre: (m.perfiles as unknown as { nombre: string } | null)?.nombre ?? "???",
   }));
 
+  const { data: temporadasRaw } = await supabase
+    .from("temporadas")
+    .select("id, nombre, inicio, fin, estado, premio")
+    .eq("sala_id", id)
+    .order("inicio", { ascending: false });
+  const temporadas = (temporadasRaw ?? []).map((t) => ({
+    id: t.id,
+    nombre: t.nombre,
+    inicio: t.inicio,
+    fin: t.fin,
+    estado: t.estado,
+    premio: t.premio as string | null,
+  }));
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
       <Link href={`/sala/${id}`} className="text-sm text-texto2">
@@ -73,6 +88,8 @@ export default async function AjustesSalaPage({
         miRol={miembro.rol}
         miembros={miembros}
       />
+
+      <TemporadasSalaControl salaId={sala.id} temporadas={temporadas} />
 
       <h2 className="mt-8 font-titulo text-xl text-texto">Balance de liga</h2>
       <p className="mb-6 text-sm text-texto2">
