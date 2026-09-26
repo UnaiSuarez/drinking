@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import FrameListAnimations, { useFrameListAnimations } from "@/components/FrameListAnimations";
+import { fxDeMarco } from "@/lib/marcoFx";
 import { PersonajeFichaTrigger } from "@/components/PersonajeFicha";
 import { createClient } from "@/lib/supabase/client";
 import { parseAvatarConfig } from "@/lib/avatar";
@@ -93,6 +95,7 @@ export default function TiendaClient({
   xp: number;
   plHistoricos: number;
 }) {
+  const animateFrames = useFrameListAnimations();
   const router = useRouter();
   const [rawConfig, setRawConfig] = useState<unknown>(avatarConfigRaw);
   const [comprando, setComprando] = useState<string | null>(null);
@@ -313,6 +316,7 @@ export default function TiendaClient({
         <h2 className="mb-3 font-titulo text-xl text-texto">
           Marcos personales
         </h2>
+        <FrameListAnimations />
         <ul className="grid grid-cols-2 gap-3">
           {TIENDA_MARCOS.map((item) => {
             const comprado = tienda.marcos.includes(item.id);
@@ -327,6 +331,7 @@ export default function TiendaClient({
                   <AvatarFramePreview
                     config={avatar}
                     marco={item.id}
+                    animateTrigger={animateFrames}
                     titulo={item.nombre}
                     subtitulo={`${rareza.etiqueta} · ${item.precio} chapas`}
                     triggerClassName="h-20 w-20"
@@ -341,6 +346,7 @@ export default function TiendaClient({
                     {rareza.etiqueta}
                   </span>
                 </div>
+                {fxDeMarco(item.id) && <p className="mb-2 text-xs text-cian">Marco animado</p>}
                 <p className="mb-3 min-h-10 text-xs text-texto2">
                   {item.descripcion}
                 </p>
@@ -379,7 +385,7 @@ export default function TiendaClient({
                 <div className="mb-3 flex justify-center rounded-2xl bg-fondo/60 p-2">
                   <PersonajeFichaTrigger
                     personaje={item}
-                    marco="madera"
+                    portraitOnly
                     triggerClassName="h-24 w-24"
                   />
                 </div>

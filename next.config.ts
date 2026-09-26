@@ -1,6 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  images: {
+    localPatterns: [
+      { pathname: "/**", search: "" },
+      { pathname: "/medals/ai/items-main/**", search: "?v=2" },
+    ],
+  },
   async headers() {
     return ["/sw.js", "/sw-build.js"].map((source) => ({
       source,

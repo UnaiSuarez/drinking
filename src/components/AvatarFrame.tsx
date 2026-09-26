@@ -238,6 +238,7 @@ export default function AvatarFrame({
   className = "h-12 w-12",
   avatarClassName,
   imageSizes = "128px",
+  animated = true,
 }: {
   config: AvatarConfig;
   estado?: EstadoAvatar;
@@ -245,6 +246,7 @@ export default function AvatarFrame({
   className?: string;
   avatarClassName?: string;
   imageSizes?: string;
+  animated?: boolean;
 }) {
   const marcoInfo = MARCO_CLASES[marco];
   const fx = fxDeMarco(marco);
@@ -252,7 +254,7 @@ export default function AvatarFrame({
 
   return (
     <span
-      className={`avatar-frame relative inline-flex shrink-0 items-center justify-center ${marcoInfo.base} ${marcoInfo.arte ? "avatar-frame-has-art" : ""} ${className}`}
+      className={`avatar-frame relative inline-flex shrink-0 items-center justify-center ${!animated ? "avatar-frame-static" : ""} ${marcoInfo.base} ${marcoInfo.arte ? "avatar-frame-has-art" : ""} ${className}`}
       aria-label={`Avatar con marco ${marco}`}
     >
       {/* El personaje va siempre estático dentro del marco: solo se anima el
@@ -272,7 +274,7 @@ export default function AvatarFrame({
           className="avatar-frame-art object-cover"
         />
       )}
-      {fx && <AvatarFrameFx kind={fx} arte={Boolean(marcoInfo.arte)} />}
+      {animated && fx && <AvatarFrameFx kind={fx} arte={Boolean(marcoInfo.arte)} />}
       {!marcoInfo.arte && (
         <svg
           viewBox="0 0 100 100"

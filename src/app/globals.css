@@ -482,6 +482,15 @@ body {
 
 .avatar-preview-stage { isolation: isolate; }
 
+.avatar-frame-static,
+.avatar-frame-static *,
+.avatar-frame-static::before,
+.avatar-frame-static::after,
+.avatar-frame-static *::before,
+.avatar-frame-static *::after {
+  animation: none !important;
+}
+
 @keyframes avatar-aura-lightning {
   0%, 64%, 100% { opacity: 0.12; transform: scale(0.9) rotate(-6deg); }
   67% { opacity: 0.82; transform: scale(1.04) rotate(3deg); }

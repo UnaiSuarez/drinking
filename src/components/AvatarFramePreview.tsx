@@ -19,6 +19,7 @@ export default function AvatarFramePreview({
   triggerClassName = "h-12 w-12",
   previewClassName = "h-64 w-64",
   asSpan = false,
+  animateTrigger = true,
 }: {
   config: AvatarConfig;
   estado?: EstadoAvatar;
@@ -28,14 +29,13 @@ export default function AvatarFramePreview({
   triggerClassName?: string;
   previewClassName?: string;
   asSpan?: boolean;
+  animateTrigger?: boolean;
 }) {
   const [abierto, setAbierto] = useState(false);
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
   const sinMovimiento = useReducedMotion();
   const personaje = personajePorImagen(config.avatarImagen);
-  const marcoLegendario = marco === "trono" || marco === "tormenta" || marco === "liga-challenger";
-  const especial = marcoLegendario;
   useModalScrollLock(abierto);
 
   useEffect(() => {
@@ -62,6 +62,7 @@ export default function AvatarFramePreview({
       marco={marco}
       className={triggerClassName}
       imageSizes="128px"
+      animated={animateTrigger && !abierto}
     />
   );
 
@@ -109,12 +110,12 @@ export default function AvatarFramePreview({
               transition={{ duration: sinMovimiento ? 0.12 : 0.25 }}
             >
               <motion.div
-                className="w-full max-w-sm rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
+                className="w-full max-w-sm max-h-[calc(100svh-2.5rem)] overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
-                initial={sinMovimiento ? { opacity: 0 } : { opacity: 0, y: especial ? 36 : 16, scale: especial ? 0.82 : 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={sinMovimiento ? { opacity: 0 } : { opacity: 0, y: 14, scale: 0.96 }}
-                transition={sinMovimiento ? { duration: 0.12 } : { type: "spring", stiffness: especial ? 230 : 320, damping: especial ? 20 : 28 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: sinMovimiento ? 0 : 0.18 }}
               >
                 <div className="mb-4 flex justify-end">
                   <button type="button" onClick={() => setAbierto(false)} className="rounded-lg border border-borde px-3 py-2 text-sm text-texto2 active:scale-95">
@@ -122,14 +123,9 @@ export default function AvatarFramePreview({
                   </button>
                 </div>
                 <div className="mb-4 flex justify-center">
-                  <motion.div
-                    className={`avatar-preview-stage relative flex max-w-full items-center justify-center`}
-                    initial={sinMovimiento || !especial ? false : { opacity: 0, y: -42, rotate: -5, scale: 1.12 }}
-                    animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
-                    transition={sinMovimiento ? { duration: 0 } : { type: "spring", stiffness: 190, damping: 18, delay: especial ? 0.1 : 0 }}
-                  >
-                    <AvatarFrame config={config} estado={estado} marco={marco} className={previewClassName} imageSizes="(max-width: 768px) 80vw, 360px" />
-                  </motion.div>
+                  <div className={`avatar-preview-stage relative flex shrink-0 items-center justify-center ${previewClassName} max-w-full !h-auto aspect-square`}>
+                    <AvatarFrame config={config} estado={estado} marco={marco} className="h-4/5 w-4/5" imageSizes="(max-width: 400px) 60vw, 240px" />
+                  </div>
                 </div>
                 <h2 id={tituloId} className="font-titulo text-2xl text-texto">{titulo}</h2>
                 {subtitulo && <p className="mt-1 text-sm text-texto2">{subtitulo}</p>}

@@ -16,6 +16,8 @@ import {
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CofreAperturaModal from "@/components/CofreAperturaModal";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import FrameListAnimations, { useFrameListAnimations } from "@/components/FrameListAnimations";
+import { fxDeMarco } from "@/lib/marcoFx";
 import { PersonajeFichaTrigger } from "@/components/PersonajeFicha";
 import { prepararAudioCofre } from "@/lib/cofreAudio";
 import {
@@ -40,8 +42,7 @@ import {
   parseTiendaState,
 } from "@/lib/tienda";
 import { parseAvatarConfig } from "@/lib/avatar";
-import { MARCO_INFO, marcoPorNivel, type MarcoPerfil } from "@/lib/marcos";
-import { progresoNivel } from "@/lib/niveles";
+import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
 
 const RAREZA_ESTILO: Record<
   CartaRareza,
@@ -110,7 +111,7 @@ export default function InventarioClient({
   const inventario = useMemo(() => parseInventarioState(rawConfig), [rawConfig]);
   const tienda = useMemo(() => parseTiendaState(rawConfig), [rawConfig]);
   const avatar = useMemo(() => parseAvatarConfig(rawConfig), [rawConfig]);
-  const marcoActual = tienda.marcoEquipado ?? marcoPorNivel(progresoNivel(xp).nivel);
+  const animateFrames = useFrameListAnimations();
   const chapasGanadas = calcularChapasGanadas({ xp, plHistoricos });
   const saldo = calcularSaldoChapas({ xp, plHistoricos, tienda });
   const cofresTotales = totalItems(inventario.cofres);
@@ -268,7 +269,7 @@ export default function InventarioClient({
             ...PERSONAJES_OCULTOS.filter((item) => inventario.personajesOcultos.includes(item.id))].map((item) => {
             const equipado = tienda.avatarEquipado === item.id || (!tienda.avatarEquipado && avatar.avatarImagen === item.imagen);
             return <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
-              <PersonajeFichaTrigger personaje={item} marco={marcoActual} triggerClassName="mx-auto h-20 w-20" />
+              <PersonajeFichaTrigger personaje={item} portraitOnly triggerClassName="mx-auto h-20 w-20" />
               <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
               {AVATARES_GRATIS.some((gratis) => gratis.id === item.id) && <p className="mb-1 text-xs text-cian">Gratis</p>}
               <button type="button" disabled={Boolean(equipando) || equipado} onClick={() => void equiparAvatar(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
@@ -314,11 +315,13 @@ export default function InventarioClient({
 
       <section className="mb-8">
         <h2 className="mb-3 font-titulo text-xl text-texto">Mis marcos</h2>
+        <FrameListAnimations />
         <ul className="grid grid-cols-2 gap-3">
           {TIENDA_MARCOS.filter((item) => tienda.marcos.includes(item.id)).map((item) => (
             <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
-              <AvatarFramePreview config={avatar} marco={item.id} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
+              <AvatarFramePreview animateTrigger={animateFrames} config={avatar} marco={item.id} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
               <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
+              {fxDeMarco(item.id) && <p className="text-xs text-cian">Marco animado</p>}
               <button type="button" disabled={Boolean(equipando) || tienda.marcoEquipado === item.id} onClick={() => void equiparMarco(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
                 {tienda.marcoEquipado === item.id ? "Equipado" : "Equipar"}
               </button>
