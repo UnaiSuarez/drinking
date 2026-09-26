@@ -25,8 +25,9 @@ export default async function HomePage() {
       .single(),
     supabase
       .from("sala_miembros")
-      .select("rol, salas(id, nombre, codigo, archivada_at)")
-      .eq("usuario_id", user!.id),
+      .select("rol, visitado_at, salas(id, nombre, codigo, archivada_at)")
+      .eq("usuario_id", user!.id)
+      .order("visitado_at", { ascending: false }),
   ]);
 
   const salaIds = (membresias ?? []).flatMap((m) => {
