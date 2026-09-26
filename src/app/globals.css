@@ -549,6 +549,8 @@ body {
    cara y las partículas nacen en los bordes. GSAP mueve los elementos; aquí
    solo está su apariencia (transparentes por defecto). */
 .avatar-frame-fx {
+  contain: strict;
+  overflow: hidden;
   --fx-star: #fff;
   --fx-glow: rgba(255, 255, 255, 0.35);
   position: absolute;
@@ -564,6 +566,7 @@ body {
 .avatar-frame-fx[data-kind="halo"] { --fx-star: #fffbe0; --fx-glow: rgba(255, 246, 184, 0.6); }
 .avatar-frame-fx[data-kind="disco"] { --fx-glow: rgba(255, 46, 147, 0.55); }
 .avatar-frame-fx .fx-band {
+  contain: strict;
   position: absolute;
   inset: 0;
   overflow: hidden;
@@ -576,7 +579,7 @@ body {
   mask-repeat: no-repeat;
 }
 .avatar-frame-has-art .fx-band { clip-path: inset(0 13% 0 13%); }
-.avatar-frame-fx .fx-free { position: absolute; inset: 0; mix-blend-mode: screen; }
+.avatar-frame-fx .fx-free { position: absolute; inset: 0; mix-blend-mode: screen; contain: strict; overflow: hidden; }
 
 .fx-sweep {
   position: absolute;
@@ -596,15 +599,15 @@ body {
 }
 .fx-rays {
   position: absolute;
-  inset: -30%;
+  inset: 0;
   opacity: 0.6;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 246, 184, 0.9) 0 4deg, transparent 4deg 18deg);
+  background: repeating-conic-gradient(from var(--fx-angle, 0deg), rgba(255, 246, 184, 0.9) 0 4deg, transparent 4deg 18deg);
 }
 .fx-disco-beam {
   position: absolute;
-  inset: -30%;
+  inset: 0;
   opacity: 0.55;
-  background: conic-gradient(#ff2e93, #ffd54a, #9bf00b, #2de2e6, #7c3aed, #ff2e93);
+  background: conic-gradient(from var(--fx-angle, 0deg), #ff2e93, #ffd54a, #9bf00b, #2de2e6, #7c3aed, #ff2e93);
 }
 .fx-prism {
   position: absolute;

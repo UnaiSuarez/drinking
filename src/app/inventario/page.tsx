@@ -28,7 +28,7 @@ export default async function InventarioPage() {
   );
 
   return (
-    <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
+    <main className="mx-auto min-h-dvh w-full max-w-md overflow-hidden px-5 pb-24 pt-8 [contain:paint]">
       <BackButton />
       <InventarioClient
         userId={user.id}

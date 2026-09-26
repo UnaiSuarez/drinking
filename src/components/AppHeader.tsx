@@ -71,6 +71,7 @@ export default async function AppHeader() {
             marco={marco}
             className="h-9 w-9"
             imageSizes="36px"
+            animated={false}
           />
         </Link>
       </span>

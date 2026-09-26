@@ -99,12 +99,12 @@ export default function AvatarFrameFx({ kind, arte }: { kind: FxKind; arte: bool
       }
 
       if (kind === "halo") {
-        gsap.to(q(".fx-rays")[0], { rotation: 360, duration: 34, ease: "none", repeat: -1 });
+        gsap.fromTo(q(".fx-rays")[0], { "--fx-angle": "0deg" }, { "--fx-angle": "360deg", duration: 34, ease: "none", repeat: -1 });
         gsap.to(q(".fx-rays")[0], { opacity: "random(0.35,0.85)", duration: "random(1.6,3)", ease: "sine.inOut", repeat: -1, yoyo: true, repeatRefresh: true });
       }
 
       if (kind === "disco") {
-        gsap.to(q(".fx-disco-beam")[0], { rotation: 360, duration: 4.5, ease: "none", repeat: -1 });
+        gsap.fromTo(q(".fx-disco-beam")[0], { "--fx-angle": "0deg" }, { "--fx-angle": "360deg", duration: 4.5, ease: "none", repeat: -1 });
         gsap.to(q(".fx-disco-beam")[0], { opacity: "random(0.5,0.95)", duration: "random(0.2,0.5)", ease: "steps(1)", repeat: -1, repeatRefresh: true });
       }
 

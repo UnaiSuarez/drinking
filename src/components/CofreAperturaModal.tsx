@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import confetti from "canvas-confetti";
 import gsap from "gsap";
@@ -255,7 +256,9 @@ export default function CofreAperturaModal({
     }
   });
 
-  return (
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
     <div ref={raiz} className="fixed inset-0 z-50 flex items-center justify-center bg-fondo/92 p-3 backdrop-blur-sm">
       <div
         role="dialog"
@@ -376,7 +379,8 @@ export default function CofreAperturaModal({
           }}
         />
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
