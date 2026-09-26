@@ -5,13 +5,12 @@ import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import ProfileAchievementDetails from "@/components/ProfileAchievementDetails";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
-import CumpleanosEditor from "@/components/CumpleanosEditor";
 import NombreEditor from "@/components/NombreEditor";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
-import { MARCO_INFO, marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
+import { marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 
 const RAREZA_ESTILO: Record<string, string> = {
@@ -37,7 +36,7 @@ export default async function PerfilPage({
 
   const { data: perfil } = await supabase
     .from("perfiles")
-    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina, cumpleanos")
+    .select("id, nombre, created_at, avatar_config, xp, titulo, vitrina")
     .eq("id", id)
     .single();
 
@@ -189,18 +188,13 @@ export default async function PerfilPage({
             config={avatar}
             marco={marcoPersonal}
             titulo={perfil.nombre}
-            subtitulo={`Nivel ${nivel.nivel} · ${MARCO_INFO[marcoPersonal].nombre}`}
+            subtitulo={`Nivel ${nivel.nivel}`}
             triggerClassName="h-32 w-32"
             previewClassName="h-80 w-80"
           />
           <p className="mt-3 font-titulo text-sm text-cian">
-            Nivel {nivel.nivel} · {MARCO_INFO[marcoPersonal].nombre}
+            Nivel {nivel.nivel}
           </p>
-          {tienda.marcoEquipado && tienda.marcoEquipado !== marcoNivel && (
-            <p className="text-[11px] text-texto2">
-              Marco de nivel: {MARCO_INFO[marcoNivel].nombre}
-            </p>
-          )}
         </div>
 
         <h1 className="font-titulo text-3xl text-texto">
@@ -245,11 +239,8 @@ export default async function PerfilPage({
                 previewClassName="h-72 w-72"
               />
             </div>
-            <p className="text-center font-titulo text-xl text-texto">
+            <p className="mb-2 text-center font-titulo text-xl text-texto">
               Nivel {nivel.nivel}
-            </p>
-            <p className="mb-2 text-center text-[11px] text-texto2">
-              {MARCO_INFO[marcoPersonal].nombre}
             </p>
             <div className="mb-1 flex justify-between text-[11px] text-texto2">
               <span>XP</span>
@@ -392,7 +383,6 @@ export default async function PerfilPage({
             📊 Estadísticas
           </Link>
         </div>
-        {esMiPerfil && <CumpleanosEditor actual={perfil.cumpleanos} />}
         {esMiPerfil && (
           <PerfilCustomizer
             tituloActual={perfil.titulo}

@@ -39,6 +39,15 @@ const RAREZA_NOMBRE: Record<string, string> = {
   legendaria: "Legendaria",
 };
 
+const XP_BASE = 5;
+/** Bonus que se suma la primera vez que se registra esa bebida concreta. */
+const XP_BONUS_RAREZA: Record<string, number> = {
+  comun: 0,
+  rara: 5,
+  epica: 15,
+  legendaria: 30,
+};
+
 export default function BebidaSueltaLogger({
   salaId,
   bebidas,
@@ -304,6 +313,7 @@ export default function BebidaSueltaLogger({
               <span className="mt-1 text-center text-[11px] leading-tight text-texto">
                 {b.nombre}
               </span>
+              <span className="text-[10px] text-texto2">+{XP_BASE} XP</span>
             </button>
           ))}
         </div>
@@ -319,6 +329,7 @@ export default function BebidaSueltaLogger({
           <div className="mb-3 max-h-64 space-y-1.5 overflow-y-auto pr-1">
             {resultadosBusqueda.map((c) => {
               const cat = categoriaPorId.get(c.categoriaId);
+              const bonus = XP_BONUS_RAREZA[c.rareza] ?? 0;
               return (
                 <button
                   key={c.id}
@@ -330,8 +341,11 @@ export default function BebidaSueltaLogger({
                     <span>{cat?.icono ?? "🥤"}</span>
                     {c.nombre}
                   </span>
-                  <span className="text-[11px]">
-                    {RAREZA_NOMBRE[c.rareza] ?? c.rareza}
+                  <span className="text-right text-[11px]">
+                    <span className="block">{RAREZA_NOMBRE[c.rareza] ?? c.rareza}</span>
+                    <span className="block text-texto2">
+                      +{XP_BASE} XP{bonus > 0 ? ` (+${XP_BASE + bonus} 1ª vez)` : ""}
+                    </span>
                   </span>
                 </button>
               );
