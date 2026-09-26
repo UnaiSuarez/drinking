@@ -488,12 +488,15 @@ body {
 /* Keep browser toolbar changes and animated overflow out of modal layout. */
 .avatar-preview-panel {
   position: absolute;
-  left: 50%;
+  left: 0;
+  right: 0;
+  margin-inline: auto;
   top: 50svh;
-  transform: translate(-50%, -50%);
-  width: calc(100% - 2.5rem);
+  transform: translateY(-50%);
+  width: min(24rem, calc(100svw - 2.5rem));
+  min-width: 0;
+  contain: inline-size;
   max-height: calc(100svh - 2.5rem);
-  scrollbar-gutter: stable;
   touch-action: pan-y pinch-zoom;
 }
 

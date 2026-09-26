@@ -109,13 +109,9 @@ export default function AvatarFramePreview({
               exit={{ opacity: 0 }}
               transition={{ duration: sinMovimiento ? 0.12 : 0.25 }}
             >
-              <motion.div
-                className="avatar-preview-panel w-full max-w-sm overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
+              <div
+                className="avatar-preview-panel overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"
                 onClick={(event) => event.stopPropagation()}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: sinMovimiento ? 0 : 0.18 }}
               >
                 <div className="mb-4 flex justify-end">
                   <button type="button" onClick={() => setAbierto(false)} className="rounded-lg border border-borde px-3 py-2 text-sm text-texto2 active:scale-95">
@@ -141,7 +137,7 @@ export default function AvatarFramePreview({
                     Ver ficha de {personaje.nombre}
                   </Link>
                 )}
-              </motion.div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>,
