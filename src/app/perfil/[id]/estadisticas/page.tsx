@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import AvatarFrame from "@/components/AvatarFrame";
+import BackButton from "@/components/BackButton";
 import PerfilEstadisticas, { type PerfilStats } from "@/components/PerfilEstadisticas";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { marcoPorNivel } from "@/lib/marcos";
@@ -43,10 +43,9 @@ export default async function EstadisticasPerfilPage({
   const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
   const marco = tienda.marcoEquipado ?? marcoPorNivel(nivel.nivel);
-  const profileHref = `/perfil/${id}${scope ? `?sala=${scope}` : ""}`;
 
   return <main className="mx-auto min-h-dvh w-full max-w-4xl overflow-x-clip px-4 pb-24 pt-8 sm:px-6">
-    <Link href={profileHref} className="mb-6 inline-flex rounded-lg border border-borde px-3 py-2 text-sm text-texto2 hover:text-texto">← Perfil</Link>
+    <BackButton>Perfil</BackButton>
     <header className="mb-8 flex min-w-0 items-center gap-4 border-b border-borde pb-6">
       <AvatarFrame config={parseAvatarConfig(perfil.avatar_config)} marco={marco} className="h-16 w-16" imageSizes="64px" />
       <div className="min-w-0"><p className="text-xs text-texto2">Estadísticas de</p><h1 className="truncate font-titulo text-2xl text-texto">{perfil.nombre}</h1><p className="text-xs text-texto2">{sala ? `Vista desde ${sala.nombre}` : "Todas las salas"}</p></div>
