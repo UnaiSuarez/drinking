@@ -61,6 +61,13 @@ export default function AmigosClient({
       setMensaje(error.message);
       return;
     }
+    if (data.estado === "pendiente") {
+      fetch("/api/notificar-amistad", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amistadId: data.id }),
+      }).catch((err) => console.error("notificar-amistad:", err));
+    }
     setAmigos((prev) => [
       ...prev.filter((a) => a.amigoId !== destino.id),
       {

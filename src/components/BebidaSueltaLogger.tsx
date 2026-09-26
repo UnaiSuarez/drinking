@@ -132,6 +132,13 @@ export default function BebidaSueltaLogger({
       xp: data.xp_ganada,
     });
     if (navigator.vibrate) navigator.vibrate(40);
+    fetch("/api/notificar-bebida", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      // Solo el registro: el servidor comprueba en la base que es tuyo,
+      // reciente, y saca los textos de ahí.
+      body: JSON.stringify({ registroId: data.registro.id }),
+    }).catch((err) => console.error("notificar-bebida:", err));
     const idAnim = contador.current++;
     const texto = data.descubierta
       ? `🆕 +${data.xp_ganada} XP`

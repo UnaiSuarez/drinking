@@ -127,7 +127,14 @@ export default function SojasLogger({
         ? `¡Nueva medalla SOJAS! +${resultado.xp_ganada} XP`
         : `+${resultado.xp_ganada} XP · 0 PL`
     );
-    if (!nocheId) setUltimoRegistroId(resultado.registro.id);
+    if (!nocheId) {
+      setUltimoRegistroId(resultado.registro.id);
+      fetch("/api/notificar-bebida", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ registroId: resultado.registro.id, tipo: "soja" }),
+      }).catch((err) => console.error("notificar-bebida:", err));
+    }
   }
 
   return (

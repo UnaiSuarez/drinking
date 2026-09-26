@@ -27,6 +27,13 @@ export default async function AppHeader() {
     .from("noche_jugadores")
     .select("pl_ganados")
     .eq("usuario_id", user.id);
+
+  const { count: solicitudesPendientes } = await supabase
+    .from("amistades")
+    .select("id", { count: "exact", head: true })
+    .eq("estado", "pendiente")
+    .neq("solicitado_por", user.id)
+    .or(`usuario_a.eq.${user.id},usuario_b.eq.${user.id}`);
   const plHistoricos = (participaciones ?? []).reduce(
     (total, p) => total + (p.pl_ganados ?? 0),
     0
@@ -59,11 +66,20 @@ export default async function AppHeader() {
         </Link>
         <Link
           href="/amigos"
-          aria-label="Amigos"
-          className="text-lg outline-none transition active:scale-95"
+          aria-label={
+            solicitudesPendientes
+              ? `Amigos (${solicitudesPendientes} solicitudes pendientes)`
+              : "Amigos"
+          }
+          className="relative text-lg outline-none transition active:scale-95"
           title="Amigos"
         >
           👥
+          {Boolean(solicitudesPendientes) && (
+            <span className="absolute -right-1.5 -top-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rosa px-1 text-[10px] font-bold text-fondo">
+              {solicitudesPendientes}
+            </span>
+          )}
         </Link>
         <Link
           href="/ajustes"
