@@ -4,7 +4,7 @@ import AvatarFrame from "@/components/AvatarFrame";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel } from "@/lib/niveles";
 import { marcoPorNivel } from "@/lib/marcos";
-import { parseTiendaState } from "@/lib/tienda";
+import { calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
 import NivelCelebracion from "@/components/NivelCelebracion";
 import VisitaDiaria from "@/components/VisitaDiaria";
 
@@ -24,9 +24,20 @@ export default async function AppHeader() {
 
   if (!perfil) return null;
 
+  const { data: participaciones } = await supabase
+    .from("noche_jugadores")
+    .select("pl_ganados")
+    .eq("usuario_id", user.id);
+  const plHistoricos = (participaciones ?? []).reduce(
+    (total, p) => total + (p.pl_ganados ?? 0),
+    0
+  );
+
   const avatarConfig = parseAvatarConfig(perfil.avatar_config);
+  const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
-  const marco = parseTiendaState(perfil.avatar_config).marcoEquipado ?? marcoPorNivel(nivel.nivel);
+  const marco = tienda.marcoEquipado ?? marcoPorNivel(nivel.nivel);
+  const chapas = calcularSaldoChapas({ xp: perfil.xp ?? 0, plHistoricos, tienda });
 
   return (
     <>
@@ -35,6 +46,18 @@ export default async function AppHeader() {
         🍻 El Ranking
       </Link>
       <span className="flex items-center gap-3">
+        <span className="flex items-center gap-1.5 text-xs text-texto2">
+          <span title={`Nivel ${nivel.nivel}`}>🔥{nivel.nivel}</span>
+          <span title="Chapas">🪙{chapas}</span>
+        </span>
+        <Link
+          href="/tienda"
+          aria-label="Tienda"
+          className="text-lg outline-none transition active:scale-95"
+          title="Tienda"
+        >
+          🛍️
+        </Link>
         <Link
           href="/amigos"
           aria-label="Amigos"
