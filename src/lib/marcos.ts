@@ -177,12 +177,33 @@ export const MARCO_INFO: Record<
   },
 };
 
+/**
+ * Un marco nuevo cada 10 niveles hasta el 100. Al llegar al nivel se añade
+ * al inventario (ver recompensar_niveles_xp en Postgres); no se equipa
+ * solo, el jugador elige ponérselo desde la tienda/inventario como
+ * cualquier otro marco. marcoPorNivel() da el del tramo más alto ya
+ * alcanzado, usado solo como referencia (p. ej. la animación de subida de
+ * nivel), nunca como marco equipado por defecto.
+ */
+export const MARCO_NIVEL_HITOS: { nivel: number; marco: MarcoPerfil }[] = [
+  { nivel: 10, marco: "plata" },
+  { nivel: 20, marco: "cosmico" },
+  { nivel: 30, marco: "hielo" },
+  { nivel: 40, marco: "aureola" },
+  { nivel: 50, marco: "neon" },
+  { nivel: 60, marco: "disco" },
+  { nivel: 70, marco: "reliquia" },
+  { nivel: 80, marco: "prisma" },
+  { nivel: 90, marco: "trono" },
+  { nivel: 100, marco: "llamas" },
+];
+
 export function marcoPorNivel(nivel: number): MarcoPerfil {
-  if (nivel >= 50) return "llamas";
-  if (nivel >= 25) return "neon";
-  if (nivel >= 10) return "oro";
-  if (nivel >= 5) return "plata";
-  return "madera";
+  let actual: MarcoPerfil = "madera";
+  for (const hito of MARCO_NIVEL_HITOS) {
+    if (nivel >= hito.nivel) actual = hito.marco;
+  }
+  return actual;
 }
 
 export function marcoPorLiga(pl: number, esTop1 = false): MarcoPerfil {

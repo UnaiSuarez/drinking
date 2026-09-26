@@ -10,7 +10,7 @@ import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
-import { marcoPorLiga, marcoPorNivel } from "@/lib/marcos";
+import { marcoPorLiga } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 
 const RAREZA_ESTILO: Record<string, string> = {
@@ -44,8 +44,7 @@ export default async function PerfilPage({
   const avatar = parseAvatarConfig(perfil.avatar_config);
   const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
-  const marcoNivel = marcoPorNivel(nivel.nivel);
-  const marcoPersonal = tienda.marcoEquipado ?? marcoNivel;
+  const marcoPersonal = tienda.marcoEquipado ?? "madera";
   const vitrinaSlugs = (perfil.vitrina ?? []) as string[];
 
   const { data: salasPerfilRaw } = await supabase

@@ -36,7 +36,6 @@ import {
   skinsDisponibles,
   type PersonajeSkin,
   TIENDA_AVATARES,
-  TIENDA_MARCOS,
   calcularChapasGanadas,
   calcularSaldoChapas,
   parseTiendaState,
@@ -317,18 +316,18 @@ export default function InventarioClient({
         <h2 className="mb-3 font-titulo text-xl text-texto">Mis marcos</h2>
         <FrameListAnimations />
         <ul className="grid grid-cols-2 gap-3">
-          {TIENDA_MARCOS.filter((item) => tienda.marcos.includes(item.id)).map((item) => (
-            <li key={item.id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
-              <AvatarFramePreview animateTrigger={animateFrames} config={avatar} marco={item.id} titulo={item.nombre} subtitulo={item.descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
-              <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{item.nombre}</p>
-              {fxDeMarco(item.id) && <p className="text-xs text-cian">Marco animado</p>}
-              <button type="button" disabled={Boolean(equipando) || tienda.marcoEquipado === item.id} onClick={() => void equiparMarco(item.id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
-                {tienda.marcoEquipado === item.id ? "Equipado" : "Equipar"}
+          {tienda.marcos.map((id) => (
+            <li key={id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
+              <AvatarFramePreview animateTrigger={animateFrames} config={avatar} marco={id} titulo={MARCO_INFO[id].nombre} subtitulo={MARCO_INFO[id].descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
+              <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{MARCO_INFO[id].nombre}</p>
+              {fxDeMarco(id) && <p className="text-xs text-cian">Marco animado</p>}
+              <button type="button" disabled={Boolean(equipando) || tienda.marcoEquipado === id} onClick={() => void equiparMarco(id)} className="mt-2 w-full rounded-lg bg-cian px-2 py-2 font-titulo text-xs text-fondo disabled:opacity-50">
+                {tienda.marcoEquipado === id ? "Equipado" : "Equipar"}
               </button>
             </li>
           ))}
         </ul>
-        {tienda.marcos.length === 0 && <p className="text-sm text-texto2">Aún no tienes marcos comprados.</p>}
+        {tienda.marcos.length === 0 && <p className="text-sm text-texto2">Aún no tienes marcos: cómpralos en la tienda o sube de nivel.</p>}
       </section>
 
       <section className="mb-8">

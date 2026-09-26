@@ -3,7 +3,6 @@ import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import AvatarFrame from "@/components/AvatarFrame";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel } from "@/lib/niveles";
-import { marcoPorNivel } from "@/lib/marcos";
 import { calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
 import NivelCelebracion from "@/components/NivelCelebracion";
 import VisitaDiaria from "@/components/VisitaDiaria";
@@ -36,7 +35,7 @@ export default async function AppHeader() {
   const avatarConfig = parseAvatarConfig(perfil.avatar_config);
   const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
-  const marco = tienda.marcoEquipado ?? marcoPorNivel(nivel.nivel);
+  const marco = tienda.marcoEquipado ?? "madera";
   const chapas = calcularSaldoChapas({ xp: perfil.xp ?? 0, plHistoricos, tienda });
 
   return (

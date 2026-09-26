@@ -3,8 +3,6 @@ import AvatarFrame from "@/components/AvatarFrame";
 import BackButton from "@/components/BackButton";
 import PerfilEstadisticas, { type PerfilStats } from "@/components/PerfilEstadisticas";
 import { parseAvatarConfig } from "@/lib/avatar";
-import { marcoPorNivel } from "@/lib/marcos";
-import { progresoNivel } from "@/lib/niveles";
 import { createClient } from "@/lib/supabase/server";
 import { parseTiendaState } from "@/lib/tienda";
 
@@ -49,8 +47,7 @@ export default async function EstadisticasPerfilPage({
   ]);
 
   const tienda = parseTiendaState(perfil.avatar_config);
-  const nivel = progresoNivel(perfil.xp ?? 0);
-  const marco = tienda.marcoEquipado ?? marcoPorNivel(nivel.nivel);
+  const marco = tienda.marcoEquipado ?? "madera";
 
   return <main className="mx-auto min-h-dvh w-full max-w-4xl overflow-x-clip px-4 pb-24 pt-8 sm:px-6">
     <BackButton>Perfil</BackButton>

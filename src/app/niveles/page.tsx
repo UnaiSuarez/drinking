@@ -3,10 +3,8 @@ import BackButton from "@/components/BackButton";
 import AvatarFrame from "@/components/AvatarFrame";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
-import { MARCO_INFO, marcoPorNivel, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
+import { MARCO_INFO, MARCO_NIVEL_HITOS, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
 import { calcularDivision } from "@/lib/liga";
-
-const HITOS = [1, 5, 10, 25, 50];
 
 const LIGA_HITOS: { pl: number; esTop1: boolean; marco: MarcoPerfil }[] = [
   { pl: 0, esTop1: false, marco: "liga-bronce" },
@@ -92,8 +90,9 @@ export default async function NivelesPage({
         <p className="font-titulo text-3xl text-ambar">📈 Niveles</p>
         <p className="mt-2 text-sm text-texto2">
           El nivel sube con la XP que ganas registrando bebidas, ganando
-          noches y desbloqueando logros. Cada hito da un marco de perfil
-          nuevo para siempre.
+          noches y desbloqueando logros. Cada 10 niveles se añade un marco
+          nuevo a tu inventario para siempre; equípalo cuando quieras desde
+          ahí.
         </p>
         {miNivel && (
           <p className="mt-3 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-sm text-texto">
@@ -134,8 +133,7 @@ export default async function NivelesPage({
       )}
 
       <ul className="space-y-3">
-        {HITOS.map((nivel) => {
-          const marco = marcoPorNivel(nivel);
+        {MARCO_NIVEL_HITOS.map(({ nivel, marco }) => {
           const info = MARCO_INFO[marco];
           const xpNecesaria = xpTotalParaNivel(nivel);
           const conseguido = miNivel ? miNivel.nivel >= nivel : false;
@@ -158,7 +156,7 @@ export default async function NivelesPage({
                 <p className="font-titulo text-lg text-texto">
                   Nivel {nivel}
                   {conseguido && (
-                    <span className="ml-2 text-xs text-lima">✓ conseguido</span>
+                    <span className="ml-2 text-xs text-lima">✓ en tu inventario</span>
                   )}
                 </p>
                 <p className="text-xs text-texto2">
@@ -219,8 +217,8 @@ export default async function NivelesPage({
       </ul>
 
       <p className="mt-6 rounded-2xl border border-borde bg-tarjeta/60 p-4 text-center text-xs text-texto2">
-        A partir del nivel 50 el marco de llamas es para siempre, aunque
-        sigas subiendo de nivel.
+        Ningún marco se equipa solo: elige el que quieras llevar desde tu
+        inventario.
       </p>
     </main>
   );
