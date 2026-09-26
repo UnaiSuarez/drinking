@@ -392,6 +392,14 @@ export default async function PerfilPage({
               🗺️ Mapa de sitios
             </Link>
           </>}
+          {esAmigoAceptado && (
+            <Link
+              href={`/mapa/amigo/${id}`}
+              className="rounded-xl border border-rosa px-4 py-2 text-xs text-rosa active:scale-95"
+            >
+              🗺️ Sus sitios
+            </Link>
+          )}
           {puedeVerPrivado && (
             <Link
               href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}

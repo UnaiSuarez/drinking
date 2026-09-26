@@ -245,13 +245,23 @@ export default function AmigosClient({
                 >
                   {a.nombre}
                 </Link>
-                <button
-                  onClick={() => eliminar(a.amigoId)}
-                  disabled={cargando === a.amigoId}
-                  className="rounded-lg border border-rosa px-3 py-1.5 text-xs text-rosa active:scale-95 disabled:opacity-50"
-                >
-                  {cargando === a.amigoId ? "…" : "Quitar"}
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <Link
+                    href={`/mapa/amigo/${a.amigoId}`}
+                    aria-label={`Sitios de ${a.nombre}`}
+                    title="Sus sitios"
+                    className="rounded-lg border border-borde px-2.5 py-1.5 text-sm active:scale-95"
+                  >
+                    🗺️
+                  </Link>
+                  <button
+                    onClick={() => eliminar(a.amigoId)}
+                    disabled={cargando === a.amigoId}
+                    className="rounded-lg border border-rosa px-3 py-1.5 text-xs text-rosa active:scale-95 disabled:opacity-50"
+                  >
+                    {cargando === a.amigoId ? "…" : "Quitar"}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
