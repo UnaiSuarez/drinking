@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import MedalIcon from "@/components/MedalIcon";
 import SitioPicker from "@/components/SitioPicker";
+import { useTraining } from "@/components/TrainingContext";
 
 export type BebidaTipo = {
   id: number;
@@ -64,6 +65,7 @@ export default function BebidaSueltaLogger({
   catalogo: BebidaCatalogo[];
 }) {
   const supabase = createClient();
+  const training = useTraining();
   const [ultimo, setUltimo] = useState<{ id: string; ts: number; xp: number } | null>(
     null
   );
@@ -173,6 +175,7 @@ export default function BebidaSueltaLogger({
   }
 
   async function registrar(bebida: BebidaTipo) {
+    if (training) { await training.run("learn-normal"); return; }
     setCargando(true);
     setError(null);
     const { data, error } = await supabase.rpc("registrar_bebida_suelta", {
@@ -188,6 +191,7 @@ export default function BebidaSueltaLogger({
   }
 
   async function registrarConcreta(item: BebidaCatalogo) {
+    if (training) { await training.run("learn-unique"); return; }
     setCargando(true);
     setError(null);
     const { data, error } = await supabase.rpc("registrar_bebida_suelta", {
@@ -206,6 +210,7 @@ export default function BebidaSueltaLogger({
 
   async function anadirYRegistrar(e: React.FormEvent) {
     e.preventDefault();
+    if (training) return;
     if (!nuevoNombre.trim() || nuevaCategoria === "") return;
     setAnadiendo(true);
     setError(null);
@@ -238,6 +243,7 @@ export default function BebidaSueltaLogger({
   }
 
   async function deshacer() {
+    if (training) return;
     if (!ultimo) return;
     const { error } = await supabase.rpc("anular_bebida_suelta", {
       p_registro_id: ultimo.id,
@@ -248,7 +254,7 @@ export default function BebidaSueltaLogger({
   const puedoDeshacer = ultimo && ahora - ultimo.ts < 30000;
 
   return (
-    <section className="relative mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
+    <section data-training="drinks" className="relative mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
       {logroActual && (
         <div className="fixed inset-x-0 top-6 z-50 mx-auto flex max-w-md justify-center px-5">
           <div className="subir-podio flex items-center gap-3 rounded-2xl border-2 border-ambar bg-tarjeta px-5 py-4 glow-ambar">
@@ -312,6 +318,8 @@ export default function BebidaSueltaLogger({
       </div>
 
       {error && <p className="mb-3 text-sm text-rosa">{error}</p>}
+      {training?.completed.includes("learn-normal") && <p className="mb-3 text-sm text-cian">Cerveza de prueba registrada · Sin XP ni PL reales</p>}
+      {training?.completed.includes("learn-unique") && <p className="mb-3 text-sm text-cian">Bebida de muestra descubierta en entrenamiento · Sin XP ni medallas reales</p>}
 
       {vista === "rapido" ? (
         <div className="grid grid-cols-4 gap-2">
@@ -319,7 +327,7 @@ export default function BebidaSueltaLogger({
             <button
               key={b.id}
               onClick={() => registrar(b)}
-              disabled={cargando}
+              disabled={cargando || Boolean(training && (training.step !== "learn-normal" || b.nombre !== "Cerveza"))}
               className="flex min-h-20 flex-col items-center justify-center rounded-2xl border border-borde bg-fondo py-3 transition active:scale-90 active:border-ambar disabled:opacity-40"
             >
               <span className="text-3xl">{b.icono}</span>
@@ -348,7 +356,7 @@ export default function BebidaSueltaLogger({
                 <button
                   key={c.id}
                   onClick={() => registrarConcreta(c)}
-                  disabled={cargando}
+                  disabled={cargando || Boolean(training && training.step !== "learn-unique")}
                   className={`flex w-full items-center justify-between rounded-xl border bg-fondo px-3 py-2 text-left text-sm transition active:scale-[0.98] disabled:opacity-40 ${RAREZA_ESTILO[c.rareza] ?? "border-borde"}`}
                 >
                   <span className="flex items-center gap-2 text-texto">

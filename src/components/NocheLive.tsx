@@ -1,9 +1,9 @@
 "use client";
+import NightCardSummary from "@/components/NightCardSummary";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { CARTAS_COFRES, type CartaCofre } from "@/lib/cofresDesign";
 import {
@@ -1623,33 +1623,7 @@ export default function NocheLive({
                       key={carta.id}
                       className="rounded-2xl border border-borde bg-fondo/60 p-3"
                     >
-                      <button
-                        type="button"
-                        onClick={() => setCartaDetalle(carta)}
-                        className="flex w-full gap-3 text-left outline-none"
-                      >
-                        <Image
-                          src={carta.imagen}
-                          alt={carta.nombre}
-                          width={768}
-                          height={768}
-                          className="h-16 w-16 rounded-xl object-cover"
-                          sizes="64px"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-1 flex items-center justify-between gap-2">
-                            <p className="font-titulo text-sm text-texto">
-                              {carta.nombre}
-                            </p>
-                            <span className="rounded-full bg-tarjeta px-2 py-0.5 font-titulo text-xs text-ambar">
-                              x{cantidad}
-                            </span>
-                          </div>
-                          <p className="text-[11px] leading-snug text-texto2">
-                            {carta.efecto}
-                          </p>
-                        </div>
-                      </button>
+                      <NightCardSummary image={carta.imagen} name={carta.nombre} effect={carta.efecto} quantity={cantidad} onClick={() => setCartaDetalle(carta)} />
 
                       {requiereObjetivo && (
                         <select

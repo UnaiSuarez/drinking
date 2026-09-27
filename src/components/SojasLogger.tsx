@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import SitioPicker from "@/components/SitioPicker";
+import { useTraining } from "@/components/TrainingContext";
 
 const OPCIONES = [
   { id: "agua", icono: "💧", nombre: "Agua" },
@@ -32,9 +33,11 @@ export default function SojasLogger({
   disabled?: boolean;
 }) {
   const supabase = useMemo(() => createClient(), []);
-  const [abierto, setAbierto] = useState(false);
-  const [totalContexto, setTotalContexto] = useState<number | null>(null);
-  const [registrosContexto, setRegistrosContexto] = useState<RegistroSoja[]>([]);
+  const training = useTraining();
+  const practicing = training !== null;
+  const [abierto, setAbierto] = useState(Boolean(training?.completed.includes("learn-water")));
+  const [totalContexto, setTotalContexto] = useState<number | null>(practicing ? Number(training.completed.includes("learn-water")) : null);
+  const [registrosContexto, setRegistrosContexto] = useState<RegistroSoja[]>(() => training?.completed.includes("learn-water") ? [{ id: "training-soja", bebida: "agua", ts: new Date().toISOString() }] : []);
   const [cargandoMas, setCargandoMas] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
@@ -43,6 +46,7 @@ export default function SojasLogger({
   const [borrandoId, setBorrandoId] = useState<string | null>(null);
 
   useEffect(() => {
+    if (practicing) return;
     let activo = true;
     async function cargarTotal() {
       const { data: auth } = await supabase.auth.getUser();
@@ -67,9 +71,10 @@ export default function SojasLogger({
     }
     void cargarTotal();
     return () => { activo = false; };
-  }, [supabase, salaId, nocheId]);
+  }, [supabase, salaId, nocheId, practicing]);
 
   async function cargarMas() {
+    if (practicing) return;
     setCargandoMas(true);
     setError(null);
     const consulta = supabase
@@ -90,6 +95,7 @@ export default function SojasLogger({
   }
 
   async function borrar(registro: RegistroSoja) {
+    if (practicing) return;
     setBorrandoId(registro.id);
     setError(null);
     const { error: fallo } = await supabase.rpc("borrar_soja_suelta", {
@@ -106,6 +112,16 @@ export default function SojasLogger({
 
   async function registrar(bebida: (typeof OPCIONES)[number]) {
     if (guardando || disabled) return;
+    if (training) {
+      if (await training.run("learn-water")) {
+        setAbierto(true);
+        setTotalContexto(1);
+        setRegistrosContexto([{ id: "training-soja", bebida: "agua", ts: new Date().toISOString() }]);
+        setMensaje("Registrado en entrenamiento · 0 XP real · 0 PL");
+        setUltimoRegistroId("training-soja");
+      }
+      return;
+    }
     setGuardando(true);
     setError(null);
     setMensaje(null);
@@ -138,7 +154,7 @@ export default function SojasLogger({
   }
 
   return (
-    <section className="mb-6">
+    <section data-training="sojas" className="mb-6">
       <button
         type="button"
         onClick={() => setAbierto((valor) => !valor)}
@@ -157,7 +173,7 @@ export default function SojasLogger({
                 key={bebida.id}
                 type="button"
                 onClick={() => void registrar(bebida)}
-                disabled={disabled || guardando}
+                disabled={disabled || guardando || (practicing && (training.step !== "learn-water" || bebida.id !== "agua"))}
                 className="flex min-h-16 items-center gap-2 rounded-lg border border-borde bg-tarjeta px-3 text-left text-sm text-texto transition hover:border-cian disabled:opacity-40"
               >
                 <span className="text-2xl">{bebida.icono}</span>
@@ -189,7 +205,7 @@ export default function SojasLogger({
                             minute: "2-digit",
                           })}
                         </span>
-                        {!nocheId && (
+                        {!nocheId && !practicing && (
                           <button
                             type="button"
                             onClick={() => void borrar(registro)}
@@ -212,10 +228,10 @@ export default function SojasLogger({
               </button>
             )}
           </div>
-          {!nocheId && ultimoRegistroId && (
+          {!nocheId && (ultimoRegistroId || (training?.completed.includes("learn-water"))) && (
             <SitioPicker
               key={ultimoRegistroId}
-              registroId={ultimoRegistroId}
+              registroId={ultimoRegistroId ?? "training-soja"}
               tipo="soja"
             />
           )}

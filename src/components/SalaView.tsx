@@ -14,6 +14,7 @@ import BebidaSueltaLogger, {
 } from "@/components/BebidaSueltaLogger";
 import SojasLogger from "@/components/SojasLogger";
 import AvanceMedallasSala from "@/components/AvanceMedallasSala";
+import { useTraining } from "@/components/TrainingContext";
 
 export type Miembro = {
   id: string;
@@ -72,6 +73,8 @@ export default function SalaView({
   liga: EntradaLiga[];
 }) {
   const router = useRouter();
+  const training = useTraining();
+  const practicing = training !== null;
   const [eligiendoDuracion, setEligiendoDuracion] = useState(false);
   const [hastaFecha, setHastaFecha] = useState("");
   const [minFecha, setMinFecha] = useState("");
@@ -87,11 +90,12 @@ export default function SalaView({
   // Registrar solo la entrada: hacerlo durante el render del servidor crea
   // un bucle con la suscripcion de sala_miembros y router.refresh().
   useEffect(() => {
+    if (practicing) return;
     const supabase = createClient();
     void supabase.rpc("marcar_visita_sala", { p_sala: sala.id }).then(({ error }) => {
       if (error) console.warn("No se pudo registrar la visita a la sala", error.message);
     });
-  }, [sala.id, userId]);
+  }, [sala.id, userId, practicing]);
 
   // Tiempo real: si alguien se une/sale, añade una bebida/SOJA suelta, o
   // arranca una noche mientras estás viendo la sala, se refresca sola en
@@ -99,6 +103,7 @@ export default function SalaView({
   // página al servidor (sin perder el estado de los <details> abiertos ni
   // hacer un reload completo) y trae ya todo recalculado.
   useEffect(() => {
+    if (practicing) return;
     const supabase = createClient();
     const canal = supabase
       .channel(`sala-${sala.id}`)
@@ -139,9 +144,10 @@ export default function SalaView({
     return () => {
       supabase.removeChannel(canal);
     };
-  }, [sala.id, router]);
+  }, [sala.id, router, practicing]);
 
   async function compartirCodigo() {
+    if (practicing) return;
     const texto = `¡Únete a "${sala.nombre}" en El Ranking! 🍻 Código: ${sala.codigo}`;
     if (navigator.share) {
       try {
@@ -158,6 +164,7 @@ export default function SalaView({
   }
 
   async function iniciarNoche(horas: number) {
+    if (training) { await training.run("learn-night"); return; }
     setCargando(true);
     const supabase = createClient();
     const fin = new Date(new Date().getTime() + horas * 3600 * 1000).toISOString();
@@ -191,7 +198,7 @@ export default function SalaView({
 
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md px-5 pb-24 pt-8">
-      <header className="mb-6">
+      <header data-training="room" className="mb-6">
         <Link href="/" className="text-sm text-texto2">
           ← Tus salas
         </Link>
@@ -260,10 +267,11 @@ export default function SalaView({
             )}
           />
           <SojasLogger salaId={sala.id} />
-          <AvanceMedallasSala salaId={sala.id} userId={userId} />
+          {!practicing && <AvanceMedallasSala salaId={sala.id} userId={userId} />}
         </>
       )}
 
+      <div data-training="night">
       {nocheActiva && nocheActiva.estado === "pendiente" ? (
         <Link
           href={`/noche/${nocheActiva.id}`}
@@ -389,8 +397,9 @@ export default function SalaView({
         </div>
       )}
 
+      </div>
       {/* Liga de la temporada */}
-      <section className="mb-8">
+      <section data-training="league" className="mb-8">
         <div className="mb-1 flex items-baseline justify-between">
           <h2 className="font-titulo text-xl text-texto">🏆 Liga</h2>
           {temporada && (

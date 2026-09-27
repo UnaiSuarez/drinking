@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Map as LeafletMap, Marker as LeafletMarker } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { createClient } from "@/lib/supabase/client";
+import { useTraining } from "@/components/TrainingContext";
 
 type SitioCercano = { id: string; nombre: string; distancia_m: number };
 type Fase = "inicial" | "buscando" | "eligiendo" | "nuevo" | "confirmado" | "omitido";
@@ -18,7 +19,13 @@ const ICONOS = ["📍", "🍺", "🍷", "🍸", "🥃", "🎉", "🏠", "⛺", "
  * padre lo renderiza con `key={registroId}`, así que un registro nuevo lo
  * remonta entero con estado limpio (no hace falta reiniciarlo aquí).
  */
-export default function SitioPicker({
+export default function SitioPicker(props: { registroId: string; tipo?: "bebida" | "soja" }) {
+  // Keep the highlighted node stable: React can replace the inner classes
+  // while Driver owns its interaction class on this outer wrapper.
+  return <div data-training="place"><SitioPickerContent {...props} /></div>;
+}
+
+function SitioPickerContent({
   registroId,
   tipo = "bebida",
 }: {
@@ -28,7 +35,8 @@ export default function SitioPicker({
   const rpcMarcar =
     tipo === "soja" ? "marcar_sitio_de_soja" : "marcar_sitio_de_registro";
   const supabase = createClient();
-  const [fase, setFase] = useState<Fase>("inicial");
+  const training = useTraining();
+  const [fase, setFase] = useState<Fase>(training?.completed.includes("learn-place") ? "confirmado" : "inicial");
   const [error, setError] = useState<string | null>(null);
   const [cercanos, setCercanos] = useState<SitioCercano[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -37,7 +45,7 @@ export default function SitioPicker({
   );
   const [iconoElegido, setIconoElegido] = useState(ICONOS[0]);
   const [nombreNuevo, setNombreNuevo] = useState("");
-  const [nombreElegido, setNombreElegido] = useState("");
+  const [nombreElegido, setNombreElegido] = useState(training ? "Plaza de práctica" : "");
   const [guardando, setGuardando] = useState(false);
 
   const miniMapaRef = useRef<HTMLDivElement | null>(null);
@@ -45,6 +53,11 @@ export default function SitioPicker({
   const miniMarcador = useRef<LeafletMarker | null>(null);
 
   function empezar() {
+    if (training) {
+      setCercanos([{ id: "training-place", nombre: "Plaza de práctica", distancia_m: 25 }]);
+      setFase("eligiendo");
+      return;
+    }
     if (!navigator.geolocation) {
       setError("Este dispositivo no permite geolocalización.");
       return;
@@ -78,6 +91,10 @@ export default function SitioPicker({
   }
 
   async function elegirExistente(sitio: SitioCercano) {
+    if (training) {
+      if (await training.run("learn-place")) { setNombreElegido(sitio.nombre); setFase("confirmado"); }
+      return;
+    }
     setGuardando(true);
     setError(null);
     const { error } = await supabase.rpc(rpcMarcar, {
@@ -95,6 +112,7 @@ export default function SitioPicker({
 
   async function crearYElegir(e: React.FormEvent) {
     e.preventDefault();
+    if (training) return;
     const punto = coordsNuevo ?? coords;
     if (!punto || !nombreNuevo.trim()) return;
     setGuardando(true);
@@ -201,6 +219,7 @@ export default function SitioPicker({
           📍 ¿Dónde estás? (opcional)
         </button>
         <button
+          disabled={Boolean(training)}
           onClick={() => setFase("omitido")}
           className="text-xs text-texto2 underline"
         >
@@ -235,6 +254,7 @@ export default function SitioPicker({
             </button>
           ))}
           <button
+            disabled={Boolean(training)}
             onClick={() => {
               setCoordsNuevo(coords);
               setFase("nuevo");

@@ -1,0 +1,51 @@
+.ranking-tour-popover {
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 24px));
+  min-width: 0;
+  max-width: calc(100vw - 24px);
+  max-height: 48svh;
+  overflow-y: auto;
+  border: 1px solid #2de2e6;
+  border-radius: 8px;
+  background: #1b1d30;
+  color: #f2f3f7;
+  box-shadow: 0 8px 32px #0006;
+  font-family: var(--font-nunito), sans-serif;
+}
+.ranking-tour-popover .driver-popover-title {
+  font-family: var(--font-lilita), sans-serif;
+  font-size: 18px;
+  line-height: 1.3;
+  color: #2de2e6;
+}
+.ranking-tour-popover .driver-popover-description {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #f2f3f7;
+}
+.ranking-tour-popover .driver-popover-next-btn {
+  min-height: 44px;
+  border: 1px solid #5c6278;
+  border-radius: 6px;
+  background: transparent;
+  padding: 8px 12px;
+  color: #f2f3f7;
+  font-family: inherit;
+  font-size: 13px;
+  text-shadow: none;
+}
+.ranking-tour-popover .driver-popover-next-btn:hover,
+.ranking-tour-popover .driver-popover-next-btn:focus-visible {
+  background: #2de2e622;
+  outline: 2px solid #2de2e6;
+  outline-offset: 2px;
+}
+.ranking-tour-popover .driver-popover-arrow { display: none; }
+.ranking-tour-popover .training-skip { display: block; width: 100%; min-height: 44px; margin-top: 12px; color: #c5c8d8; font-size: 13px; text-decoration: underline; }
+.tutorial-practice [id^="tour-"] { scroll-margin-block: 110px; }
+.tutorial-practice [id^="tour-"]:focus-visible { outline: 3px solid #2de2e6; outline-offset: 4px; }
+@media (max-height: 500px) {
+  .ranking-tour-popover { max-height: 65svh; padding: 12px; }
+  .ranking-tour-popover .driver-popover-description { font-size: 12px; line-height: 1.4; }
+}

@@ -8,6 +8,7 @@ import { calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
 import NivelCelebracion from "@/components/NivelCelebracion";
 import VisitaDiaria from "@/components/VisitaDiaria";
 import AnimationPreferences from "@/components/AnimationPreferences";
+import TutorialWelcome from "@/components/TutorialWelcome";
 
 const ADMIN_EMAIL = "unaisucar64535@gmail.com";
 
@@ -122,6 +123,7 @@ export default async function AppHeader() {
       <NivelCelebracion key={`${user.id}:${ciclo}`} userId={user.id} nivelInicial={nivel.nivel} ciclo={ciclo} />
       <VisitaDiaria userId={user.id} />
       <AnimationPreferences welcome />
+      <TutorialWelcome key={user.id} userId={user.id} />
     </>
   );
 }

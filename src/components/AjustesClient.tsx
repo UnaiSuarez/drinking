@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { BookOpen } from "lucide-react";
 import AnimationPreferences from "@/components/AnimationPreferences";
 import { createClient } from "@/lib/supabase/client";
 import { activarNotificaciones, desactivarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
@@ -141,6 +143,12 @@ export default function AjustesClient({ email, nombreInicial, cumpleanosInicial 
   }
 
   return <div className="space-y-8">
+    <section className="border-b border-borde pb-6">
+      <h2 className="font-titulo text-lg text-cian">Tutorial</h2>
+      <p className="mb-4 mt-2 text-sm text-texto2">Practica registros, ubicaciones, una noche y una carta prestada sin cambiar tu progreso real. Puedes omitirlo o retomarlo cuando quieras.</p>
+      <Link href="/tutorial" className={`${boton} inline-flex min-h-11 items-center gap-2`}><BookOpen size={18} aria-hidden="true" /> Abrir tutorial</Link>
+      <Link href="/guia" className="ml-4 inline-block py-3 text-sm text-cian underline">Guía de consulta</Link>
+    </section>
     <AnimationPreferences />
     <section aria-labelledby="ajustes-perfil" className="border-b border-borde pb-7">
       <h2 id="ajustes-perfil" className="mb-4 font-titulo text-lg text-cian">Perfil</h2>
