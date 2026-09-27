@@ -76,6 +76,22 @@ export default function MomentosAlbumClient({
     return () => window.clearTimeout(t);
   }, [cargar]);
 
+  // Tiempo real: si alguien más sube o borra una foto (o tú lo haces desde
+  // otra pestaña/móvil), el álbum se refresca solo.
+  useEffect(() => {
+    const canal = supabase
+      .channel(`fotos-sala-${salaId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "fotos_sala", filter: `sala_id=eq.${salaId}` },
+        () => void cargar()
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(canal);
+    };
+  }, [supabase, salaId, cargar]);
+
   async function subir(archivos: FileList | null) {
     if (!archivos || archivos.length === 0) return;
     setMensaje(null);
@@ -152,15 +168,20 @@ export default function MomentosAlbumClient({
 
       {!cuota?.bloqueado && (
         <div className="mb-3 space-y-2">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(event) => void subir(event.target.files)}
-            className="w-full text-sm text-texto2"
-            disabled={subiendo}
-          />
+          <label
+            className={`block w-full cursor-pointer rounded-lg bg-cian px-3 py-2 text-center font-titulo text-sm text-fondo active:scale-95 ${subiendo ? "pointer-events-none opacity-50" : ""}`}
+          >
+            {subiendo ? "Subiendo..." : "📷 Elegir fotos"}
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(event) => void subir(event.target.files)}
+              disabled={subiendo}
+              className="hidden"
+            />
+          </label>
           <input
             type="text"
             value={descripcionSubida}
@@ -169,7 +190,6 @@ export default function MomentosAlbumClient({
             disabled={subiendo}
             className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto"
           />
-          {subiendo && <p className="text-xs text-texto2">Subiendo...</p>}
         </div>
       )}
 
