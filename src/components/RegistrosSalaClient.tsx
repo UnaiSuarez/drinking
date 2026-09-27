@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
@@ -92,6 +92,29 @@ export default function RegistrosSalaClient({
   const [borrandoSoja, setBorrandoSoja] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [jugadorFiltro, setJugadorFiltro] = useState<string>("todos");
+
+  // El historial mezcla bebidas sueltas (de toda la sala) con tus propias
+  // SOJAS: es el único sitio desde el que se puede borrar cualquiera de las
+  // dos (el chip de "Tus SOJAS" ya no lo permite, solo muestra el conteo).
+  const historial = useMemo(() => {
+    const misNombre = nombrePorUsuario[userId] ?? "Tú";
+    const desdeSojas = sojas.map((registro) => {
+      const bebida = SOJAS_BEBIDAS[registro.bebida] ?? { nombre: registro.bebida, icono: "💧" };
+      return {
+        origen: "soja" as const,
+        id: registro.id,
+        usuarioId: userId,
+        nombre: misNombre,
+        bebidaNombre: bebida.nombre,
+        icono: bebida.icono,
+        ts: registro.ts,
+      };
+    });
+    const desdeBebidas = registros.map((registro) => ({ origen: "bebida" as const, ...registro }));
+    return [...desdeBebidas, ...desdeSojas].sort(
+      (a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime()
+    );
+  }, [registros, sojas, userId, nombrePorUsuario]);
 
   // Tiempo real: si alguien más añade o borra una bebida/SOJA de la sala
   // mientras tienes esta página abierta, se refresca sola (historial,
@@ -201,18 +224,18 @@ export default function RegistrosSalaClient({
     );
   }
 
-  async function borrarSoja(registro: RegistroSoja) {
-    setBorrandoSoja(registro.id);
+  async function borrarSoja(id: string) {
+    setBorrandoSoja(id);
     setError(null);
     const { error } = await supabase.rpc("borrar_soja_suelta", {
-      p_registro_id: registro.id,
+      p_registro_id: id,
     });
     setBorrandoSoja(null);
     if (error) {
       setError(error.message);
       return;
     }
-    setSojas((prev) => prev.filter((r) => r.id !== registro.id));
+    setSojas((prev) => prev.filter((r) => r.id !== id));
     setSojasTotalLocal((prev) => Math.max(0, prev - 1));
   }
 
@@ -344,21 +367,12 @@ export default function RegistrosSalaClient({
                   nombre: bebidaId,
                   icono: "💧",
                 };
-                const masReciente = registros[0];
                 return (
                   <span
                     key={bebidaId}
                     className="flex items-center gap-1 rounded-full border border-cian/30 bg-tarjeta px-2 py-1 text-[11px] text-texto"
                   >
                     {bebida.icono} {bebida.nombre} ×{registros.length}
-                    <button
-                      onClick={() => void borrarSoja(masReciente)}
-                      disabled={borrandoSoja === masReciente.id}
-                      className="ml-0.5 text-rosa disabled:opacity-50"
-                      aria-label={`Borrar un registro de ${bebida.nombre}`}
-                    >
-                      {borrandoSoja === masReciente.id ? "…" : "✕"}
-                    </button>
                   </span>
                 );
               })}
@@ -378,18 +392,19 @@ export default function RegistrosSalaClient({
 
       <section>
         <h2 className="mb-3 font-titulo text-lg text-texto">📋 Historial</h2>
-        {registros.length === 0 ? (
+        {historial.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
             Nada por aquí todavía.
           </p>
         ) : (
           <>
             <ul className="space-y-2">
-              {registros.map((r) => {
-                const puedeBorrar = r.usuarioId === userId || esAdmin;
+              {historial.map((r) => {
+                const puedeBorrar = r.origen === "soja" || r.usuarioId === userId || esAdmin;
+                const borrando = r.origen === "soja" ? borrandoSoja === r.id : borrandoId === r.id;
                 return (
                   <li
-                    key={r.id}
+                    key={`${r.origen}-${r.id}`}
                     className="flex items-center justify-between rounded-2xl border border-borde bg-tarjeta px-4 py-3"
                   >
                     <div className="flex items-center gap-2 text-sm text-texto">
@@ -405,16 +420,19 @@ export default function RegistrosSalaClient({
                             hour: "2-digit",
                             minute: "2-digit",
                           })}
+                          {r.origen === "soja" && " · SOJA"}
                         </p>
                       </div>
                     </div>
                     {puedeBorrar && (
                       <button
-                        onClick={() => borrar(r)}
-                        disabled={borrandoId === r.id}
+                        onClick={() =>
+                          r.origen === "soja" ? void borrarSoja(r.id) : borrar(r)
+                        }
+                        disabled={borrando}
                         className="px-2 text-sm text-rosa disabled:opacity-50"
                       >
-                        {borrandoId === r.id ? "…" : "🗑️"}
+                        {borrando ? "…" : "🗑️"}
                       </button>
                     )}
                   </li>

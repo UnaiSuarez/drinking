@@ -81,6 +81,7 @@ export type MiLigaNoche = {
   totalLiga: number;
   esTop1Antes: boolean;
   esTop1Despues: boolean;
+  desglose: { concepto: string; pl: number }[];
 };
 
 export default function PodioReveal({

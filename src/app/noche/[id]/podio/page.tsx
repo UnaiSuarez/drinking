@@ -89,7 +89,7 @@ export default async function PodioPage({
   // Logros persistidos de esta noche (los calculó finalizar_noche en la BD)
   const { data: logrosRaw } = await supabase
     .from("logros_usuario")
-    .select("usuario_id, logros(nombre, icono, descripcion, rareza)")
+    .select("usuario_id, logros(nombre, icono, descripcion, rareza, pl)")
     .eq("noche_id", id);
 
   // Penalizaciones marcadas al cierre (ha vomitado, KO, etc.)
@@ -97,6 +97,23 @@ export default async function PodioPage({
     .from("noche_penalizaciones")
     .select("usuario_id, penalizaciones_tipo(nombre, icono, pl)")
     .eq("noche_id", id);
+
+  // Balance de PL de la sala (o los valores por defecto si no se ha
+  // personalizado), para poder reconstruir de dónde salen los PL de la
+  // noche con las mismas reglas que usa finalizar_noche.
+  const { data: salaBalRaw } = await supabase
+    .from("salas")
+    .select("balance")
+    .eq("id", noche.sala_id)
+    .maybeSingle();
+  const bal = (salaBalRaw?.balance ?? {}) as Record<string, number>;
+  const balVol = [bal.vol1_5 ?? 5, bal.vol6 ?? 4, bal.vol7 ?? 3, bal.vol8 ?? 2, bal.vol9 ?? 1];
+  const balPos1 = bal.pos1 ?? 15;
+  const balPos2 = bal.pos2 ?? 10;
+  const balPos3 = bal.pos3 ?? 6;
+  const balResto = bal.resto ?? 3;
+  const balPresencia = bal.presencia ?? 2;
+  const balVoto = bal.voto ?? 5;
 
   // Votación
   const { data: votos } = await supabase
@@ -147,6 +164,7 @@ export default async function PodioPage({
         nombre: string;
         descripcion: string;
         rareza: string;
+        pl: number;
         n: number;
       }
     >
@@ -157,6 +175,7 @@ export default async function PodioPage({
       icono: string;
       descripcion: string;
       rareza: string;
+      pl: number;
     } | null;
     if (!info) continue;
     const porNombre = logrosPorUsuario.get(l.usuario_id) ?? new Map();
@@ -271,7 +290,46 @@ export default async function PodioPage({
     totalLiga: number;
     esTop1Antes: boolean;
     esTop1Despues: boolean;
+    desglose: { concepto: string; pl: number }[];
   } | null = null;
+  // De dónde vienen los PL de esta noche: mismas 4 fuentes que documenta
+  // DISEÑO.md (volumen, posición, votos, logros). Lo que no se puede atribuir
+  // a una de esas 4 (cartas, habilidades pasivas, penalizaciones) se agrupa
+  // en un residual, así el total siempre cuadra exacto con pl_ganados.
+  let desglosePl: { concepto: string; pl: number }[] = [];
+  if (user && jugadorActual) {
+    const misLogrosPl = [...(logrosPorUsuario.get(user.id)?.values() ?? [])];
+    const misRegsAlcohol = (registros ?? []).filter((r) => {
+      if (r.usuario_id !== user.id || r.retroactivo) return false;
+      const bt = r.bebidas_tipo as unknown as { puntos: number } | { puntos: number }[] | null;
+      const puntos = Array.isArray(bt) ? bt[0]?.puntos : bt?.puntos;
+      return (puntos ?? 0) > 0;
+    });
+    const tramoVol = (n: number) =>
+      n <= 5 ? balVol[0] : n === 6 ? balVol[1] : n === 7 ? balVol[2] : n === 8 ? balVol[3] : balVol[4];
+    const plVolumen = misRegsAlcohol.reduce((acc: number, _r, i) => acc + tramoVol(i + 1), 0);
+    const misVotos = (votos ?? []).filter((v) => v.votado_id === user.id).length;
+    const plVotos = misVotos * balVoto;
+    const plLogros = misLogrosPl.reduce((acc, l) => acc + (l.pl ?? 0) * l.n, 0);
+    const nLogros = misLogrosPl.reduce((acc, l) => acc + l.n, 0);
+    const posFinal = jugadorActual.posicion_final;
+    const sinAlcohol = misRegsAlcohol.length === 0;
+    const plPos = sinAlcohol ? balPresencia : posFinal === 1 ? balPos1 : posFinal === 2 ? balPos2 : posFinal === 3 ? balPos3 : balResto;
+    const posEtiqueta = sinAlcohol
+      ? "presencia, sin bebidas con alcohol"
+      : posFinal === 1 ? "🥇 1º" : posFinal === 2 ? "🥈 2º" : posFinal === 3 ? "🥉 3º" : `${posFinal}º`;
+    const conocido = plVolumen + plPos + plVotos + plLogros;
+    const extra = (jugadorActual.pl_ganados ?? 0) - conocido;
+    desglosePl = [
+      ...(misRegsAlcohol.length > 0
+        ? [{ concepto: `Volumen (${misRegsAlcohol.length} bebida${misRegsAlcohol.length === 1 ? "" : "s"} con alcohol)`, pl: plVolumen }]
+        : []),
+      { concepto: `Posición (${posEtiqueta})`, pl: plPos },
+      ...(misVotos > 0 ? [{ concepto: `${misVotos} voto${misVotos === 1 ? "" : "s"} recibido${misVotos === 1 ? "" : "s"}`, pl: plVotos }] : []),
+      ...(nLogros > 0 ? [{ concepto: `${nLogros} logro${nLogros === 1 ? "" : "s"} conseguido${nLogros === 1 ? "" : "s"}`, pl: plLogros }] : []),
+      ...(extra !== 0 ? [{ concepto: "Cartas, habilidades y penalizaciones", pl: extra }] : []),
+    ];
+  }
   if (user && jugadorActual && noche.temporada_id) {
     const { data: ligaRaw } = await supabase
       .from("liga")
@@ -296,6 +354,7 @@ export default async function PodioPage({
         totalLiga: lista.length,
         esTop1Antes: idxAntes === 0,
         esTop1Despues: idxDespues === 0,
+        desglose: desglosePl,
       };
     }
   }

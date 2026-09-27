@@ -25,6 +25,7 @@ export type NocheResumen = {
   id: string;
   inicio: string;
   ganador: string | null;
+  iniciador: string | null;
   jugadores: number;
 };
 export type EntradaLiga = {
@@ -514,6 +515,7 @@ export default function SalaView({
                     </span>
                     <p className="text-xs text-texto2">
                       {n.jugadores} jugadores
+                      {n.iniciador && ` · iniciada por ${n.iniciador}`}
                     </p>
                   </div>
                   {n.ganador && (

@@ -171,6 +171,7 @@ export function RevealLiga({
     totalLiga: number;
     esTop1Antes: boolean;
     esTop1Despues: boolean;
+    desglose: { concepto: string; pl: number }[];
   };
   onSiguiente: () => void;
 }) {
@@ -234,6 +235,23 @@ export function RevealLiga({
           </p>
         )}
       </div>
+
+      {liga.desglose.length > 0 && (
+        <ul className="mb-8 w-full space-y-2">
+          {liga.desglose.map((d, i) => (
+            <li
+              key={i}
+              className="animate-[fadeIn_0.4s_ease-out_forwards] rounded-2xl border border-borde bg-tarjeta px-4 py-3 opacity-0"
+              style={{ animationDelay: `${i * 180}ms` }}
+            >
+              <span className="flex items-center justify-between text-sm">
+                <span className="text-texto">{d.concepto}</span>
+                <span className="font-titulo text-lima">{d.pl >= 0 ? "+" : ""}{d.pl} PL</span>
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
       <button
         onClick={onSiguiente}

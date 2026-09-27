@@ -440,6 +440,33 @@ export default function NocheLive({
   const [colaLogros, setColaLogros] = useState<LogroNoche[]>([]);
   const [logroActual, setLogroActual] = useState<LogroNoche | null>(null);
   const logrosVistosRef = useRef<Set<string>>(new Set(logrosVistosIniciales));
+  const [logrosVistosListos, setLogrosVistosListos] = useState(false);
+
+  // `logrosVistosIniciales` viene del render del servidor: si vuelves a esta
+  // página con la caché de navegación de Next (salir al menú y entrar de
+  // nuevo sin recarga completa), puede quedarse desactualizada y el popup de
+  // un logro ya conseguido saltaría otra vez. Se refresca aparte, directo
+  // contra Supabase, antes de dejar que la detección en vivo dispare nada.
+  useEffect(() => {
+    let activo = true;
+    supabase
+      .from("logros_usuario")
+      .select("logros(nombre)")
+      .eq("usuario_id", userId)
+      .eq("noche_id", noche.id)
+      .then(({ data }) => {
+        if (!activo) return;
+        for (const fila of data ?? []) {
+          const info = fila.logros as unknown as { nombre: string } | { nombre: string }[] | null;
+          const nombre = Array.isArray(info) ? info[0]?.nombre : info?.nombre;
+          if (nombre) logrosVistosRef.current.add(nombre);
+        }
+        setLogrosVistosListos(true);
+      });
+    return () => {
+      activo = false;
+    };
+  }, [supabase, userId, noche.id]);
 
   const unido = jugadores.some((j) => j.id === userId);
   const finMs = new Date(finProgramado).getTime();
@@ -689,9 +716,11 @@ export default function NocheLive({
     };
   }, [supabase, noche.id, router, cargarJugador]);
 
-  // Detecta logros "estables" según van llegando registros y encola el popup
+  // Detecta logros "estables" según van llegando registros y encola el popup.
+  // Espera a `logrosVistosListos` para no adelantarse con un set aún
+  // incompleto (ver el efecto de arriba).
   useEffect(() => {
-    if (!unido) return;
+    if (!unido || !logrosVistosListos) return;
     const misRegs = registros.filter((r) => r.usuario_id === userId);
     const puntos = misRegs.reduce((acc, r) => acc + puntosBaseRegistro(r, bebidasMap), 0);
     const tiposDistintos = new Set(misRegs.map((r) => r.bebida_tipo_id)).size;
@@ -733,7 +762,7 @@ export default function NocheLive({
       });
       setColaLogros((prev) => [...prev, ...nuevos]);
     }
-  }, [registros, userId, unido, bebidasMap, supabase, noche.id]);
+  }, [registros, userId, unido, bebidasMap, supabase, noche.id, logrosVistosListos]);
 
   // Saca el siguiente logro de la cola cuando no hay ninguno mostrándose
   useEffect(() => {
@@ -1560,17 +1589,16 @@ export default function NocheLive({
             </section>
           )}
 
-          <section className="mb-6 rounded-3xl border border-borde bg-tarjeta p-4">
+          <details className="group mb-6 rounded-3xl border border-borde bg-tarjeta p-4" open>
+            <summary className="mb-1 flex cursor-pointer list-none items-center justify-between gap-3 font-titulo text-lg text-texto focus-visible:outline-cian">
+              🎴 Cartas de noche ({cartasUsables.length})
+              <span aria-hidden="true" className="text-base text-texto2 group-open:rotate-180">⌄</span>
+            </summary>
             <div className="mb-3 flex items-baseline justify-between gap-3">
-              <div>
-                <h2 className="font-titulo text-lg text-texto">
-                  🎴 Cartas de noche
-                </h2>
-                <p className="text-xs text-texto2">
-                  Se gastan al usarlas y afectan a esta noche.
-                </p>
-              </div>
-              <Link href="/inventario" className="text-xs text-cian underline">
+              <p className="text-xs text-texto2">
+                Se gastan al usarlas y afectan a esta noche.
+              </p>
+              <Link href="/inventario" className="shrink-0 text-xs text-cian underline">
                 Inventario
               </Link>
             </div>
@@ -1587,7 +1615,7 @@ export default function NocheLive({
               </p>
             ) : (
               <ul className="space-y-3">
-                {cartasUsables.slice(0, 6).map((carta) => {
+                {cartasUsables.map((carta) => {
                   const cantidad = miInventario.cartas[carta.id] ?? 0;
                   const requiereObjetivo = carta.alcance === "objetivo";
                   return (
@@ -1685,7 +1713,7 @@ export default function NocheLive({
                 })}
               </ul>
             )}
-          </section>
+          </details>
         </>
       )}
 

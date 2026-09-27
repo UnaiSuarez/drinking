@@ -67,7 +67,7 @@ export default async function SalaPage({
       .maybeSingle(),
     supabase
       .from("noches")
-      .select("id, inicio, noche_jugadores(usuario_id, posicion_final)")
+      .select("id, inicio, creada_por, noche_jugadores(usuario_id, posicion_final)")
       .eq("sala_id", id)
       .eq("estado", "cerrada")
       .order("inicio", { ascending: false })
@@ -123,6 +123,7 @@ export default async function SalaPage({
       id: n.id,
       inicio: n.inicio,
       ganador: miembros.find((m) => m.id === ganadorId)?.nombre ?? null,
+      iniciador: miembros.find((m) => m.id === n.creada_por)?.nombre ?? null,
       jugadores: jugadores.length,
     };
   });

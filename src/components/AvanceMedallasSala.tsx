@@ -124,7 +124,7 @@ const MEDALLA_UNICA = { slug: "sala_madrugada", icono: "🌌", nombre: "Sesión 
  * ver y ocultar, y recuerda el estado entre visitas. */
 export default function AvanceMedallasSala({ salaId, userId }: { salaId: string; userId: string }) {
   const [progreso, setProgreso] = useState<Progreso | null>(null);
-  const [abierto, setAbierto] = useState(true);
+  const [abierto, setAbierto] = useState(false);
 
   // Carga el progreso al entrar y lo vuelve a pedir solo cuando cae una
   // medalla nueva (de esta sala o de cualquier otra), en vez de sondear.

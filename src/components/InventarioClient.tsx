@@ -8,7 +8,6 @@ import {
   CARTAS_COFRES,
   COFRES_TIPOS,
   MONEDA_COFRES,
-  REVERSOS_CARTA,
   type CartaCofre,
   type CartaRareza,
   type CofreTipo,
@@ -446,17 +445,15 @@ export default function InventarioClient({
           </span>
         </div>
 
+        {cartasConseguidas === 0 ? (
+          <p className="rounded-2xl border border-dashed border-borde px-3 py-6 text-center text-sm text-texto2">
+            Aún no tienes ninguna carta. Se irán mostrando aquí conforme las consigas en cofres.
+          </p>
+        ) : (
         <ul className="grid grid-cols-2 gap-3">
-          {CARTAS_COFRES.map((carta) => {
+          {CARTAS_COFRES.filter((carta) => (inventario.cartas[carta.id] ?? 0) > 0).map((carta) => {
             const cantidad = inventario.cartas[carta.id] ?? 0;
-            const conseguida = cantidad > 0;
-            const ocultaBloqueada = carta.oculta && !conseguida;
             const rareza = RAREZA_ESTILO[carta.rareza];
-            const imagen = ocultaBloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
-            const titulo = ocultaBloqueada ? "???" : carta.nombre;
-            const descripcion = ocultaBloqueada
-              ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."
-              : carta.descripcion;
 
             return (
               <li
@@ -474,18 +471,16 @@ export default function InventarioClient({
                   carta.oculta
                     ? "cofre-card-secret border-purple-400/70"
                     : rareza.borde
-                } ${conseguida ? rareza.brillo : "opacity-70"}`}
+                } ${rareza.brillo}`}
               >
                 <div className="relative mb-3 overflow-hidden rounded-xl bg-fondo/70">
                   {carta.oculta && <span className="cofre-reward-aura" />}
                   <Image
-                    src={imagen}
-                    alt={titulo}
+                    src={carta.imagen}
+                    alt={carta.nombre}
                     width={768}
                     height={768}
-                    className={`relative z-10 aspect-square w-full object-cover ${
-                      conseguida || carta.oculta ? "" : "grayscale"
-                    }`}
+                    className="relative z-10 aspect-square w-full object-cover"
                     sizes="180px"
                   />
                   <span className="absolute right-2 top-2 z-20 rounded-full bg-fondo/85 px-2 py-1 font-titulo text-xs text-ambar">
@@ -494,27 +489,24 @@ export default function InventarioClient({
                 </div>
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <p className="font-titulo text-sm leading-tight text-texto">
-                    {titulo}
+                    {carta.nombre}
                   </p>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
                       carta.oculta ? "bg-purple-400/15 text-purple-200" : rareza.fondo
                     } ${carta.oculta ? "" : rareza.texto}`}
                   >
-                    {ocultaBloqueada
-                      ? "Oculta"
-                      : conseguida
-                        ? "Tienes"
-                        : rareza.etiqueta}
+                    Tienes
                   </span>
                 </div>
                 <p className="min-h-10 text-[11px] leading-snug text-texto2">
-                  {descripcion}
+                  {carta.descripcion}
                 </p>
               </li>
             );
           })}
         </ul>
+        )}
       </section>
 
       {apertura && (
