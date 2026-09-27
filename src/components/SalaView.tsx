@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -79,6 +79,19 @@ export default function SalaView({
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const esAdmin = miRol === "fundador" || miRol === "admin";
+  const miembrosRef = useRef(miembros);
+  useEffect(() => {
+    miembrosRef.current = miembros;
+  }, [miembros]);
+
+  // Registrar solo la entrada: hacerlo durante el render del servidor crea
+  // un bucle con la suscripcion de sala_miembros y router.refresh().
+  useEffect(() => {
+    const supabase = createClient();
+    void supabase.rpc("marcar_visita_sala", { p_sala: sala.id }).then(({ error }) => {
+      if (error) console.warn("No se pudo registrar la visita a la sala", error.message);
+    });
+  }, [sala.id, userId]);
 
   // Tiempo real: si alguien se une/sale, añade una bebida/SOJA suelta, o
   // arranca una noche mientras estás viendo la sala, se refresca sola en
@@ -92,7 +105,15 @@ export default function SalaView({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "sala_miembros", filter: `sala_id=eq.${sala.id}` },
-        () => router.refresh()
+        (payload) => {
+          // visitado_at no cambia la vista; ignorarlo tambien protege frente
+          // a pestañas antiguas que siguen escribiendo visitas al refrescar.
+          if (payload.eventType === "UPDATE") {
+            const miembro = miembrosRef.current.find((m) => m.id === payload.new.usuario_id);
+            if (miembro && miembro.rol === payload.new.rol) return;
+          }
+          router.refresh();
+        }
       )
       .on(
         "postgres_changes",
