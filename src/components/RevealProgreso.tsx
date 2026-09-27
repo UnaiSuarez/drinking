@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { animationMode } from "@/lib/animationSettings";
 import AvatarFrame from "@/components/AvatarFrame";
 import { type AvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
@@ -46,6 +47,13 @@ function BarraNivel({ xpAntes, xpDespues, marcoPersonal }: { xpAntes: number; xp
   useEffect(() => {
     const tramo = tramos[paso];
     if (!tramo) return;
+    if (animationMode() !== "full") {
+      const timer = setTimeout(() => {
+        setPaso(tramos.length - 1);
+        setAncho(tramos[tramos.length - 1].fracFin);
+      }, 0);
+      return () => clearTimeout(timer);
+    }
     const t1 = setTimeout(() => setAncho(tramo.fracFin), 250);
     let t2: ReturnType<typeof setTimeout> | undefined;
     let t3: ReturnType<typeof setTimeout> | undefined;
@@ -184,10 +192,11 @@ export function RevealLiga({
   const fraccionFinal = Math.min(1, (liga.despues - suelo) / Math.max(1, techo - suelo));
 
   useEffect(() => {
-    const t1 = setTimeout(() => setAncho(fraccionFinal), 300);
+    const full = animationMode() === "full";
+    const t1 = setTimeout(() => setAncho(fraccionFinal), full ? 300 : 0);
     let t2: ReturnType<typeof setTimeout> | undefined;
     if (cambioDivision) {
-      t2 = setTimeout(() => setMostrarSalto(true), 1500);
+      t2 = setTimeout(() => setMostrarSalto(true), full ? 1500 : 0);
     }
     return () => {
       clearTimeout(t1);

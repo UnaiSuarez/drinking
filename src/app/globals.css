@@ -1,5 +1,34 @@
 @import "tailwindcss";
 
+/* Device preference: decorative motion is opt-in, essential reveals use JS. */
+html:not([data-animation-mode="full"]) *,
+html:not([data-animation-mode="full"]) *::before,
+html:not([data-animation-mode="full"]) *::after {
+  animation: none !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+html:not([data-animation-mode="full"]) [class*="animate-"] { opacity: 1; }
+html:not([data-animation-mode="full"]) :is(.cofre-opening__light, .cofre-opening__beam, .cofre-opening__burst, .cofre-reward-halo, .cofre-glare, .pj-halo, .avatar-aura, .avatar-character-fx) { display: none; }
+html[data-animation-mode="minimal"] .avatar-frame { filter: none; }
+.inventory-catalog .fx-band { display: none; }
+.frame-balanced-pulse {
+  position: absolute;
+  inset: 4%;
+  z-index: 4;
+  border: 2px solid #2de2e6;
+  border-radius: 8px;
+  pointer-events: none;
+  opacity: 0.25;
+}
+html[data-animation-mode="balanced"] .frame-balanced-pulse {
+  animation: balanced-pulse 3s ease-in-out infinite !important;
+}
+@keyframes balanced-pulse { 50% { opacity: 0.65; } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-animation-mode="balanced"] .frame-balanced-pulse { animation: none !important; }
+}
+
 @theme {
   --color-fondo: #0d0e1a;
   --color-tarjeta: #1a1c2e;

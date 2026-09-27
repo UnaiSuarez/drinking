@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useAnimationMode } from "@/components/AnimationPreferences";
 
 const KEY = "frame-list-animations";
 const EVENT = "frame-list-animations-change";
@@ -14,15 +15,18 @@ function subscribe(notify: () => void) {
   };
 }
 function snapshot() {
-  try { return localStorage.getItem(KEY) === "on"; } catch { return sessionValue; }
+  try { return localStorage.getItem(KEY) !== "off"; } catch { return sessionValue; }
 }
 export function useFrameListAnimations() {
-  return useSyncExternalStore(subscribe, snapshot, () => false);
+  const mode = useAnimationMode();
+  const enabled = useSyncExternalStore(subscribe, snapshot, () => false);
+  return mode !== "minimal" && enabled;
 }
 export default function FrameListAnimations() {
   const enabled = useFrameListAnimations();
+  const mode = useAnimationMode();
   return <label className="mb-4 flex min-h-11 cursor-pointer items-center gap-3 text-sm text-texto2">
-    <input type="checkbox" checked={enabled} onChange={(event) => {
+    <input type="checkbox" disabled={mode === "minimal"} checked={enabled} onChange={(event) => {
       sessionValue = event.target.checked;
       try {
         localStorage.setItem(KEY, event.target.checked ? "on" : "off");

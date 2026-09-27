@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 
 gsap.registerPlugin(useGSAP);
 
 import { type FxKind } from "@/lib/marcoFx";
+import { useAnimationMode } from "@/components/AnimationPreferences";
 
 const R = gsap.utils.random;
 const N: Record<FxKind, { band: number; free: number; stars: number }> = {
@@ -26,7 +27,30 @@ const N: Record<FxKind, { band: number; free: number; stars: number }> = {
 
 const idx = (n: number) => Array.from({ length: n }, (_, i) => i);
 
-export default function AvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {
+export default function AvatarFrameFx(props: { kind: FxKind; arte: boolean }) {
+  const mode = useAnimationMode();
+  if (mode === "minimal") return null;
+  if (mode === "balanced") return <BalancedFrameFx />;
+  return <FullAvatarFrameFx {...props} />;
+}
+
+function BalancedFrameFx() {
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let visible = false;
+    const update = () => { el.style.animationPlayState = visible && !document.hidden ? "running" : "paused"; };
+    const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); });
+    observer.observe(el);
+    document.addEventListener("visibilitychange", update);
+    update();
+    return () => { observer.disconnect(); document.removeEventListener("visibilitychange", update); };
+  }, []);
+  return <span ref={ref} className="frame-balanced-pulse" aria-hidden="true" />;
+}
+
+function FullAvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {
   const root = useRef<HTMLSpanElement>(null);
   const n = N[kind];
 
@@ -111,7 +135,7 @@ export default function AvatarFrameFx({ kind, arte }: { kind: FxKind; arte: bool
       if (kind === "prisma") {
         const p = q(".fx-prism")[0];
         gsap.set(p, { rotation: 18 });
-        gsap.timeline({ repeat: -1, repeatDelay: 0.9 }).fromTo(p, { xPercent: -140, filter: "hue-rotate(0deg)" }, { xPercent: 140, filter: "hue-rotate(300deg)", duration: 2.6, ease: "power1.inOut" });
+        gsap.timeline({ repeat: -1, repeatDelay: 0.9 }).fromTo(p, { xPercent: -140 }, { xPercent: 140, duration: 2.6, ease: "power1.inOut" });
       }
 
       if (kind === "cosmic") {

@@ -6,6 +6,7 @@ import { progresoNivel } from "@/lib/niveles";
 import { calcularSaldoChapas, parseTiendaState } from "@/lib/tienda";
 import NivelCelebracion from "@/components/NivelCelebracion";
 import VisitaDiaria from "@/components/VisitaDiaria";
+import AnimationPreferences from "@/components/AnimationPreferences";
 
 const ADMIN_EMAIL = "unaisucar64535@gmail.com";
 
@@ -116,6 +117,7 @@ export default async function AppHeader() {
       </header>
       <NivelCelebracion userId={user.id} nivelInicial={nivel.nivel} />
       <VisitaDiaria userId={user.id} />
+      <AnimationPreferences welcome />
     </>
   );
 }

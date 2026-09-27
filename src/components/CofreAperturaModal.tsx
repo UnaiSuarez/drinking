@@ -12,6 +12,7 @@ import { PERSONAJES_OCULTOS } from "@/lib/tienda";
 import { prepararAudioCofre, sonarCofre } from "@/lib/cofreAudio";
 import { centroEn, chispas, fogonazo, onda, particulasAscendentes, sinMovimiento, temblor, vortice } from "@/lib/cofreFx";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
+import { animationMode } from "@/lib/animationSettings";
 
 gsap.registerPlugin(useGSAP);
 
@@ -115,9 +116,11 @@ export default function CofreAperturaModal({
       const q = gsap.utils.selector(el);
       const slots = q(".cofre-reward-slot");
       if (sinMovimiento()) {
-        gsap.set(q(".cofre-opening__closed"), { opacity: 0 });
-        gsap.set(q(".cofre-opening__open"), { opacity: 1, y: 0, scale: 1 });
-        setEtapa("lista");
+        const duration = animationMode() === "balanced" ? 0.45 : 0.15;
+        gsap.timeline({ onComplete: () => setEtapa("lista") })
+          .to(q(".cofre-opening__closed"), { opacity: 0, duration })
+          .set(q(".cofre-opening__open"), { opacity: 1, y: 0, scale: 1 })
+          .fromTo(slots, { opacity: 0 }, { opacity: 1, duration });
         if (sonido.current) sonarCofre("abrir");
         return;
       }
@@ -197,8 +200,13 @@ export default function CofreAperturaModal({
     const pantallaPropia = modo === "personaje" || modo === "fragmento";
 
     if (sinMovimiento()) {
-      setFases((actual) => actual.map((fase, i) => i === index ? "revelada" : fase));
-      if (nivel === 3) setPremioEspecial({ recompensa, modo, index });
+      const card = el.querySelector(`[data-idx="${index}"] .gacha-card`);
+      setFases((actual) => actual.map((fase, i) => i === index ? "girando" : fase));
+      gsap.to(card, { rotationY: 180, duration: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : animationMode() === "balanced" ? 0.45 : 0.2,
+        onComplete: () => {
+          setFases((actual) => actual.map((fase, i) => i === index ? "revelada" : fase));
+          if (frag) setDesveladas((actual) => [...actual, index]);
+        } });
       if (sonido.current && nivel < 3) sonarCofre("revelar");
       return;
     }

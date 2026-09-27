@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
+import { animationMode } from "@/lib/animationSettings";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import MedalIcon from "@/components/MedalIcon";
 import { claseTambaleo, estadoPorBebidas, type AvatarConfig } from "@/lib/avatar";
@@ -223,22 +224,22 @@ export default function PodioReveal({
   // Cuenta atrás → aperitivo de votación (si hubo votos) → revelado
   useEffect(() => {
     if (fase !== "countdown") return;
-    if (navigator.vibrate) navigator.vibrate(100);
+    if (navigator.vibrate && animationMode() === "full") navigator.vibrate(100);
     const t = setTimeout(() => {
       if (cuenta > 1) {
         setCuenta((c) => c - 1);
       } else {
         setFase(votacion ? "votacion" : "revelado");
       }
-    }, 1000);
+    }, animationMode() === "full" ? 1000 : 0);
     return () => clearTimeout(t);
   }, [cuenta, fase, votacion]);
 
   // El aperitivo de la votación se muestra unos segundos y pasa al podio
   useEffect(() => {
     if (fase !== "votacion") return;
-    if (navigator.vibrate) navigator.vibrate([60, 40, 120]);
-    const t = setTimeout(() => setFase("revelado"), 4000);
+    if (navigator.vibrate && animationMode() === "full") navigator.vibrate([60, 40, 120]);
+    const t = setTimeout(() => setFase("revelado"), animationMode() === "full" ? 4000 : 0);
     return () => clearTimeout(t);
   }, [fase]);
 
@@ -246,10 +247,10 @@ export default function PodioReveal({
   useEffect(() => {
     if (fase !== "revelado" || vistaHistorica || terminado) return;
     const siguiente = total - revelados; // posición que toca revelar
-    const pausa = siguiente === 1 ? 2200 : siguiente <= 3 ? 1400 : 700;
+    const pausa = animationMode() === "full" ? (siguiente === 1 ? 2200 : siguiente <= 3 ? 1400 : 700) : animationMode() === "balanced" ? 180 : 0;
     const t = setTimeout(() => {
       setRevelados((r) => r + 1);
-      if (siguiente === 1) {
+      if (siguiente === 1 && animationMode() === "full") {
         confetti({
           particleCount: 160,
           spread: 80,

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { personajePorImagen } from "@/lib/tienda";
 import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
+import { useAnimationMode } from "@/components/AnimationPreferences";
 
 export default function AvatarFramePreview({
   config,
@@ -36,6 +37,7 @@ export default function AvatarFramePreview({
   const tituloId = useId();
   const marcoInfo = MARCO_INFO[marco];
   const sinMovimiento = useReducedMotion();
+  const animationMode = useAnimationMode();
   const personaje = personajePorImagen(config.avatarImagen);
   useModalScrollLock(abierto);
 
@@ -110,7 +112,7 @@ export default function AvatarFramePreview({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: sinMovimiento ? 0.12 : 0.25 }}
+              transition={{ duration: sinMovimiento || animationMode === "minimal" ? 0 : animationMode === "balanced" ? 0.12 : 0.25 }}
             >
               <div
                 className="avatar-preview-panel overflow-x-hidden overflow-y-auto overscroll-contain rounded-lg border border-borde bg-tarjeta p-5 text-center shadow-2xl"

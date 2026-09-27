@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Lilita_One, Nunito_Sans } from "next/font/google";
 import AppHeader from "@/components/AppHeader";
 import WebUpdates from "@/components/WebUpdates";
+import { AnimationProvider } from "@/components/AnimationPreferences";
 import "./globals.css";
 
 const lilita = Lilita_One({
@@ -40,11 +41,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${lilita.variable} ${nunito.variable}`}>
+    <html lang="es" data-animation-mode="minimal" className={`${lilita.variable} ${nunito.variable}`}>
       <body className="antialiased">
+        <AnimationProvider>
         <AppHeader />
         {children}
         <WebUpdates />
+        </AnimationProvider>
       </body>
     </html>
   );

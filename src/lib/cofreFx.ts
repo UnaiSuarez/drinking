@@ -1,11 +1,12 @@
 import gsap from "gsap";
+import { animationMode } from "@/lib/animationSettings";
 
 /** Utilidades GSAP compartidas por las animaciones de cofres y cartas. Los
  * elementos se crean sobre `host` (position: relative/fixed) y se eliminan
  * solos al terminar. */
 
 export function sinMovimiento() {
-  return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  return animationMode() !== "full";
 }
 
 /** En móvil (puntero táctil o pocos núcleos) se usan menos partículas. */

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import AnimationPreferences from "@/components/AnimationPreferences";
 import { createClient } from "@/lib/supabase/client";
 import { activarNotificaciones, desactivarNotificaciones, estaSuscrito, pushSoportado } from "@/lib/push";
 
@@ -140,6 +141,7 @@ export default function AjustesClient({ email, nombreInicial, cumpleanosInicial 
   }
 
   return <div className="space-y-8">
+    <AnimationPreferences />
     <section aria-labelledby="ajustes-perfil" className="border-b border-borde pb-7">
       <h2 id="ajustes-perfil" className="mb-4 font-titulo text-lg text-cian">Perfil</h2>
       <div className="space-y-5">
