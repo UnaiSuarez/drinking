@@ -38,7 +38,7 @@ function tramosNivel(xpAntes: number, xpDespues: number): Tramo[] {
 /** Barra de progreso de nivel animada: recorre, uno a uno, cada nivel que
  * se cruza esta noche, mostrando un destello de "¡Subes a nivel N!" en cada
  * salto antes de continuar con el siguiente tramo. */
-function BarraNivel({ xpAntes, xpDespues, marcoPersonal }: { xpAntes: number; xpDespues: number; marcoPersonal: MarcoPerfil }) {
+function BarraNivel({ xpAntes, xpDespues, marcoPersonal, ciclo = 0 }: { xpAntes: number; xpDespues: number; marcoPersonal: MarcoPerfil; ciclo?: number }) {
   const tramos = useMemo(() => tramosNivel(xpAntes, xpDespues), [xpAntes, xpDespues]);
   const [paso, setPaso] = useState(0);
   const [ancho, setAncho] = useState(() => tramos[0]?.fracInicio ?? 0);
@@ -75,7 +75,7 @@ function BarraNivel({ xpAntes, xpDespues, marcoPersonal }: { xpAntes: number; xp
   }, [paso, tramos]);
 
   const nivelActual = tramos[paso]?.nivel ?? tramos[tramos.length - 1]?.nivel ?? 1;
-  const marco = marcoPorNivel(nivelActual);
+  const marco = marcoPorNivel(nivelActual, ciclo);
 
   return (
     <div className="text-center">
@@ -104,11 +104,13 @@ function BarraNivel({ xpAntes, xpDespues, marcoPersonal }: { xpAntes: number; xp
 export function RevealXp({
   avatarConfig,
   marcoPersonal,
+  ciclo = 0,
   xp,
   onSiguiente,
 }: {
   avatarConfig: AvatarConfig;
   marcoPersonal: MarcoPerfil;
+  ciclo?: number;
   xp: {
     ganada: number;
     antes: number;
@@ -129,7 +131,7 @@ export function RevealXp({
       <AvatarFrame config={avatarConfig} marco={marcoPersonal} className="mb-6 h-20 w-20" imageSizes="80px" />
 
       <div className="mb-6 w-full rounded-3xl border border-borde bg-tarjeta p-5">
-        <BarraNivel xpAntes={xp.antes} xpDespues={xp.despues} marcoPersonal={marcoPersonal} />
+        <BarraNivel xpAntes={xp.antes} xpDespues={xp.despues} marcoPersonal={marcoPersonal} ciclo={ciclo} />
       </div>
 
       <ul className="mb-8 w-full space-y-2">

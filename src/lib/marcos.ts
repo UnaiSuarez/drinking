@@ -26,7 +26,27 @@ export type MarcoPerfil =
   | "liga-oro"
   | "liga-diamante"
   | "liga-maestro"
-  | "liga-challenger";
+  | "liga-challenger"
+  // Marcos de nivel (ciclo 0, antes del primer prestigio). Exclusivos: no
+  // están en la tienda, solo se consiguen subiendo de nivel.
+  | "acero"
+  | "zafiro"
+  | "rubi"
+  | "esmeralda"
+  | "platino"
+  // Marcos de nivel (ciclo 1+, tras el primer prestigio). Mismos hitos de
+  // nivel, otro estilo, para que se note que ya has prestigiado.
+  | "obsidiana"
+  | "amatista"
+  | "topacio"
+  | "granate"
+  | "corona"
+  // Marcos de prestigio (uno por cada ascenso, del 1 al 5). Exclusivos.
+  | "eclipse"
+  | "supernova"
+  | "quasar"
+  | "singularidad"
+  | "infinito";
 
 /**
  * Orden de "peor a mejor" para mostrar marcos en galerías (Inventario,
@@ -62,6 +82,24 @@ export const MARCO_ORDEN: MarcoPerfil[] = [
   "llamas",
   "challenger",
   "oro",
+  // Nivel, ciclo 0
+  "acero",
+  "zafiro",
+  "rubi",
+  "esmeralda",
+  "platino",
+  // Nivel, ciclo 1+
+  "obsidiana",
+  "amatista",
+  "topacio",
+  "granate",
+  "corona",
+  // Prestigio
+  "eclipse",
+  "supernova",
+  "quasar",
+  "singularidad",
+  "infinito",
   // Liga (escalera propia de la temporada)
   "liga-bronce",
   "liga-plata",
@@ -187,35 +225,116 @@ export const MARCO_INFO: Record<
     nombre: "Challenger del Vodka",
     descripcion: "Corona única del nº1: rayos, destellos y trono vacante.",
   },
+  acero: {
+    nombre: "Acero de Barra",
+    descripcion: "Nivel 10. Exclusivo: no se vende, solo se sube de nivel.",
+  },
+  zafiro: {
+    nombre: "Zafiro de Ronda",
+    descripcion: "Nivel 20. Exclusivo: no se vende, solo se sube de nivel.",
+  },
+  rubi: {
+    nombre: "Rubí de Barra",
+    descripcion: "Nivel 30. Exclusivo: no se vende, solo se sube de nivel.",
+  },
+  esmeralda: {
+    nombre: "Esmeralda Nocturna",
+    descripcion: "Nivel 40. Exclusivo: no se vende, solo se sube de nivel.",
+  },
+  platino: {
+    nombre: "Platino de Cierre",
+    descripcion: "Nivel 50. Exclusivo: no se vende, solo se sube de nivel.",
+  },
+  obsidiana: {
+    nombre: "Obsidiana Renacida",
+    descripcion: "Nivel 10 tras tu primer prestigio. Exclusivo, no se vende.",
+  },
+  amatista: {
+    nombre: "Amatista Renacida",
+    descripcion: "Nivel 20 tras tu primer prestigio. Exclusivo, no se vende.",
+  },
+  topacio: {
+    nombre: "Topacio Renacido",
+    descripcion: "Nivel 30 tras tu primer prestigio. Exclusivo, no se vende.",
+  },
+  granate: {
+    nombre: "Granate Renacido",
+    descripcion: "Nivel 40 tras tu primer prestigio. Exclusivo, no se vende.",
+  },
+  corona: {
+    nombre: "Corona Renacida",
+    descripcion: "Nivel 50 tras tu primer prestigio. Exclusivo, no se vende.",
+  },
+  eclipse: {
+    nombre: "Eclipse",
+    descripcion: "Recompensa del 1er prestigio. Exclusivo, no se vende.",
+  },
+  supernova: {
+    nombre: "Supernova",
+    descripcion: "Recompensa del 2º prestigio. Exclusivo, no se vende.",
+  },
+  quasar: {
+    nombre: "Quásar",
+    descripcion: "Recompensa del 3er prestigio. Exclusivo, no se vende.",
+  },
+  singularidad: {
+    nombre: "Singularidad",
+    descripcion: "Recompensa del 4º prestigio. Exclusivo, no se vende.",
+  },
+  infinito: {
+    nombre: "Infinito",
+    descripcion: "Recompensa del 5º prestigio. Exclusivo, no se vende.",
+  },
 };
 
 /**
  * Un marco nuevo cada 10 niveles hasta el 50. Al llegar al nivel se añade
  * al inventario (ver recompensar_niveles_xp en Postgres); no se equipa
  * solo, el jugador elige ponérselo desde la tienda/inventario como
- * cualquier otro marco. marcoPorNivel() da el del tramo más alto ya
- * alcanzado, usado solo como referencia (p. ej. la animación de subida de
+ * cualquier otro marco. Son exclusivos de nivel: no están en la tienda.
+ *
+ * Cambian de estilo la primera vez que haces prestigio: MARCO_NIVEL_HITOS_0
+ * son los del ciclo 0 (antes de prestigiar nunca), MARCO_NIVEL_HITOS_1 los
+ * de cualquier ciclo 1 o superior. marcosNivelHitos(ciclo) da la lista que
+ * corresponde; marcoPorNivel() da el hito más alto ya alcanzado en ese
+ * ciclo, usado solo como referencia (p. ej. la animación de subida de
  * nivel), nunca como marco equipado por defecto.
  */
-export const MARCO_NIVEL_HITOS: { nivel: number; marco: MarcoPerfil }[] = [
-  { nivel: 10, marco: "plata" },
-  { nivel: 20, marco: "cosmico" },
-  { nivel: 30, marco: "hielo" },
-  { nivel: 40, marco: "aureola" },
-  { nivel: 50, marco: "neon" },
+export const MARCO_NIVEL_HITOS_0: { nivel: number; marco: MarcoPerfil }[] = [
+  { nivel: 10, marco: "acero" },
+  { nivel: 20, marco: "zafiro" },
+  { nivel: 30, marco: "rubi" },
+  { nivel: 40, marco: "esmeralda" },
+  { nivel: 50, marco: "platino" },
 ];
+
+export const MARCO_NIVEL_HITOS_1: { nivel: number; marco: MarcoPerfil }[] = [
+  { nivel: 10, marco: "obsidiana" },
+  { nivel: 20, marco: "amatista" },
+  { nivel: 30, marco: "topacio" },
+  { nivel: 40, marco: "granate" },
+  { nivel: 50, marco: "corona" },
+];
+
+/** Todos los hitos de nivel posibles, de cualquier ciclo: para validar qué
+ * marcos son legítimos en el inventario de un jugador (ver tienda.ts). */
+export const MARCO_NIVEL_HITOS_TODOS = [...MARCO_NIVEL_HITOS_0, ...MARCO_NIVEL_HITOS_1];
+
+export function marcosNivelHitos(ciclo: number): { nivel: number; marco: MarcoPerfil }[] {
+  return ciclo >= 1 ? MARCO_NIVEL_HITOS_1 : MARCO_NIVEL_HITOS_0;
+}
 
 export const MARCO_PRESTIGIO_HITOS: { prestigio: number; marco: MarcoPerfil }[] = [
-  { prestigio: 1, marco: "disco" },
-  { prestigio: 2, marco: "reliquia" },
-  { prestigio: 3, marco: "prisma" },
-  { prestigio: 4, marco: "trono" },
-  { prestigio: 5, marco: "llamas" },
+  { prestigio: 1, marco: "eclipse" },
+  { prestigio: 2, marco: "supernova" },
+  { prestigio: 3, marco: "quasar" },
+  { prestigio: 4, marco: "singularidad" },
+  { prestigio: 5, marco: "infinito" },
 ];
 
-export function marcoPorNivel(nivel: number): MarcoPerfil {
+export function marcoPorNivel(nivel: number, ciclo = 0): MarcoPerfil {
   let actual: MarcoPerfil = "madera";
-  for (const hito of MARCO_NIVEL_HITOS) {
+  for (const hito of marcosNivelHitos(ciclo)) {
     if (nivel >= hito.nivel) actual = hito.marco;
   }
   return actual;

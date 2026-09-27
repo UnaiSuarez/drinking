@@ -3,7 +3,7 @@ import BackButton from "@/components/BackButton";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
-import { MARCO_INFO, MARCO_NIVEL_HITOS, MARCO_PRESTIGIO_HITOS, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
+import { MARCO_INFO, MARCO_PRESTIGIO_HITOS, marcoPorLiga, marcosNivelHitos, type MarcoPerfil } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 import PrestigioPanel from "@/components/PrestigioPanel";
 import { calcularDivision } from "@/lib/liga";
@@ -148,8 +148,13 @@ export default async function NivelesPage({
         </section>
       )}
 
+      <p className="mb-3 text-xs text-texto2">
+        {ciclo >= 1
+          ? "Ya has hecho prestigio: estos hitos de nivel te dan la versión renacida del marco."
+          : "Al hacer tu primer prestigio, estos mismos hitos de nivel cambian a una versión renacida distinta."}
+      </p>
       <ul className="space-y-3">
-        {MARCO_NIVEL_HITOS.map(({ nivel, marco }) => {
+        {marcosNivelHitos(ciclo).map(({ nivel, marco }) => {
           const info = MARCO_INFO[marco];
           const xpNecesaria = xpTotalParaNivel(nivel);
           const conseguido = marcosObtenidos.includes(marco);

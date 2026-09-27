@@ -279,6 +279,20 @@ export default async function PodioPage({
     miXp = { ganada, antes: despues - ganada, despues, desglose };
   }
 
+  // Ciclo de prestigio actual: los marcos de nivel cambian de estilo tras
+  // el primer prestigio, así que la barra de nivel necesita saberlo.
+  let miCiclo = 0;
+  if (user) {
+    const { data: prestigio } = await supabase
+      .from("prestigios")
+      .select("ciclo")
+      .eq("usuario_id", user.id)
+      .order("ciclo", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    miCiclo = prestigio?.ciclo ?? 0;
+  }
+
   // Progreso de liga: comparamos el PL actual (ya con el de esta noche
   // sumado) contra el que había antes de cerrarla, incluyendo el cambio de
   // posición/división que eso supone dentro de la clasificación.
@@ -370,6 +384,7 @@ export default async function PodioPage({
       premioPodio={premioPodio}
       esAdmin={esAdmin}
       miXp={miXp}
+      miCiclo={miCiclo}
       miLiga={miLiga}
       userId={user?.id ?? null}
     />

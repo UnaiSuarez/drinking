@@ -244,6 +244,56 @@ body {
     drop-shadow(0 0 24px rgba(255, 213, 74, 0.72))
     drop-shadow(0 0 14px rgba(45, 226, 230, 0.48));
 }
+/* Marcos exclusivos de nivel (ciclo 0) y prestigio: no se venden en tienda. */
+.avatar-frame-acero {
+  filter: drop-shadow(0 0 10px rgba(199, 204, 219, 0.4));
+}
+.avatar-frame-zafiro {
+  filter: drop-shadow(0 0 14px rgba(74, 144, 255, 0.48));
+}
+.avatar-frame-rubi {
+  filter: drop-shadow(0 0 14px rgba(255, 46, 91, 0.48));
+}
+.avatar-frame-esmeralda {
+  filter: drop-shadow(0 0 14px rgba(45, 226, 138, 0.48));
+}
+.avatar-frame-platino {
+  filter: drop-shadow(0 0 16px rgba(245, 241, 232, 0.5));
+}
+/* Marcos exclusivos de nivel, ciclo 1+ (tras el primer prestigio). */
+.avatar-frame-obsidiana {
+  filter: drop-shadow(0 0 16px rgba(124, 58, 237, 0.5));
+}
+.avatar-frame-amatista {
+  filter: drop-shadow(0 0 16px rgba(167, 139, 250, 0.52));
+}
+.avatar-frame-topacio {
+  filter: drop-shadow(0 0 16px rgba(255, 182, 39, 0.5));
+}
+.avatar-frame-granate {
+  filter: drop-shadow(0 0 16px rgba(255, 46, 91, 0.5));
+}
+.avatar-frame-corona {
+  filter: drop-shadow(0 0 18px rgba(255, 213, 74, 0.56));
+}
+/* Marcos exclusivos de prestigio (uno por cada ascenso, 1 al 5). */
+.avatar-frame-eclipse {
+  filter: drop-shadow(0 0 18px rgba(255, 138, 31, 0.54));
+}
+.avatar-frame-supernova {
+  filter: drop-shadow(0 0 20px rgba(255, 46, 147, 0.58));
+}
+.avatar-frame-quasar {
+  filter: drop-shadow(0 0 20px rgba(45, 226, 230, 0.58));
+}
+.avatar-frame-singularidad {
+  filter: drop-shadow(0 0 22px rgba(124, 58, 237, 0.6));
+}
+.avatar-frame-infinito {
+  filter:
+    drop-shadow(0 0 22px rgba(45, 226, 230, 0.5))
+    drop-shadow(0 0 12px rgba(255, 46, 147, 0.4));
+}
 @keyframes marco-corona-viva {
   0%, 100% { opacity: 0.08; transform: rotate(-8deg) scale(0.94); }
   50% { opacity: 0.26; transform: rotate(8deg) scale(1.04); }

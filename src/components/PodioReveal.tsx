@@ -94,6 +94,7 @@ export default function PodioReveal({
   premioPodio,
   esAdmin,
   miXp,
+  miCiclo = 0,
   miLiga,
   userId,
 }: {
@@ -106,6 +107,7 @@ export default function PodioReveal({
   premioPodio: PremioPodio | null;
   esAdmin: boolean;
   miXp: MiXpNoche | null;
+  miCiclo?: number;
   miLiga: MiLigaNoche | null;
   userId: string | null;
 }) {
@@ -383,7 +385,7 @@ export default function PodioReveal({
 
   if (terminado && postFase === "xp" && miXp && miResultado) {
     return (
-      <RevealXp avatarConfig={miResultado.avatarConfig} marcoPersonal={miResultado.marcoPersonal} xp={miXp} onSiguiente={avanzarPostFase} />
+      <RevealXp avatarConfig={miResultado.avatarConfig} marcoPersonal={miResultado.marcoPersonal} ciclo={miCiclo} xp={miXp} onSiguiente={avanzarPostFase} />
     );
   }
   if (terminado && postFase === "liga" && miLiga && miResultado) {

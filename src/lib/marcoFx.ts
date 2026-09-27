@@ -12,6 +12,10 @@ const FX_POR_MARCO: Partial<Record<MarcoPerfil, FxKind>> = {
   llamas: "fire", magma: "fire", "liga-maestro": "fire",
   disco: "disco", cosmico: "cosmic", prisma: "prisma", aureola: "halo",
   trono: "crown", portal: "portal", glitch: "glitch", reliquia: "dust",
+  // Nivel (ciclo 0) y prestigio: marcos exclusivos, no vendibles en tienda.
+  zafiro: "cristal", rubi: "shine", esmeralda: "shine", platino: "shine",
+  obsidiana: "glitch", amatista: "cosmic", topacio: "shine", granate: "fire", corona: "crown",
+  eclipse: "electric", supernova: "fire", quasar: "cosmic", singularidad: "portal", infinito: "prisma",
 };
 
 export function fxDeMarco(marco: MarcoPerfil): FxKind | null {

@@ -3,7 +3,7 @@ import {
   parseAvatarConfig,
   type AvatarConfig,
 } from "@/lib/avatar";
-import { MARCO_NIVEL_HITOS, MARCO_PRESTIGIO_HITOS, type MarcoPerfil } from "@/lib/marcos";
+import { MARCO_NIVEL_HITOS_TODOS, MARCO_PRESTIGIO_HITOS, type MarcoPerfil } from "@/lib/marcos";
 import { type CartaRareza } from "@/lib/cofresDesign";
 
 export type TiendaRareza = "comun" | "rara" | "epica" | "legendaria" | "unica";
@@ -527,11 +527,13 @@ export function personajePorImagen(imagen: string | null): PersonajeCatalogo | n
   );
 }
 
-// Marcos que pueden estar en el inventario: los de la tienda y los que se
-// desbloquean solos al llegar a un nivel (MARCO_NIVEL_HITOS).
+// Marcos que pueden estar en el inventario: los de la tienda y los
+// exclusivos que se desbloquean solos al llegar a un nivel o hacer
+// prestigio (MARCO_NIVEL_HITOS_TODOS incluye los de los dos ciclos, porque
+// un jugador puede llevar en su inventario marcos de un ciclo anterior).
 const MARCOS_COMPRABLES = new Set([
   ...TIENDA_MARCOS.map((marco) => marco.id),
-  ...MARCO_NIVEL_HITOS.map((hito) => hito.marco),
+  ...MARCO_NIVEL_HITOS_TODOS.map((hito) => hito.marco),
   ...MARCO_PRESTIGIO_HITOS.map((hito) => hito.marco),
 ]);
 const AVATARES_COMPRABLES = new Set(TIENDA_AVATARES.map((avatar) => avatar.id));

@@ -20,6 +20,7 @@ type PerfilDetalle = {
   saldo: number;
   cartas: number;
   cofres: number;
+  ciclo: number;
 };
 
 export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
@@ -68,6 +69,13 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
       .select("pl")
       .eq("usuario_id", id);
     const plHistoricos = (ligaRaw ?? []).reduce((acc, l) => acc + (l.pl ?? 0), 0);
+    const { data: prestigioRaw } = await supabase
+      .from("prestigios")
+      .select("ciclo")
+      .eq("usuario_id", id)
+      .order("ciclo", { ascending: false })
+      .limit(1)
+      .maybeSingle();
     const inventario = parseInventarioState(data.avatar_config);
     const tienda = parseTiendaState(data.avatar_config);
     const xp = data.xp ?? 0;
@@ -78,6 +86,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
       saldo: calcularSaldoChapas({ xp, plHistoricos, tienda }),
       cartas: totalItems(inventario.cartas),
       cofres: totalItems(inventario.cofres),
+      ciclo: prestigioRaw?.ciclo ?? 0,
     });
   }
 
@@ -156,7 +165,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
             <p className="text-xs text-texto2">
               Nivel {progresoNivel(seleccionado.xp).nivel} · {seleccionado.xp} XP ·{" "}
               {seleccionado.saldo} chapas · {seleccionado.cartas} cartas ·{" "}
-              {seleccionado.cofres} cofres
+              {seleccionado.cofres} cofres · Prestigio {seleccionado.ciclo}
             </p>
           </div>
 
@@ -246,6 +255,30 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
                 Fijar nivel
               </button>
             </div>
+          </section>
+
+          <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+            <p className="mb-2 font-titulo text-sm text-texto">🏆 Prestigio</p>
+            <p className="mb-2 text-xs text-texto2">
+              Sube al siguiente ciclo de prestigio sin exigir el nivel 50:
+              reinicia su XP a 0, le da el marco exclusivo de ese ciclo
+              ({seleccionado.ciclo + 1 <= 5 ? `ciclo ${seleccionado.ciclo + 1}` : "sin marco nuevo a partir del 6º"})
+              y traslada sus chapas ganadas a bonus, igual que el prestigio
+              normal.
+            </p>
+            <button
+              disabled={aplicando}
+              onClick={() =>
+                aplicar(() =>
+                  supabase.rpc("admin_ascender_prestigio", {
+                    p_usuario: seleccionado.id,
+                  })
+                )
+              }
+              className="w-full rounded-xl bg-ambar py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
+            >
+              Ascender a prestigio {seleccionado.ciclo + 1}
+            </button>
           </section>
 
           <section className="rounded-2xl border border-borde bg-tarjeta p-4">
