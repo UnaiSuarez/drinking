@@ -15,6 +15,7 @@ import BebidaSueltaLogger, {
 import SojasLogger from "@/components/SojasLogger";
 import AvanceMedallasSala from "@/components/AvanceMedallasSala";
 import CartasSalaClient from "@/components/CartasSalaClient";
+import MomentosAlbumClient from "@/components/MomentosAlbumClient";
 import { useTraining } from "@/components/TrainingContext";
 
 export type Miembro = {
@@ -559,6 +560,8 @@ export default function SalaView({
           </ul>
         )}
       </details>
+
+      <MomentosAlbumClient salaId={sala.id} userId={userId} esAdmin={esAdmin} />
     </main>
   );
 }
