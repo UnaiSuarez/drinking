@@ -33,6 +33,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
 
   const [deltaChapas, setDeltaChapas] = useState("10");
   const [deltaXp, setDeltaXp] = useState("50");
+  const [nivelExacto, setNivelExacto] = useState("10");
   const [cartaId, setCartaId] = useState(CARTAS_COFRES[0]?.id ?? "");
   const [deltaCarta, setDeltaCarta] = useState("1");
   const [cofreId, setCofreId] = useState<string>(COFRES_TIPOS[0]?.id ?? "");
@@ -211,6 +212,38 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
                 className="flex-1 rounded-xl bg-ambar py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
               >
                 Aplicar
+              </button>
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+            <p className="mb-2 font-titulo text-sm text-texto">🎚️ Nivel exacto</p>
+            <p className="mb-2 text-xs text-texto2">
+              No mueve la XP a ojo: calcula la base exacta de ese nivel y la
+              fija, así que el jugador recibe también los cofres de nivel y
+              medalla de todos los niveles intermedios en cuanto entre.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={1}
+                value={nivelExacto}
+                onChange={(e) => setNivelExacto(e.target.value)}
+                className="w-24 rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+              />
+              <button
+                disabled={aplicando || !Number(nivelExacto)}
+                onClick={() =>
+                  aplicar(() =>
+                    supabase.rpc("admin_establecer_nivel", {
+                      p_usuario: seleccionado.id,
+                      p_nivel: Math.max(1, Math.floor(Number(nivelExacto)) || 1),
+                    })
+                  )
+                }
+                className="flex-1 rounded-xl bg-ambar py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
+              >
+                Fijar nivel
               </button>
             </div>
           </section>
