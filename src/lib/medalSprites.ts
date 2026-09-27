@@ -89,17 +89,35 @@ const SPRITES = new Map(
   ])
 );
 
-// Phase III/IV reuse water-themed art until their dedicated illustrations are ready.
+// Standalone artwork, independent of the original sprite sheets.
 for (const [slug, src] of [
   ["sojas-i", "/medals/ai/items-main/sojas-i.webp"],
   ["sojas-ii", "/medals/ai/items-main/sojas-ii.webp"],
-  ["sojas-iii", "/medals/ai/items-main/hidratado.webp"],
-  ["sojas-iv", "/medals/ai/items-main/sobrio-designado.webp"],
+  ["sojas-iii", "/medals/ai/items-main/sojas-iii.webp"],
+  ["sojas-iv", "/medals/ai/items-main/sojas-iv.webp"],
+  ["sala-ritual", "/medals/ai/items-main/sala-ritual.webp"],
+  ["sala-cronista", "/medals/ai/items-main/sala-cronista.webp"],
+  ["sala-madrugada", "/medals/ai/items-main/sala-madrugada.webp"],
+  ["sala-constancia", "/medals/ai/items-main/sala-constancia.webp"],
+  ["sala-leyenda", "/medals/ai/items-main/sala-leyenda.webp"],
+  ["coleccionista-raras", "/medals/ai/items-main/coleccionista-raras.webp"],
+  ["coleccionista-legendaria", "/medals/ai/items-main/coleccionista-legendaria.webp"],
+  ["sumiller-1", "/medals/ai/items-main/sumiller-1.webp"],
+  ["sumiller-2", "/medals/ai/items-main/sumiller-2.webp"],
 ] as const) {
   SPRITES.set(slug, { sheet: 0, row: 0, col: 0, src });
 }
 
 const ALIASES: Record<string, string> = {
+  "ritual-de-sala": "sala-ritual",
+  "cronista-de-sala": "sala-cronista",
+  "sesion-de-madrugada": "sala-madrugada",
+  "constancia-de-hierro": "sala-constancia",
+  "leyenda-del-barrio": "sala-leyenda",
+  coleccionista: "coleccionista-raras",
+  "leyenda-viva": "coleccionista-legendaria",
+  "sumiller-i": "sumiller-1",
+  "sumiller-ii": "sumiller-2",
   "ganador-de-la-noche": "campeon-de-temporada",
   ganador: "campeon-de-temporada",
   campeon: "campeon-de-temporada",

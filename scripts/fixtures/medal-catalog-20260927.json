@@ -1,0 +1,310 @@
+[
+  {
+    "slug": "buho",
+    "nombre": "Búho"
+  },
+  {
+    "slug": "caballo_negro",
+    "nombre": "El Caballo Negro"
+  },
+  {
+    "slug": "campeon_temporada",
+    "nombre": "Campeón de Temporada"
+  },
+  {
+    "slug": "cenicienta",
+    "nombre": "Cenicienta"
+  },
+  {
+    "slug": "centurion_1",
+    "nombre": "Centurión I"
+  },
+  {
+    "slug": "centurion_2",
+    "nombre": "Centurión II"
+  },
+  {
+    "slug": "centurion_3",
+    "nombre": "Centurión III"
+  },
+  {
+    "slug": "centurion_4",
+    "nombre": "Centurión IV"
+  },
+  {
+    "slug": "cervecero_1",
+    "nombre": "Cervecero I"
+  },
+  {
+    "slug": "cervecero_2",
+    "nombre": "Cervecero II"
+  },
+  {
+    "slug": "cervecero_3",
+    "nombre": "Cervecero III"
+  },
+  {
+    "slug": "cervecero_4",
+    "nombre": "Cervecero IV"
+  },
+  {
+    "slug": "coctelero_1",
+    "nombre": "Coctelero I"
+  },
+  {
+    "slug": "coctelero_2",
+    "nombre": "Coctelero II"
+  },
+  {
+    "slug": "coctelero_3",
+    "nombre": "Coctelero III"
+  },
+  {
+    "slug": "coctelero_4",
+    "nombre": "Coctelero IV"
+  },
+  {
+    "slug": "coleccionista_legendaria",
+    "nombre": "Leyenda Viva"
+  },
+  {
+    "slug": "coleccionista_raras",
+    "nombre": "Coleccionista"
+  },
+  {
+    "slug": "combo",
+    "nombre": "Combo"
+  },
+  {
+    "slug": "cumple_legendario",
+    "nombre": "Cumpleañero Legendario"
+  },
+  {
+    "slug": "cumple_responsable",
+    "nombre": "Cumpleañero Responsable"
+  },
+  {
+    "slug": "degustador",
+    "nombre": "Degustador"
+  },
+  {
+    "slug": "desaparecido_combate",
+    "nombre": "Desaparecido en Combate"
+  },
+  {
+    "slug": "dinastia",
+    "nombre": "Dinastía"
+  },
+  {
+    "slug": "el_perfecto",
+    "nombre": "El Perfecto"
+  },
+  {
+    "slug": "en_racha_1",
+    "nombre": "En Racha I"
+  },
+  {
+    "slug": "en_racha_2",
+    "nombre": "En Racha II"
+  },
+  {
+    "slug": "en_racha_3",
+    "nombre": "En Racha III"
+  },
+  {
+    "slug": "enciclopedia",
+    "nombre": "Enciclopedia Etílica"
+  },
+  {
+    "slug": "escalador",
+    "nombre": "Escalador"
+  },
+  {
+    "slug": "espejo",
+    "nombre": "El Espejo"
+  },
+  {
+    "slug": "eterno_segundon",
+    "nombre": "Eterno Segundón"
+  },
+  {
+    "slug": "fantasma",
+    "nombre": "El Fantasma"
+  },
+  {
+    "slug": "fijo_casa",
+    "nombre": "Fijo de la Casa"
+  },
+  {
+    "slug": "finde_laboral",
+    "nombre": "Lunes de Oficina"
+  },
+  {
+    "slug": "francotirador",
+    "nombre": "Francotirador"
+  },
+  {
+    "slug": "gallina",
+    "nombre": "Gallina"
+  },
+  {
+    "slug": "ganador",
+    "nombre": "Ganador de la noche"
+  },
+  {
+    "slug": "gemelos",
+    "nombre": "Gemelos"
+  },
+  {
+    "slug": "grillo",
+    "nombre": "Grillo"
+  },
+  {
+    "slug": "happy_hour",
+    "nombre": "Happy Hour"
+  },
+  {
+    "slug": "hidratado",
+    "nombre": "Hidratado"
+  },
+  {
+    "slug": "horas_bajas",
+    "nombre": "En Horas Bajas"
+  },
+  {
+    "slug": "jackpot",
+    "nombre": "El Jackpot"
+  },
+  {
+    "slug": "kamikaze",
+    "nombre": "Kamikaze"
+  },
+  {
+    "slug": "lento_seguro",
+    "nombre": "Lento pero Seguro"
+  },
+  {
+    "slug": "leyenda_suicida",
+    "nombre": "Leyenda Suicida"
+  },
+  {
+    "slug": "licantropo",
+    "nombre": "Licántropo"
+  },
+  {
+    "slug": "madrugador",
+    "nombre": "Madrugador"
+  },
+  {
+    "slug": "media_docena",
+    "nombre": "Media Docena"
+  },
+  {
+    "slug": "monumento",
+    "nombre": "Monumento Nacional"
+  },
+  {
+    "slug": "muro",
+    "nombre": "El Muro"
+  },
+  {
+    "slug": "nochevieja_congelada",
+    "nombre": "Año Nuevo Congelado"
+  },
+  {
+    "slug": "oceano",
+    "nombre": "El Océano"
+  },
+  {
+    "slug": "poker_copas",
+    "nombre": "Póker de Copas"
+  },
+  {
+    "slug": "remontada",
+    "nombre": "La Remontada"
+  },
+  {
+    "slug": "ronda_torera",
+    "nombre": "Ronda Torera"
+  },
+  {
+    "slug": "sala_constancia",
+    "nombre": "Constancia de Hierro"
+  },
+  {
+    "slug": "sala_cronista",
+    "nombre": "Cronista de Sala"
+  },
+  {
+    "slug": "sala_leyenda",
+    "nombre": "Leyenda del Barrio"
+  },
+  {
+    "slug": "sala_madrugada",
+    "nombre": "Sesión de Madrugada"
+  },
+  {
+    "slug": "sala_ritual",
+    "nombre": "Ritual de Sala"
+  },
+  {
+    "slug": "siesta",
+    "nombre": "La Siesta"
+  },
+  {
+    "slug": "sobrio_designado",
+    "nombre": "Sobrio Designado"
+  },
+  {
+    "slug": "sojas-i",
+    "nombre": "SOJAS I"
+  },
+  {
+    "slug": "sojas-ii",
+    "nombre": "SOJAS II"
+  },
+  {
+    "slug": "sojas-iii",
+    "nombre": "SOJAS III"
+  },
+  {
+    "slug": "sojas-iv",
+    "nombre": "SOJAS IV"
+  },
+  {
+    "slug": "sprint",
+    "nombre": "Sprint"
+  },
+  {
+    "slug": "sumiller_1",
+    "nombre": "Sumiller I"
+  },
+  {
+    "slug": "sumiller_2",
+    "nombre": "Sumiller II"
+  },
+  {
+    "slug": "tricampeon",
+    "nombre": "Tricampeón"
+  },
+  {
+    "slug": "turbo",
+    "nombre": "Turbo"
+  },
+  {
+    "slug": "veterano_1",
+    "nombre": "Veterano I"
+  },
+  {
+    "slug": "veterano_2",
+    "nombre": "Veterano II"
+  },
+  {
+    "slug": "veterano_3",
+    "nombre": "Veterano III"
+  },
+  {
+    "slug": "veterano_4",
+    "nombre": "Veterano IV"
+  }
+]

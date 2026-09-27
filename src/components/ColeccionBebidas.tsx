@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 export type BebidaCatalogoItem = {
   id: string;
@@ -32,10 +33,9 @@ const RAREZA_NOMBRE: Record<string, string> = {
 export default function ColeccionBebidas({ items }: { items: BebidaCatalogoItem[] }) {
   const [categoria, setCategoria] = useState("todas");
   const [rareza, setRareza] = useState("todas");
-  const [soloConseguidas, setSoloConseguidas] = useState(false);
 
   const categorias = useMemo(
-    () => [...new Set(items.map((i) => i.categoriaNombre))].sort(),
+    () => [...new Set(items.filter((i) => i.cantidad > 0).map((i) => i.categoriaNombre))].sort(),
     [items]
   );
   const conseguidas = items.filter((i) => i.cantidad > 0).length;
@@ -44,19 +44,22 @@ export default function ColeccionBebidas({ items }: { items: BebidaCatalogoItem[
     (i) =>
       (categoria === "todas" || i.categoriaNombre === categoria) &&
       (rareza === "todas" || i.rareza === rareza) &&
-      (!soloConseguidas || i.cantidad > 0)
+      i.cantidad > 0
   );
 
   return (
     <section className="mb-8">
-      <div className="mb-3 flex items-baseline justify-between">
-        <h2 className="font-titulo text-xl text-texto">
+      <details className="group">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 py-3 [&::-webkit-details-marker]:hidden">
+        <h2 className="min-w-0 font-titulo text-xl text-texto">
           🍹 Bebidas concretas ({conseguidas}/{items.length})
         </h2>
-      </div>
+        <ChevronDown aria-hidden="true" className="h-5 w-5 shrink-0 text-texto2 group-open:rotate-180" />
+      </summary>
 
-      <div className="mb-3 flex flex-wrap gap-2">
+      {conseguidas > 0 && <div className="mb-3 flex flex-wrap gap-2">
         <select
+          aria-label="Categoría de bebida"
           value={categoria}
           onChange={(e) => setCategoria(e.target.value)}
           className="rounded-xl border border-borde bg-tarjeta px-2 py-1.5 text-xs text-texto"
@@ -67,6 +70,7 @@ export default function ColeccionBebidas({ items }: { items: BebidaCatalogoItem[
           ))}
         </select>
         <select
+          aria-label="Rareza de bebida"
           value={rareza}
           onChange={(e) => setRareza(e.target.value)}
           className="rounded-xl border border-borde bg-tarjeta px-2 py-1.5 text-xs text-texto"
@@ -76,49 +80,38 @@ export default function ColeccionBebidas({ items }: { items: BebidaCatalogoItem[
             <option key={r} value={r}>{RAREZA_NOMBRE[r]}</option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={() => setSoloConseguidas((v) => !v)}
-          className={`rounded-xl border px-3 py-1.5 text-xs active:scale-95 ${
-            soloConseguidas ? "border-cian bg-cian/10 text-cian" : "border-borde text-texto2"
-          }`}
-        >
-          {soloConseguidas ? "✓ Solo probadas" : "Solo probadas"}
-        </button>
-      </div>
+      </div>}
 
       {filtradas.length === 0 ? (
         <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
-          Nada con estos filtros.
+          {conseguidas === 0 ? "Todavía no hay bebidas concretas desbloqueadas." : "Nada con estos filtros."}
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-2">
           {filtradas.map((item) => {
-            const probada = item.cantidad > 0;
             return (
               <li
                 key={item.id}
                 className={`flex items-center gap-2 rounded-xl border bg-tarjeta p-2.5 ${
-                  probada ? RAREZA_ESTILO[item.rareza] ?? "border-borde" : "border-borde opacity-50"
+                  RAREZA_ESTILO[item.rareza] ?? "border-borde"
                 }`}
               >
-                <span className="text-xl">{probada ? item.categoriaIcono : "❔"}</span>
+                <span className="text-xl">{item.categoriaIcono}</span>
                 <div className="min-w-0 flex-1">
-                  <p className={`truncate font-titulo text-xs ${probada ? "text-texto" : "text-texto2"}`}>
-                    {probada ? item.nombre : "???"}
+                  <p className="break-words font-titulo text-xs text-texto">
+                    {item.nombre}
                   </p>
                   <p className="text-[10px] text-texto2">
                     {item.categoriaNombre} · {RAREZA_NOMBRE[item.rareza]}
                   </p>
                 </div>
-                {probada && (
                   <span className="shrink-0 font-titulo text-xs text-ambar">x{item.cantidad}</span>
-                )}
               </li>
             );
           })}
         </ul>
       )}
+      </details>
     </section>
   );
 }

@@ -1,0 +1,187 @@
+{
+  "generator": "Built-in image_gen",
+  "assets": [
+    {
+      "id": "ronda-extra",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-6c6b2e17-f7ea-4c64-a750-ce5ea2157975.png",
+      "prompt": "Square fantasy common card: welcoming cocktail offered on a tavern tray, restrained bronze magic, no text.",
+      "output": "public/cards/ai/items/ronda-extra.webp"
+    },
+    {
+      "id": "confesion-de-barra",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-906b0489-138f-4971-b789-7b6a5d3ffdc6.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for confesion-de-barra, common rarity. Subject: A glowing speech bubble shaped from parchment over a tavern journal and a drink, warm bronze. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, restrained magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/confesion-de-barra.webp"
+    },
+    {
+      "id": "chapa-doble-o-nada",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-b2b86bfc-26f3-4bf3-8d0c-fb3a0af5c5ed.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for chapa-doble-o-nada, common rarity. Subject: One golden bottle-cap coin spinning in midair with two opposite trails over a bar, bronze. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, restrained magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/chapa-doble-o-nada.webp"
+    },
+    {
+      "id": "espia-de-barra",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-5c99101b-430f-4d19-8e73-27cd988a6c8b.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for espia-de-barra, common rarity. Subject: A detective magnifying glass revealing hidden playing cards under a tavern counter, bronze. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, restrained magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/espia-de-barra.webp"
+    },
+    {
+      "id": "copa-doble",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-7893adad-ec45-4d27-a280-ff1c1bdb44b8.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for copa-doble, rare rarity. Subject: Two identical elegant goblets joined by a luminous blue energy bridge. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, restrained magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/copa-doble.webp"
+    },
+    {
+      "id": "autografo",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-a6ecb75a-4919-4541-a462-25919bc4e3b6.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for autografo, rare rarity. Subject: A silver fountain pen signing an abstract illegible flourish on a tavern receipt, blue magical ink. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, restrained magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/autografo.webp"
+    },
+    {
+      "id": "ronda-de-la-noche",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-9377574e-b2e0-4431-918a-738f905c1489.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for ronda-de-la-noche, rare rarity. Subject: A crescent moon above one glass on a midnight tavern balcony, silver and blue. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/ronda-de-la-noche.webp"
+    },
+    {
+      "id": "ronda-pagada",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-ff0f4b86-e5b3-4be0-870b-d9508fbb354d.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for ronda-pagada, rare rarity. Subject: A gift ribbon around a goblet offered by a single gloved hand, sapphire magic. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/ronda-pagada.webp"
+    },
+    {
+      "id": "regalo-anonimo",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-e3c4adba-508c-4169-9cc8-7f864ff44f9c.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for regalo-anonimo, rare rarity. Subject: An unsigned sealed envelope spilling gold bottle-cap coins beside a small masquerade mask, blue rim lighting. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/regalo-anonimo.webp"
+    },
+    {
+      "id": "cazador-de-rarezas",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-2bb7f23e-b4b5-48b4-99d2-5c6e96eac44e.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for cazador-de-rarezas, epic rarity. Subject: An ornate compass pointing toward one rare jeweled bottle inside an open collector case, violet energy. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/cazador-de-rarezas.webp"
+    },
+    {
+      "id": "cata-a-ciegas",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-cf24116f-dbbf-433b-b276-56d9adc17baa.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for cata-a-ciegas, epic rarity. Subject: A silk blindfold floating over a tasting goblet and a familiar bottle, violet magical swirls. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/cata-a-ciegas.webp"
+    },
+    {
+      "id": "chuleta",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-55df3ffd-fbf1-4de4-8263-6bca7839e5e9.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for chuleta, epic rarity. Subject: A sly gloved hand sliding a glowing collectible card from an ornate card case, violet smoke. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/chuleta.webp"
+    },
+    {
+      "id": "fiebre-de-sala",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-d37b8b46-478c-4e62-a614-ec3aec035a69.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for fiebre-de-sala, epic rarity. Subject: A miniature fantasy tavern radiating warm fire magic through all its windows, violet accents, no people. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/fiebre-de-sala.webp"
+    },
+    {
+      "id": "duplicado-expres",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-fdf9de45-4183-4545-b8d5-55317343ebd4.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for duplicado-expres, legendary rarity. Subject: A spectacular golden arcane duplication machine producing two matching blank ornate cards, luminous gold lightning, rich detail. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/duplicado-expres.webp"
+    },
+    {
+      "id": "barra-libre-para-todos",
+      "type": "card",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-84cccd56-9a97-436b-b54f-cb070bc5dfa3.png",
+      "prompt": "Use case: stylized-concept. One square fantasy collectible game card illustration for barra-libre-para-todos, legendary rarity. Subject: A grand magical tavern counter with three ornate gift treasure chests radiating golden light to surrounding empty seats, triumphant rich gold. Polished painterly fantasy item art, crisp detailed glass and metal, centered readable composition, midnight navy background, magical highlights appropriate to rarity. No text, letters, numbers, logos, watermarks or outer card frame. One asset only.",
+      "output": "public/cards/ai/items/barra-libre-para-todos.webp"
+    },
+    {
+      "id": "sala-ritual",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-67509478-1c7d-4212-b3d7-4c9bb1f8850a.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sala-ritual, rare. Subject: Silver heraldic shield holding a tavern doorway surrounded by seven small sapphire gems. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Elegant restrained silver and blue ornamentation.",
+      "output": "public/medals/ai/items-main/sala-ritual.webp"
+    },
+    {
+      "id": "sala-cronista",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-72b6aca1-d5a3-4564-9e72-2ae89ef4946a.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sala-cronista, rare. Subject: Silver heraldic medal with a quill crossing an open blue enamel journal. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Elegant restrained silver and blue ornamentation.",
+      "output": "public/medals/ai/items-main/sala-cronista.webp"
+    },
+    {
+      "id": "sala-madrugada",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-276491bd-5f46-4156-be88-d519787161a8.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sala-madrugada, rare. Subject: Silver heraldic badge with a crescent moon and a tiny tavern window glowing under stars. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Elegant restrained silver and blue ornamentation.",
+      "output": "public/medals/ai/items-main/sala-madrugada.webp"
+    },
+    {
+      "id": "sala-constancia",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-e19c9db4-281b-44cc-a179-86143d1ed110.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sala-constancia, epic. Subject: Heavy polished iron and amethyst heraldic medal, interlocked chain ring around a calendar emblem, no numbers. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Prestigious detailed purple and silver ornamentation.",
+      "output": "public/medals/ai/items-main/sala-constancia.webp"
+    },
+    {
+      "id": "sala-leyenda",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-e0baa807-3181-49ea-b48b-3924e0730bc3.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sala-leyenda, legendary. Subject: Majestic golden crowned heraldic badge with a miniature neighborhood tavern, laurel wings and amber gems. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Most prestigious richly layered gold ornamentation.",
+      "output": "public/medals/ai/items-main/sala-leyenda.webp"
+    },
+    {
+      "id": "coleccionista-raras",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-4a287647-4f3d-4386-aa04-e405cf866536.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, coleccionista-raras, rare. Subject: Silver heraldic shield containing three different tiny jeweled bottles in a collectors display, sapphire enamel. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Elegant restrained silver and blue ornamentation.",
+      "output": "public/medals/ai/items-main/coleccionista-raras.webp"
+    },
+    {
+      "id": "coleccionista-legendaria",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-93c59152-c44d-4885-aa11-9228454b196a.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, coleccionista-legendaria, epic. Subject: Ornate amethyst and silver medal holding one radiant golden mythical bottle on a pedestal. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Prestigious detailed purple and silver ornamentation.",
+      "output": "public/medals/ai/items-main/coleccionista-legendaria.webp"
+    },
+    {
+      "id": "sumiller-1",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-5868338d-c312-4c2d-b475-a9c9c8e71971.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sumiller-1, rare. Subject: Silver and sapphire heraldic badge with a tasting tulip glass and barley stalks. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Elegant restrained silver and blue ornamentation.",
+      "output": "public/medals/ai/items-main/sumiller-1.webp"
+    },
+    {
+      "id": "sumiller-2",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-3b1df75b-ff47-461c-a7be-a5a65d4463f1.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sumiller-2, epic. Subject: Elaborate silver and amethyst heraldic badge with a crowned tasting glass, barley laurel and purple gems. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Prestigious detailed purple and silver ornamentation.",
+      "output": "public/medals/ai/items-main/sumiller-2.webp"
+    },
+    {
+      "id": "sojas-iii",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-740ad3d3-61ba-48a4-a159-915095549d91.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sojas-iii, epic. Subject: An elaborate water drop crystal at center of silver shield with amethyst gems, curled water waves and laurel, evolved water badge. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Prestigious detailed purple and silver ornamentation.",
+      "output": "public/medals/ai/items-main/sojas-iii.webp"
+    },
+    {
+      "id": "sojas-iv",
+      "type": "medal",
+      "source": "C:\\Users\\unai6\\.codex\\generated_images\\019f2701-8530-72e0-8119-c20614c2356f\\exec-4461f9bc-0c30-4222-a027-4f8089c32b6c.png",
+      "prompt": "Use case: stylized-concept. Create one square game achievement medal asset, sojas-iv, legendary. Subject: Majestic golden crowned shield with giant luminous aqua water drop, layered tidal waves, golden laurels and turquoise jewels, highest tier water badge. Match existing elaborate fantasy game heraldic medals: sculpted polished metal, raised enamel, crisp gem facets, symmetrical silhouette, readable centerpiece. Front view, entire medal centered with 8% empty margin all sides. TRUE TRANSPARENT BACKGROUND outside solid opaque medal, no cast background, no text, no letters, no numbers, no watermark. Most prestigious richly layered gold ornamentation.",
+      "output": "public/medals/ai/items-main/sojas-iv.webp"
+    }
+  ]
+}

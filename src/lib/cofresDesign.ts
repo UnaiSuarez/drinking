@@ -446,9 +446,10 @@ export const CARTAS_COFRES: CartaCofre[] = [
 
   // Cartas exclusivas de sala permanente: se usan en cualquier momento,
   // sin depender de una noche abierta. No hay PL en sala permanente, así
-  // que pagan en XP y chapas. Sin arte de IA todavía (icono de respaldo).
+  // que pagan en XP y chapas.
   {
     id: "ronda-extra",
+    imagen: "/cards/ai/items/ronda-extra.webp",
     nombre: "Ronda Extra",
     rareza: "comun",
     alcance: "personal",
@@ -459,6 +460,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "confesion-de-barra",
+    imagen: "/cards/ai/items/confesion-de-barra.webp",
     nombre: "Confesión de Barra",
     rareza: "comun",
     alcance: "personal",
@@ -469,6 +471,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "chapa-doble-o-nada",
+    imagen: "/cards/ai/items/chapa-doble-o-nada.webp",
     nombre: "Chapa Doble o Nada",
     rareza: "comun",
     alcance: "economia",
@@ -479,6 +482,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "espia-de-barra",
+    imagen: "/cards/ai/items/espia-de-barra.webp",
     nombre: "Espía de Barra",
     rareza: "comun",
     alcance: "objetivo",
@@ -489,6 +493,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "copa-doble",
+    imagen: "/cards/ai/items/copa-doble.webp",
     nombre: "Copa Doble",
     rareza: "rara",
     alcance: "personal",
@@ -499,6 +504,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "autografo",
+    imagen: "/cards/ai/items/autografo.webp",
     nombre: "Autógrafo",
     rareza: "rara",
     alcance: "personal",
@@ -509,6 +515,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "ronda-de-la-noche",
+    imagen: "/cards/ai/items/ronda-de-la-noche.webp",
     nombre: "Ronda de la Noche",
     rareza: "rara",
     alcance: "personal",
@@ -519,6 +526,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "ronda-pagada",
+    imagen: "/cards/ai/items/ronda-pagada.webp",
     nombre: "Ronda Pagada",
     rareza: "rara",
     alcance: "objetivo",
@@ -529,6 +537,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "regalo-anonimo",
+    imagen: "/cards/ai/items/regalo-anonimo.webp",
     nombre: "Regalo Anónimo",
     rareza: "rara",
     alcance: "objetivo",
@@ -539,6 +548,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "cazador-de-rarezas",
+    imagen: "/cards/ai/items/cazador-de-rarezas.webp",
     nombre: "Cazador de Rarezas",
     rareza: "epica",
     alcance: "personal",
@@ -549,6 +559,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "cata-a-ciegas",
+    imagen: "/cards/ai/items/cata-a-ciegas.webp",
     nombre: "Cata a Ciegas",
     rareza: "epica",
     alcance: "personal",
@@ -559,6 +570,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "chuleta",
+    imagen: "/cards/ai/items/chuleta.webp",
     nombre: "Chuleta",
     rareza: "epica",
     alcance: "objetivo",
@@ -569,6 +581,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "fiebre-de-sala",
+    imagen: "/cards/ai/items/fiebre-de-sala.webp",
     nombre: "Fiebre de Sala",
     rareza: "epica",
     alcance: "global",
@@ -579,6 +592,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "duplicado-expres",
+    imagen: "/cards/ai/items/duplicado-expres.webp",
     nombre: "Duplicado Exprés",
     rareza: "legendaria",
     alcance: "economia",
@@ -589,6 +603,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
   },
   {
     id: "barra-libre-para-todos",
+    imagen: "/cards/ai/items/barra-libre-para-todos.webp",
     nombre: "Barra Libre para Todos",
     rareza: "legendaria",
     alcance: "global",
