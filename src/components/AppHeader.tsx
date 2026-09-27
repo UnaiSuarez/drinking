@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Store } from "lucide-react";
 import { createClient, getCurrentUser } from "@/lib/supabase/server";
 import AvatarFrame from "@/components/AvatarFrame";
 import { parseAvatarConfig } from "@/lib/avatar";
@@ -23,6 +24,9 @@ export default async function AppHeader() {
     .single();
 
   if (!perfil) return null;
+  const { data: prestigio } = await supabase.from("prestigios").select("ciclo")
+    .eq("usuario_id", user.id).order("ciclo", { ascending: false }).limit(1).maybeSingle();
+  const ciclo = prestigio?.ciclo ?? 0;
 
   const { data: participaciones } = await supabase
     .from("noche_jugadores")
@@ -63,7 +67,7 @@ export default async function AppHeader() {
           className="text-lg outline-none transition active:scale-95"
           title="Tienda"
         >
-          🛍️
+          <Store size={21} className="text-ambar" aria-hidden="true" />
         </Link>
         <Link
           href="/amigos"
@@ -115,7 +119,7 @@ export default async function AppHeader() {
         </Link>
       </span>
       </header>
-      <NivelCelebracion userId={user.id} nivelInicial={nivel.nivel} />
+      <NivelCelebracion key={`${user.id}:${ciclo}`} userId={user.id} nivelInicial={nivel.nivel} ciclo={ciclo} />
       <VisitaDiaria userId={user.id} />
       <AnimationPreferences welcome />
     </>

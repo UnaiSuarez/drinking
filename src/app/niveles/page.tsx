@@ -3,7 +3,9 @@ import BackButton from "@/components/BackButton";
 import AvatarFrame from "@/components/AvatarFrame";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
-import { MARCO_INFO, MARCO_NIVEL_HITOS, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
+import { MARCO_INFO, MARCO_NIVEL_HITOS, MARCO_PRESTIGIO_HITOS, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
+import { parseTiendaState } from "@/lib/tienda";
+import PrestigioPanel from "@/components/PrestigioPanel";
 import { calcularDivision } from "@/lib/liga";
 
 const LIGA_HITOS: { pl: number; esTop1: boolean; marco: MarcoPerfil }[] = [
@@ -28,6 +30,8 @@ export default async function NivelesPage({
 
   let avatarConfig = AVATAR_PREDETERMINADO;
   let xpActual: number | null = null;
+  let marcosObtenidos: MarcoPerfil[] = [];
+  let ciclo = 0;
   if (user) {
     const { data: perfil } = await supabase
       .from("perfiles")
@@ -37,7 +41,11 @@ export default async function NivelesPage({
     if (perfil) {
       avatarConfig = parseAvatarConfig(perfil.avatar_config);
       xpActual = perfil.xp ?? 0;
+      marcosObtenidos = parseTiendaState(perfil.avatar_config).marcos;
     }
+    const { data: prestigio } = await supabase.from("prestigios").select("ciclo")
+      .eq("usuario_id", user.id).order("ciclo", { ascending: false }).limit(1).maybeSingle();
+    ciclo = prestigio?.ciclo ?? 0;
   }
 
   const miNivel = xpActual !== null ? progresoNivel(xpActual) : null;
@@ -92,9 +100,9 @@ export default async function NivelesPage({
         <p className="font-titulo text-3xl text-ambar">📈 Niveles</p>
         <p className="mt-2 text-sm text-texto2">
           El nivel sube con la XP que ganas registrando bebidas, ganando
-          noches y desbloqueando logros. Cada 10 niveles se añade un marco
+          noches y desbloqueando logros. Cada 10 niveles, hasta el 50, se añade un marco
           nuevo a tu inventario para siempre; equípalo cuando quieras desde
-          ahí.
+          ahí. Desde el nivel 50 puedes hacer prestigio voluntariamente.
         </p>
         {miNivel && (
           <p className="mt-3 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-sm text-texto">
@@ -106,6 +114,7 @@ export default async function NivelesPage({
           </p>
         )}
       </header>
+      {miNivel && <PrestigioPanel ciclo={ciclo} nivel={miNivel.nivel} />}
 
       {ligaInfo && division && marcoLiga && (
         <section className="mb-8 rounded-2xl border border-oro/50 bg-gradient-to-br from-tarjeta to-oro/10 p-5">
@@ -141,7 +150,7 @@ export default async function NivelesPage({
         {MARCO_NIVEL_HITOS.map(({ nivel, marco }) => {
           const info = MARCO_INFO[marco];
           const xpNecesaria = xpTotalParaNivel(nivel);
-          const conseguido = miNivel ? miNivel.nivel >= nivel : false;
+          const conseguido = marcosObtenidos.includes(marco);
           return (
             <li
               key={nivel}
@@ -175,6 +184,14 @@ export default async function NivelesPage({
             </li>
           );
         })}
+      </ul>
+
+      <h2 className="mb-3 mt-8 font-titulo text-xl text-ambar">Marcos de prestigio</h2>
+      <ul className="space-y-3">
+        {MARCO_PRESTIGIO_HITOS.map(({ prestigio, marco }) => <li key={prestigio} className="flex items-center gap-4 rounded-lg border border-borde bg-tarjeta p-4">
+          <AvatarFrame config={avatarConfig} marco={marco} className="h-16 w-16" imageSizes="64px" animated={false} />
+          <div className="min-w-0"><p className="font-titulo text-texto">Prestigio {prestigio}</p><p className="text-sm text-ambar">{MARCO_INFO[marco].nombre}</p>{marcosObtenidos.includes(marco) && <p className="text-xs text-lima">En tu inventario</p>}</div>
+        </li>)}
       </ul>
 
       <h2 className="mb-3 mt-8 font-titulo text-xl text-texto">🏆 Divisiones de liga</h2>

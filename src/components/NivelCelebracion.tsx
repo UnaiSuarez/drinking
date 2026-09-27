@@ -5,15 +5,18 @@ import { createPortal } from "react-dom";
 import dynamic from "next/dynamic";
 import { createClient } from "@/lib/supabase/client";
 import { progresoNivel } from "@/lib/niveles";
+import { claveCelebracion } from "@/lib/prestigio";
 
 const Celebracion = dynamic(() => import("./NivelCelebracionModal"), { ssr: false });
 
 export default function NivelCelebracion({
   userId,
   nivelInicial,
+  ciclo = 0,
 }: {
   userId: string;
   nivelInicial: number;
+  ciclo?: number;
 }) {
   const supabase = useMemo(() => createClient(), []);
   const visto = useRef<number | null>(null);
@@ -28,15 +31,15 @@ export default function NivelCelebracion({
     );
     visto.current = nivel;
     try {
-      window.localStorage.setItem(`nivel-visto:${userId}`, String(nivel));
+      window.localStorage.setItem(claveCelebracion(userId, ciclo), String(nivel));
     } catch {
       // La celebración de esta sesión sigue funcionando sin almacenamiento.
     }
     setPendientes((actuales) => [...actuales, ...nuevos]);
-  }, [userId]);
+  }, [userId, ciclo]);
 
   useEffect(() => {
-    const clave = `nivel-visto:${userId}`;
+    const clave = claveCelebracion(userId, ciclo);
     let guardado = 0;
     try {
       guardado = Number(window.localStorage.getItem(clave));
@@ -50,7 +53,7 @@ export default function NivelCelebracion({
       try { window.localStorage.setItem(clave, String(nivelInicial)); } catch { /* opcional */ }
     }
     comprobar(nivelInicial);
-  }, [userId, comprobar, nivelInicial]);
+  }, [userId, ciclo, comprobar, nivelInicial]);
 
   useEffect(() => {
     comprobar(nivelInicial);

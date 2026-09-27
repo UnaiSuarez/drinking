@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import MedalIcon from "@/components/MedalIcon";
+import { normalizarVitrina } from "@/lib/prestigio";
 
 export type MedallaDisponible = {
   slug: string;
@@ -16,16 +17,19 @@ export default function PerfilCustomizer({
   tituloActual,
   vitrinaActual,
   medallas,
+  titulosPrestigio = [],
 }: {
   tituloActual: string | null;
   vitrinaActual: string[];
   medallas: MedallaDisponible[];
+  titulosPrestigio?: string[];
 }) {
   const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [titulo, setTitulo] = useState<string | null>(tituloActual);
-  const [vitrina, setVitrina] = useState<string[]>(vitrinaActual);
+  const [vitrina, setVitrina] = useState<string[]>(normalizarVitrina(vitrinaActual, medallas.map((m) => m.slug)));
   const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function alternarVitrina(slug: string) {
     setVitrina((prev) =>
@@ -38,28 +42,38 @@ export default function PerfilCustomizer({
   }
 
   async function guardar() {
+    if (guardando) return;
     setGuardando(true);
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      await supabase
+    setError(null);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Inicia sesión de nuevo para guardar.");
+      const { error: fallo } = await supabase
         .from("perfiles")
-        .update({ titulo, vitrina: vitrina.length > 0 ? vitrina : null })
-        .eq("id", user.id);
+        .update({ titulo, vitrina: normalizarVitrina(vitrina, medallas.map((m) => m.slug)) })
+        .eq("id", user.id).select("id").single();
+      if (fallo) throw new Error(fallo.message);
+      setAbierto(false);
+      router.refresh();
+    } catch (fallo) {
+      setError(fallo instanceof Error ? fallo.message : "No se pudo guardar la vitrina.");
+    } finally {
+      setGuardando(false);
     }
-    setGuardando(false);
-    setAbierto(false);
-    router.refresh();
   }
 
-  if (medallas.length === 0) return null;
+  if (medallas.length === 0 && titulosPrestigio.length === 0) return null;
 
   if (!abierto) {
     return (
       <button
-        onClick={() => setAbierto(true)}
+        onClick={() => {
+          setTitulo(tituloActual);
+          setVitrina(normalizarVitrina(vitrinaActual, medallas.map((m) => m.slug)));
+          setError(null);
+          setAbierto(true);
+        }}
         className="mx-auto mb-2 block rounded-xl border border-borde px-4 py-2 text-xs text-texto2 active:scale-95"
       >
         🏅 Título y vitrina
@@ -68,11 +82,12 @@ export default function PerfilCustomizer({
   }
 
   return (
-    <div className="mb-6 rounded-3xl border border-borde bg-tarjeta p-5 text-left">
+    <div className="mb-6 rounded-lg border border-borde bg-tarjeta p-5 text-left">
       <p className="mb-2 font-titulo text-xs uppercase text-texto2">
         Tu título (se muestra bajo tu nombre)
       </p>
       <div className="mb-4 flex flex-wrap gap-2">
+        {titulosPrestigio.map((nombre) => <button type="button" key={nombre} aria-pressed={titulo === nombre} onClick={() => setTitulo(nombre)} className={`rounded-lg border px-3 py-2 text-sm ${titulo === nombre ? "border-ambar bg-ambar text-fondo" : "border-borde text-texto"}`}>{nombre}</button>)}
         <button
           onClick={() => setTitulo(null)}
           className={`rounded-full border px-3 py-1.5 text-sm transition active:scale-95 ${
@@ -108,22 +123,21 @@ export default function PerfilCustomizer({
       </div>
 
       <p className="mb-2 font-titulo text-xs uppercase text-texto2">
-        Tu vitrina (elige hasta 3 medallas para presumir)
+        Tu vitrina · {vitrina.length}/3
       </p>
       <div className="mb-5 flex flex-wrap gap-2">
         {medallas.map((m) => {
           const elegida = vitrina.includes(m.slug);
           return (
-            <button
+            <label
               key={m.slug}
-              onClick={() => alternarVitrina(m.slug)}
-              className={`rounded-full border px-3 py-1.5 text-sm transition active:scale-95 ${
+              className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-sm ${
                 elegida
                   ? "border-cian bg-cian text-fondo"
                   : "border-borde text-texto"
               }`}
             >
-              {elegida && "✓ "}
+              <input type="checkbox" checked={elegida} disabled={guardando || (!elegida && vitrina.length >= 3)} onChange={() => alternarVitrina(m.slug)} aria-label={`Mostrar ${m.nombre} en la vitrina`} className="h-4 w-4 shrink-0 accent-cian" />
               <span className="inline-flex items-center gap-1.5">
                 <MedalIcon
                   icono={m.icono}
@@ -134,11 +148,12 @@ export default function PerfilCustomizer({
                 />
                 {m.nombre}
               </span>
-            </button>
+            </label>
           );
         })}
       </div>
 
+      {error && <p role="alert" className="mb-3 text-sm text-rosa">{error}</p>}
       <div className="flex gap-2">
         <button
           onClick={() => setAbierto(false)}

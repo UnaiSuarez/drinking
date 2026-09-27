@@ -3,7 +3,7 @@ import {
   parseAvatarConfig,
   type AvatarConfig,
 } from "@/lib/avatar";
-import { MARCO_NIVEL_HITOS, type MarcoPerfil } from "@/lib/marcos";
+import { MARCO_NIVEL_HITOS, MARCO_PRESTIGIO_HITOS, type MarcoPerfil } from "@/lib/marcos";
 import { type CartaRareza } from "@/lib/cofresDesign";
 
 export type TiendaRareza = "comun" | "rara" | "epica" | "legendaria" | "unica";
@@ -532,6 +532,7 @@ export function personajePorImagen(imagen: string | null): PersonajeCatalogo | n
 const MARCOS_COMPRABLES = new Set([
   ...TIENDA_MARCOS.map((marco) => marco.id),
   ...MARCO_NIVEL_HITOS.map((hito) => hito.marco),
+  ...MARCO_PRESTIGIO_HITOS.map((hito) => hito.marco),
 ]);
 const AVATARES_COMPRABLES = new Set(TIENDA_AVATARES.map((avatar) => avatar.id));
 const AVATARES_LIBRES = new Set(AVATARES_GRATIS.map((avatar) => avatar.id));
