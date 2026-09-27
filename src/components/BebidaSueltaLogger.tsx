@@ -9,6 +9,7 @@ export type BebidaTipo = {
   id: number;
   nombre: string;
   icono: string;
+  puntos: number;
 };
 
 export type BebidaCatalogo = {
@@ -39,7 +40,12 @@ const RAREZA_NOMBRE: Record<string, string> = {
   legendaria: "Legendaria",
 };
 
-const XP_BASE = 5;
+/** Misma fórmula que registrar_bebida_suelta en Supabase: la XP depende de
+ * los puntos de la bebida (0 agua/refresco · 1 cerveza/vino · 2 pinta/chupito
+ * · 3 cubata), no un +5 fijo para todas. */
+function xpBebida(puntos: number) {
+  return 5 + puntos * 3;
+}
 /** Bonus que se suma la primera vez que se registra esa bebida concreta. */
 const XP_BONUS_RAREZA: Record<string, number> = {
   comun: 0,
@@ -320,7 +326,7 @@ export default function BebidaSueltaLogger({
               <span className="mt-1 text-center text-[11px] leading-tight text-texto">
                 {b.nombre}
               </span>
-              <span className="text-[10px] text-texto2">+{XP_BASE} XP</span>
+              <span className="text-[10px] text-texto2">+{xpBebida(b.puntos)} XP</span>
             </button>
           ))}
         </div>
@@ -336,6 +342,7 @@ export default function BebidaSueltaLogger({
           <div className="mb-3 max-h-64 space-y-1.5 overflow-y-auto pr-1">
             {resultadosBusqueda.map((c) => {
               const cat = categoriaPorId.get(c.categoriaId);
+              const base = xpBebida(cat?.puntos ?? 0);
               const bonus = XP_BONUS_RAREZA[c.rareza] ?? 0;
               return (
                 <button
@@ -351,7 +358,7 @@ export default function BebidaSueltaLogger({
                   <span className="text-right text-[11px]">
                     <span className="block">{RAREZA_NOMBRE[c.rareza] ?? c.rareza}</span>
                     <span className="block text-texto2">
-                      +{XP_BASE} XP{bonus > 0 ? ` (+${XP_BASE + bonus} 1ª vez)` : ""}
+                      +{base} XP{bonus > 0 ? ` (+${base + bonus} 1ª vez)` : ""}
                     </span>
                   </span>
                 </button>

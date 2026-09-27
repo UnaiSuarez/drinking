@@ -44,7 +44,7 @@ export default async function SalaPage({
     esPermanente
     ? supabase
         .from("bebidas_tipo")
-        .select("id, nombre, icono")
+        .select("id, nombre, icono, puntos")
         .or(`sala_id.is.null,sala_id.eq.${id}`)
         .order("orden")
     : { data: null },

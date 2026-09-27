@@ -13,6 +13,7 @@ import BebidaSueltaLogger, {
   type BebidaCatalogo,
 } from "@/components/BebidaSueltaLogger";
 import SojasLogger from "@/components/SojasLogger";
+import AvanceMedallasSala from "@/components/AvanceMedallasSala";
 
 export type Miembro = {
   id: string;
@@ -237,6 +238,7 @@ export default function SalaView({
             )}
           />
           <SojasLogger salaId={sala.id} />
+          <AvanceMedallasSala salaId={sala.id} userId={userId} />
         </>
       )}
 
