@@ -1,5 +1,6 @@
 import gsap from "gsap";
 import { animationMode } from "@/lib/animationSettings";
+import { observeEffectBounds } from "@/lib/effectBounds";
 
 /** Utilidades GSAP compartidas por las animaciones de cofres y cartas. Los
  * elementos se crean sobre `host` (position: relative/fixed) y se eliminan
@@ -119,16 +120,26 @@ export function particulasAscendentes(
   cantidad = Math.max(6, Math.round(cantidad * factorParticulas()));
   const items: { el: HTMLElement; tl?: gsap.core.Timeline }[] = [];
   const vivo = { v: true };
+  const geometry = observeEffectBounds(host);
+  let visible = false;
+  const updatePause = () => {
+    items.forEach((item) => item.tl?.paused(!visible || document.hidden));
+  };
+  const visibility = new IntersectionObserver(([entry]) => {
+    visible = entry.isIntersecting;
+    updatePause();
+  });
+  visibility.observe(host);
+  document.addEventListener("visibilitychange", updatePause);
   for (let i = 0; i < cantidad; i++) {
     const el = punto(host, colores[i % colores.length], gsap.utils.random(tam * 0.5, tam), "54");
     const item: { el: HTMLElement; tl?: gsap.core.Timeline } = { el };
     const lanzar = () => {
       if (!vivo.v) return;
-      const w = host.clientWidth;
-      const h = host.clientHeight;
+      const { width: w, height: h } = geometry.bounds;
       const dur = gsap.utils.random(2.8, 5.2);
       gsap.set(el, { x: gsap.utils.random(0, w), y: h + 20, scale: gsap.utils.random(0.5, 1.2), opacity: 0 });
-      item.tl = gsap.timeline({ delay: gsap.utils.random(0, 2.5), onComplete: lanzar })
+      item.tl = gsap.timeline({ paused: !visible || document.hidden, delay: gsap.utils.random(0, 2.5), onComplete: lanzar })
         .to(el, { y: h * gsap.utils.random(0.1, 0.55), duration: dur, ease: "power1.out" }, 0)
         .to(el, { x: `+=${gsap.utils.random(-70, 70)}`, duration: dur, ease: "sine.inOut" }, 0)
         .to(el, { opacity: 0.95, duration: dur * 0.25, ease: "power1.out" }, 0)
@@ -139,6 +150,9 @@ export function particulasAscendentes(
   }
   return () => {
     vivo.v = false;
+    geometry.disconnect();
+    visibility.disconnect();
+    document.removeEventListener("visibilitychange", updatePause);
     items.forEach((it) => { it.tl?.kill(); it.el.remove(); });
   };
 }
@@ -153,6 +167,8 @@ export function vortice(
   for (let i = 0; i < cantidad; i++) {
     const el = punto(host, colores[i % colores.length], gsap.utils.random(5, 11), "57");
     const est = { t: 0 };
+    const setTransform = gsap.quickSetter(el, "transform");
+    const setOpacity = gsap.quickSetter(el, "opacity");
     const a0 = gsap.utils.random(0, Math.PI * 2);
     const vueltas = gsap.utils.random(1.2, 2.2) * (i % 2 ? 1 : -1);
     const r0 = gsap.utils.random(radio * 0.55, radio);
@@ -164,7 +180,8 @@ export function vortice(
       onUpdate() {
         const ang = a0 + est.t * vueltas * Math.PI * 2;
         const r = r0 * (1 - est.t);
-        gsap.set(el, { x: x + Math.cos(ang) * r, y: y + Math.sin(ang) * r, opacity: Math.sin(Math.min(1, est.t * 1.15) * Math.PI) * 0.95, scale: 1.2 - est.t * 0.7 });
+        setTransform(`translate3d(${x + Math.cos(ang) * r}px,${y + Math.sin(ang) * r}px,0) scale(${1.2 - est.t * 0.7})`);
+        setOpacity(Math.sin(Math.min(1, est.t * 1.15) * Math.PI) * 0.95);
       },
       onComplete: () => el.remove(),
     });

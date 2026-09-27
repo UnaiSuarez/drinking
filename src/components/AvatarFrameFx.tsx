@@ -8,6 +8,7 @@ gsap.registerPlugin(useGSAP);
 
 import { type FxKind } from "@/lib/marcoFx";
 import { useAnimationMode } from "@/components/AnimationPreferences";
+import { observeEffectBounds } from "@/lib/effectBounds";
 
 const R = gsap.utils.random;
 const N: Record<FxKind, { band: number; free: number; stars: number }> = {
@@ -65,6 +66,7 @@ function FullAvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {
       const q = <T extends Element = HTMLElement>(s: string) => Array.from(el.querySelectorAll<T>(s));
       const [x0, x1] = arte ? [17, 83] : [8, 92];
       const timers: { pause: (v: boolean) => void }[] = [];
+      const geometry = kind === "portal" ? observeEffectBounds(el) : null;
 
       // Ejecuta fn en intervalos aleatorios: nunca dos pasadas iguales.
       const later = (min: number, max: number, fn: () => void) => {
@@ -165,6 +167,9 @@ function FullAvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {
         // Chispas que caen en espiral hacia el portal.
         q(".fx-orb").forEach((o) => {
           const s = { t: 0 };
+          gsap.set(o, { left: 0, top: 0 });
+          const setTransform = gsap.quickSetter(o, "transform");
+          const setOpacity = gsap.quickSetter(o, "opacity");
           const go = contextSafe(() => {
             const a0 = R(0, 360);
             const turns = R(0.6, 1.1);
@@ -177,7 +182,11 @@ function FullAvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {
               onUpdate() {
                 const ang = ((a0 + s.t * turns * 360) * Math.PI) / 180;
                 const rad = 49 - s.t * 7;
-                gsap.set(o, { left: `${50 + Math.cos(ang) * rad}%`, top: `${50 + Math.sin(ang) * rad}%`, opacity: Math.sin(s.t * Math.PI), scale: 1 - s.t * 0.6 });
+                const { width, height } = geometry!.bounds;
+                const x = (50 + Math.cos(ang) * rad) * width / 100;
+                const y = (50 + Math.sin(ang) * rad) * height / 100;
+                setTransform(`translate3d(${x}px,${y}px,0) scale(${1 - s.t * 0.6})`);
+                setOpacity(Math.sin(s.t * Math.PI));
               },
               onComplete: go,
             });
@@ -252,11 +261,12 @@ function FullAvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {
       actualizarPausa();
       observer.observe(el);
       return () => {
+        geometry?.disconnect();
         observer.disconnect();
         document.removeEventListener("visibilitychange", actualizarPausa);
       };
     },
-    { scope: root, dependencies: [kind, arte] }
+    { scope: root, dependencies: [kind, arte], revertOnUpdate: true }
   );
 
   // Con movimiento reducido no se lanza nada: los elementos son transparentes
