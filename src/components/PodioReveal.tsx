@@ -13,6 +13,7 @@ import { parseInventarioState } from "@/lib/inventario";
 import { type MarcoPerfil } from "@/lib/marcos";
 import { createClient } from "@/lib/supabase/client";
 import { RevealXp, RevealLiga } from "@/components/RevealProgreso";
+import MomentosAlbumClient from "@/components/MomentosAlbumClient";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
 
 export type ResultadoJugador = {
@@ -704,6 +705,16 @@ export default function PodioReveal({
             {reabriendo ? "Reabriendo..." : "🔓 Reabrir noche"}
           </button>
         </section>
+      )}
+
+      {terminado && postFase === "detalle" && userId && (
+        <MomentosAlbumClient
+          salaId={salaId}
+          nocheId={nocheId}
+          userId={userId}
+          esAdmin={esAdmin}
+          miembros={resultados.map((r) => ({ id: r.id, nombre: r.nombre }))}
+        />
       )}
 
       {terminado && postFase === "detalle" && (

@@ -22,11 +22,15 @@ type Cuota = {
 
 export default function MomentosAlbumClient({
   salaId,
+  nocheId,
   userId,
   esAdmin,
   miembros,
 }: {
   salaId: string;
+  /** Si se pasa, el álbum se limita a las fotos de esa noche (y las
+   * subidas quedan etiquetadas con ella) en vez de mostrar toda la sala. */
+  nocheId?: string;
   userId: string;
   esAdmin: boolean;
   miembros: { id: string; nombre: string }[];
@@ -44,12 +48,14 @@ export default function MomentosAlbumClient({
   const nombreDe = (id: string) => miembros.find((m) => m.id === id)?.nombre ?? "alguien";
 
   const cargar = useCallback(async () => {
+    let consulta = supabase
+      .from("fotos_sala")
+      .select("id, usuario_id, storage_path, descripcion, creado_en")
+      .eq("sala_id", salaId)
+      .order("creado_en", { ascending: false });
+    if (nocheId) consulta = consulta.eq("noche_id", nocheId);
     const [{ data: filas }, { data: estado }] = await Promise.all([
-      supabase
-        .from("fotos_sala")
-        .select("id, usuario_id, storage_path, descripcion, creado_en")
-        .eq("sala_id", salaId)
-        .order("creado_en", { ascending: false }),
+      consulta,
       supabase.rpc("estado_almacenamiento_fotos"),
     ]);
     const lista = filas ?? [];
@@ -69,7 +75,7 @@ export default function MomentosAlbumClient({
     }
     setCuota((estado as Cuota | null) ?? null);
     setCargando(false);
-  }, [supabase, salaId]);
+  }, [supabase, salaId, nocheId]);
 
   useEffect(() => {
     const t = window.setTimeout(() => void cargar(), 0);
@@ -107,7 +113,7 @@ export default function MomentosAlbumClient({
         if (errorSubida) throw errorSubida;
         const { error: errorRpc } = await supabase.rpc("registrar_foto_sala", {
           p_sala: salaId,
-          p_noche: null,
+          p_noche: nocheId ?? null,
           p_storage_path: path,
           p_tamano_bytes: blob.size,
           p_descripcion: descripcionSubida || null,
@@ -146,9 +152,9 @@ export default function MomentosAlbumClient({
   if (cargando) return null;
 
   return (
-    <details className="group mb-8">
+    <details className="group mb-8" open={Boolean(nocheId)}>
       <summary className="mb-3 flex cursor-pointer list-none items-center justify-between font-titulo text-xl text-texto focus-visible:outline-cian">
-        📸 Álbum de la sala ({fotos.length})
+        📸 {nocheId ? "Fotos de esta noche" : "Álbum de la sala"} ({fotos.length})
         <span aria-hidden="true" className="text-base text-texto2 group-open:rotate-180">⌄</span>
       </summary>
 
@@ -195,7 +201,7 @@ export default function MomentosAlbumClient({
 
       {fotos.length === 0 ? (
         <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
-          Aún no hay fotos de esta sala. 📷
+          {nocheId ? "Aún no hay fotos de esta noche. 📷" : "Aún no hay fotos de esta sala. 📷"}
         </p>
       ) : (
         <ul className="grid grid-cols-3 gap-2">
