@@ -339,12 +339,36 @@ export default function PersonajePagina({
             )}
           </section>
 
-          {/* Habilidad */}
-          {personaje.habilidad && (
+          {/* Habilidades: pasiva y activa en sala permanente, pasiva y activa en noche */}
+          {personaje.habilidades ? (
             <section className="rounded-2xl border border-oro/40 bg-oro/10 p-4">
-              <h2 className="mb-1 font-titulo text-sm text-oro">Habilidad</h2>
-              <p className="text-sm leading-snug text-oro">{personaje.habilidad}</p>
+              <h2 className="mb-3 font-titulo text-sm text-oro">Habilidades</h2>
+              <div className="space-y-3 text-sm leading-snug text-oro">
+                <div>
+                  <p className="font-titulo text-xs uppercase tracking-wide text-oro/70">Sala · pasiva</p>
+                  <p>{personaje.habilidades.pasivaSala}</p>
+                </div>
+                <div>
+                  <p className="font-titulo text-xs uppercase tracking-wide text-oro/70">Sala · activa</p>
+                  <p>{personaje.habilidades.activaSala}</p>
+                </div>
+                <div>
+                  <p className="font-titulo text-xs uppercase tracking-wide text-oro/70">Noche · pasiva</p>
+                  <p>{personaje.habilidades.pasivaNoche}</p>
+                </div>
+                <div>
+                  <p className="font-titulo text-xs uppercase tracking-wide text-oro/70">Noche · activa</p>
+                  <p>{personaje.habilidades.activaNoche}</p>
+                </div>
+              </div>
             </section>
+          ) : (
+            personaje.habilidad && (
+              <section className="rounded-2xl border border-oro/40 bg-oro/10 p-4">
+                <h2 className="mb-1 font-titulo text-sm text-oro">Habilidad</h2>
+                <p className="text-sm leading-snug text-oro">{personaje.habilidad}</p>
+              </section>
+            )
           )}
 
           {/* Aspectos: skins normales y momentos históricos, en pestañas separadas */}

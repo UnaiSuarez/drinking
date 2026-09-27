@@ -122,6 +122,46 @@ function elegirRuletaBar(random: () => number = Math.random): string {
 // servidor (RPC) para que no se puedan falsificar desde el cliente.
 const CARTAS_RPC_CRUZADAS = new Set(["mano-larga", "cambio-de-vaso"]);
 
+// Habilidad activa de noche por personaje equipado: se guarda como una
+// cartaActiva mas (mismo jsonb que las cartas de verdad) via su propia RPC,
+// y finalizar_noche ya la lee gratis con el tmp_cartas_activas que arma hoy.
+const HABILIDADES_ACTIVAS_NOCHE: Record<
+  string,
+  { nombre: string; texto: string; cartaId: string; rpc: string; soloUltimos30Min?: boolean }
+> = {
+  "jefe-after": {
+    nombre: "Abre Barra",
+    texto: "1 vez por noche: todo el que registre en los próximos 20 minutos gana +1 PL.",
+    cartaId: "activa-abre-barra",
+    rpc: "usar_habilidad_abre_barra",
+  },
+  "ultimo-ronda": {
+    nombre: "Campana de Cierre",
+    texto: "1 vez por noche, solo en los últimos 30 minutos: extiende tu +2 PL de última hora a toda la sala.",
+    cartaId: "activa-campana-cierre",
+    rpc: "usar_habilidad_campana_cierre",
+    soloUltimos30Min: true,
+  },
+  "narrador-noche": {
+    nombre: "Crónica en Directo",
+    texto: "1 vez por noche: tu siguiente bebida comentada da +3 PL en vez de +1.",
+    cartaId: "activa-cronica-directo",
+    rpc: "usar_habilidad_cronica_directo",
+  },
+  "silencioso-letal": {
+    nombre: "Última Gota",
+    texto: "1 vez por noche: tu próxima agua o refresco puntúa como si fuera alcohol normal.",
+    cartaId: "activa-ultima-gota",
+    rpc: "usar_habilidad_ultima_gota",
+  },
+  "guardian-cubata": {
+    nombre: "Última Copa Perfecta",
+    texto: "1 vez por noche: tu próximo Cubata cuenta doble en PL.",
+    cartaId: "activa-ultima-copa",
+    rpc: "usar_habilidad_ultima_copa",
+  },
+};
+
 // Cartas con arte y descripción pero sin resolución todavía (ni aquí ni en
 // finalizar_noche). Trono del Campeón, Dado Maldito, Brindis Prohibido y
 // Cáliz Final Boss SÍ tienen resolución completa en finalizar_noche (ver
@@ -409,6 +449,8 @@ export default function NocheLive({
   const [errorDeshacer, setErrorDeshacer] = useState<string | null>(null);
   const [confirmandoCierre, setConfirmandoCierre] = useState(false);
   const [cartaDetalle, setCartaDetalle] = useState<CartaCofre | null>(null);
+  const [ocupadaHabilidad, setOcupadaHabilidad] = useState(false);
+  const [mensajeHabilidad, setMensajeHabilidad] = useState<string | null>(null);
   const [panelExtender, setPanelExtender] = useState(false);
   const [horasExtra, setHorasExtra] = useState("2");
   const [extendiendo, setExtendiendo] = useState(false);
@@ -504,6 +546,20 @@ export default function NocheLive({
   const miInventario = useMemo(
     () => parseInventarioState(miJugador?.avatarConfigRaw),
     [miJugador?.avatarConfigRaw]
+  );
+  const miAvatarEquipado = useMemo(
+    () => parseTiendaState(miJugador?.avatarConfigRaw).avatarEquipado,
+    [miJugador?.avatarConfigRaw]
+  );
+  const habilidadActivaNoche = miAvatarEquipado ? HABILIDADES_ACTIVAS_NOCHE[miAvatarEquipado] : undefined;
+  const yaUsoHabilidadNoche = useMemo(
+    () =>
+      habilidadActivaNoche
+        ? miInventario.cartasActivas.some(
+            (ca) => ca.cartaId === habilidadActivaNoche.cartaId && ca.nocheId === noche.id
+          )
+        : false,
+    [habilidadActivaNoche, miInventario.cartasActivas, noche.id]
   );
   const cartasActivas = useMemo(
     () =>
@@ -851,6 +907,20 @@ export default function NocheLive({
       () => setMasUnos((prev) => prev.filter((m) => m.id !== idAnim)),
       900
     );
+  }
+
+  async function usarHabilidadNoche() {
+    if (!habilidadActivaNoche || ocupadaHabilidad || yaUsoHabilidadNoche) return;
+    setOcupadaHabilidad(true);
+    setMensajeHabilidad(null);
+    const { error } = await supabase.rpc(habilidadActivaNoche.rpc, { p_noche: noche.id });
+    if (error) {
+      setMensajeHabilidad(`Error: ${error.message}`);
+    } else {
+      setMensajeHabilidad("Hecho ✓");
+      router.refresh();
+    }
+    setOcupadaHabilidad(false);
   }
 
   async function usarCarta(carta: CartaCofre) {
@@ -1588,6 +1658,24 @@ export default function NocheLive({
                     </div>
                   ))}
               </div>
+            </section>
+          )}
+
+          {habilidadActivaNoche && (
+            <section className="mb-6 rounded-3xl border border-oro/40 bg-oro/10 p-4">
+              <p className="mb-1 font-titulo text-lg text-oro">✨ {habilidadActivaNoche.nombre}</p>
+              <p className="mb-3 text-sm leading-snug text-oro/90">{habilidadActivaNoche.texto}</p>
+              {mensajeHabilidad && (
+                <p role="status" className="mb-3 rounded-xl bg-fondo px-3 py-2 text-sm text-cian">{mensajeHabilidad}</p>
+              )}
+              <button
+                type="button"
+                disabled={ocupadaHabilidad || yaUsoHabilidadNoche}
+                onClick={() => void usarHabilidadNoche()}
+                className="w-full rounded-2xl bg-oro py-3 font-titulo text-fondo disabled:opacity-50"
+              >
+                {yaUsoHabilidadNoche ? "Ya usada esta noche" : ocupadaHabilidad ? "Usando..." : "Usar habilidad"}
+              </button>
             </section>
           )}
 

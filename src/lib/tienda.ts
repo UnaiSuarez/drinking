@@ -72,9 +72,19 @@ export type TiendaAvatar = {
 
 export type PersonajeOculto = TiendaAvatar & {
   placeholderImagen: string;
-  /** Habilidad pasiva que se activa mientras llevas este personaje
-   * equipado. Se resuelve en finalizar_noche (ver tmp_personaje_equipado). */
+  /** Resumen corto para sitios con poco espacio (tienda, cofres). El
+   * desglose completo de las 4 habilidades vive en `habilidades`. */
   habilidad: string;
+  /** Las 4 habilidades del personaje: pasiva y activa en sala permanente
+   * (pagan en XP/chapas, se resuelven en registrar_bebida_suelta o por
+   * RPC propia), y pasiva y activa en noche (pagan en PL, se resuelven en
+   * finalizar_noche; la activa se guarda como una cartaActiva más). */
+  habilidades: {
+    pasivaSala: string;
+    activaSala: string;
+    pasivaNoche: string;
+    activaNoche: string;
+  };
   /** Persona real en la que se inspira el personaje. */
   nombreReal: string;
   /** Historia del personaje, aportada por el grupo. Vacía hasta entonces. */
@@ -365,6 +375,12 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Rubio de la Última Ronda",
     descripcion: "Personaje único, sonrisa peligrosa y croquetas de emergencia.",
     habilidad: "Habilidad oculta: tus bebidas en los últimos 10 minutos antes del cierre dan +2 PL extra.",
+    habilidades: {
+      pasivaSala: "Si pasan 3h o más desde tu última bebida suelta, la siguiente da +5 XP extra.",
+      activaSala: "Última Llamada (1/día): tu próxima bebida suelta en la hora siguiente da XP doble.",
+      pasivaNoche: "Tus bebidas en los últimos 10 minutos antes del cierre dan +2 PL extra.",
+      activaNoche: "Campana de Cierre (1/noche, solo en los últimos 30 min): extiende ese +2 PL a toda la sala.",
+    },
     nombreReal: "Antonio",
     precio: 0,
     rareza: "unica",
@@ -377,6 +393,12 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Jefe del After",
     descripcion: "Personaje único, shaker en mano y mirada de reservado cerrado.",
     habilidad: "Habilidad oculta: si tú inicias la noche, todos los que beban ganan +1 PL extra.",
+    habilidades: {
+      pasivaSala: "Si eres el primero en registrar algo ese día en la sala, todos los que beban después ganan +1 XP.",
+      activaSala: "Ronda de la Casa (1/día): todos los miembros activos de la sala ganan +1 XP al instante.",
+      pasivaNoche: "Si tú inicias la noche, todos los que beban ganan +1 PL extra.",
+      activaNoche: "Abre Barra (1/noche): todo el que registre en los próximos 20 minutos gana +1 PL.",
+    },
     nombreReal: "Denys",
     precio: 0,
     rareza: "unica",
@@ -389,6 +411,12 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Narrador de la Noche",
     descripcion: "Personaje único, móvil arriba y prueba gráfica de todo.",
     habilidad: "Habilidad oculta: cada bebida que registres con comentario da +1 PL extra.",
+    habilidades: {
+      pasivaSala: "Cada bebida suelta con comentario da +1 XP extra.",
+      activaSala: "Titular del Día (1/día): cuentas algo y ganas 15 chapas gratis, sin gastar carta.",
+      pasivaNoche: "Cada bebida que registres con comentario da +1 PL extra.",
+      activaNoche: "Crónica en Directo (1/noche): tu siguiente bebida comentada da +3 PL en vez de +1.",
+    },
     nombreReal: "Ramón",
     precio: 0,
     rareza: "unica",
@@ -401,6 +429,12 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     nombre: "El Silencioso Letal",
     descripcion: "Personaje único, refresco azul y subida discreta en la tabla.",
     habilidad: "Habilidad oculta: tus refrescos y aguas dan siempre +1 PL.",
+    habilidades: {
+      pasivaSala: "Tus aguas y refrescos dan siempre +1 XP extra.",
+      activaSala: "Retirada Discreta (1/semana): si hoy no bebes nada, el día cuenta igual para tu racha.",
+      pasivaNoche: "Tus refrescos y aguas dan siempre +1 PL.",
+      activaNoche: "Última Gota (1/noche): tu próxima agua o refresco puntúa como si fuera alcohol normal.",
+    },
     nombreReal: "Alejandro",
     precio: 0,
     rareza: "unica",
@@ -412,7 +446,13 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
     id: "guardian-cubata",
     nombre: "El Guardián del Cubata",
     descripcion: "Personaje único, vaso brillante y aura de no-me-lo-toques.",
-    habilidad: "Habilidad oculta: eres inmune a las cartas de objetivo que te lancen.",
+    habilidad: "Habilidad oculta: tus Cubatas dan siempre PL y XP extra.",
+    habilidades: {
+      pasivaSala: "Tus Cubatas dan siempre +1 XP extra.",
+      activaSala: "Cubata en su Punto (1/día): tu próximo Cubata da el doble de XP.",
+      pasivaNoche: "Tus Cubatas dan siempre +2 PL extra.",
+      activaNoche: "Última Copa Perfecta (1/noche): tu próximo Cubata cuenta doble en PL.",
+    },
     nombreReal: "Unai",
     precio: 0,
     rareza: "unica",
@@ -424,6 +464,12 @@ export const PERSONAJES_OCULTOS: PersonajeOculto[] = [
 
 export type PersonajeCatalogo = TiendaAvatar & {
   habilidad?: string;
+  habilidades?: {
+    pasivaSala: string;
+    activaSala: string;
+    pasivaNoche: string;
+    activaNoche: string;
+  };
   placeholderImagen?: string;
   nombreReal?: string;
   historia?: string;
