@@ -15,6 +15,7 @@ import BebidaSueltaLogger, {
 import SojasLogger from "@/components/SojasLogger";
 import AvanceMedallasSala from "@/components/AvanceMedallasSala";
 import CartasSalaClient from "@/components/CartasSalaClient";
+import AvisosCartasSalaClient from "@/components/AvisosCartasSalaClient";
 import MomentosAlbumClient from "@/components/MomentosAlbumClient";
 import { useTraining } from "@/components/TrainingContext";
 
@@ -261,6 +262,13 @@ export default function SalaView({
 
       {esPermanente && (
         <>
+          {!practicing && (
+            <AvisosCartasSalaClient
+              salaId={sala.id}
+              userId={userId}
+              miembros={miembros.map((m) => ({ id: m.id, nombre: m.nombre }))}
+            />
+          )}
           <BebidaSueltaLogger
             salaId={sala.id}
             bebidas={bebidasSueltas.filter((b) => b.nombre !== "Agua/Refresco")}
@@ -561,7 +569,12 @@ export default function SalaView({
         )}
       </details>
 
-      <MomentosAlbumClient salaId={sala.id} userId={userId} esAdmin={esAdmin} />
+      <MomentosAlbumClient
+        salaId={sala.id}
+        userId={userId}
+        esAdmin={esAdmin}
+        miembros={miembros.map((m) => ({ id: m.id, nombre: m.nombre }))}
+      />
     </main>
   );
 }

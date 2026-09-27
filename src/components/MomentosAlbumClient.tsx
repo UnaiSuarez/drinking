@@ -8,6 +8,7 @@ type Foto = {
   id: string;
   usuario_id: string;
   storage_path: string;
+  descripcion: string | null;
   creado_en: string;
   url?: string;
 };
@@ -23,10 +24,12 @@ export default function MomentosAlbumClient({
   salaId,
   userId,
   esAdmin,
+  miembros,
 }: {
   salaId: string;
   userId: string;
   esAdmin: boolean;
+  miembros: { id: string; nombre: string }[];
 }) {
   const supabase = createClient();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,12 +38,16 @@ export default function MomentosAlbumClient({
   const [cargando, setCargando] = useState(true);
   const [subiendo, setSubiendo] = useState(false);
   const [mensaje, setMensaje] = useState<string | null>(null);
+  const [descripcionSubida, setDescripcionSubida] = useState("");
+  const [fotoGrande, setFotoGrande] = useState<Foto | null>(null);
+
+  const nombreDe = (id: string) => miembros.find((m) => m.id === id)?.nombre ?? "alguien";
 
   const cargar = useCallback(async () => {
     const [{ data: filas }, { data: estado }] = await Promise.all([
       supabase
         .from("fotos_sala")
-        .select("id, usuario_id, storage_path, creado_en")
+        .select("id, usuario_id, storage_path, descripcion, creado_en")
         .eq("sala_id", salaId)
         .order("creado_en", { ascending: false }),
       supabase.rpc("estado_almacenamiento_fotos"),
@@ -87,6 +94,7 @@ export default function MomentosAlbumClient({
           p_noche: null,
           p_storage_path: path,
           p_tamano_bytes: blob.size,
+          p_descripcion: descripcionSubida || null,
         });
         if (errorRpc) {
           await supabase.storage.from("momentos").remove([path]);
@@ -98,6 +106,7 @@ export default function MomentosAlbumClient({
       }
     }
     if (inputRef.current) inputRef.current.value = "";
+    setDescripcionSubida("");
     setSubiendo(false);
     await cargar();
   }
@@ -105,12 +114,17 @@ export default function MomentosAlbumClient({
   async function borrar(foto: Foto) {
     if (!(foto.usuario_id === userId || esAdmin)) return;
     if (!window.confirm("¿Borrar esta foto?")) return;
-    const { error } = await supabase.rpc("borrar_foto_sala", { p_foto_id: foto.id });
+    const { data, error } = await supabase.rpc("borrar_foto_sala", { p_foto_id: foto.id });
     if (error) {
       setMensaje(error.message);
       return;
     }
+    const path = (data as { storage_path?: string } | null)?.storage_path;
+    if (path) {
+      await supabase.storage.from("momentos").remove([path]);
+    }
     setFotos((prev) => prev.filter((f) => f.id !== foto.id));
+    setFotoGrande((actual) => (actual?.id === foto.id ? null : actual));
   }
 
   if (cargando) return null;
@@ -137,18 +151,26 @@ export default function MomentosAlbumClient({
       )}
 
       {!cuota?.bloqueado && (
-        <>
+        <div className="mb-3 space-y-2">
           <input
             ref={inputRef}
             type="file"
             accept="image/*"
             multiple
             onChange={(event) => void subir(event.target.files)}
-            className="mb-3 w-full text-sm text-texto2"
+            className="w-full text-sm text-texto2"
             disabled={subiendo}
           />
-          {subiendo && <p className="mb-3 text-xs text-texto2">Subiendo...</p>}
-        </>
+          <input
+            type="text"
+            value={descripcionSubida}
+            onChange={(event) => setDescripcionSubida(event.target.value)}
+            placeholder="Descripción (opcional)"
+            disabled={subiendo}
+            className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+          />
+          {subiendo && <p className="text-xs text-texto2">Subiendo...</p>}
+        </div>
       )}
 
       {fotos.length === 0 ? (
@@ -160,8 +182,10 @@ export default function MomentosAlbumClient({
           {fotos.map((foto) => (
             <li key={foto.id} className="group/foto relative aspect-square overflow-hidden rounded-xl bg-tarjeta">
               {foto.url && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={foto.url} alt="" className="h-full w-full object-cover" loading="lazy" />
+                <button type="button" onClick={() => setFotoGrande(foto)} className="block h-full w-full">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={foto.url} alt={foto.descripcion ?? ""} className="h-full w-full object-cover" loading="lazy" />
+                </button>
               )}
               {(foto.usuario_id === userId || esAdmin) && (
                 <button
@@ -176,6 +200,41 @@ export default function MomentosAlbumClient({
             </li>
           ))}
         </ul>
+      )}
+
+      {fotoGrande && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setFotoGrande(null)}
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-fondo/95 p-5"
+        >
+          {fotoGrande.url && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={fotoGrande.url}
+              alt={fotoGrande.descripcion ?? ""}
+              onClick={(event) => event.stopPropagation()}
+              className="max-h-[75vh] max-w-full rounded-2xl object-contain"
+            />
+          )}
+          <div className="w-full max-w-sm text-center" onClick={(event) => event.stopPropagation()}>
+            {fotoGrande.descripcion && (
+              <p className="mb-1 text-sm text-texto">{fotoGrande.descripcion}</p>
+            )}
+            <p className="text-xs text-texto2">
+              {nombreDe(fotoGrande.usuario_id)} ·{" "}
+              {new Date(fotoGrande.creado_en).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}
+            </p>
+            <button
+              type="button"
+              onClick={() => setFotoGrande(null)}
+              className="mt-3 rounded-xl border border-borde px-4 py-2 text-sm text-texto2 active:scale-95"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
       )}
     </details>
   );
