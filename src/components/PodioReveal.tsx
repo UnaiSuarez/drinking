@@ -118,12 +118,12 @@ export default function PodioReveal({
   const [reabriendo, setReabriendo] = useState(false);
   const [errorReabrir, setErrorReabrir] = useState<string | null>(null);
 
-  // Si es una visita al historial, nos saltamos toda la ceremonia.
-  const [fase, setFase] = useState<Fase>(
-    vistaHistorica ? "revelado" : "countdown"
-  );
+  // Sin cuenta atrás ni revelado puesto por puesto: se va directa al
+  // resultado final del podio (el aperitivo de votación, si lo hay, y el
+  // recap personal de XP/liga de después siguen igual que siempre).
+  const [fase, setFase] = useState<Fase>(votacion ? "votacion" : "revelado");
   const [cuenta, setCuenta] = useState(3);
-  const [revelados, setRevelados] = useState(vistaHistorica ? total : 0);
+  const [revelados, setRevelados] = useState(total);
   const [logroInfo, setLogroInfo] = useState<{
     icono: string;
     nombre: string;

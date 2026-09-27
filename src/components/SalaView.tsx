@@ -84,6 +84,7 @@ export default function SalaView({
   const [errorFecha, setErrorFecha] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [mostrarRachaApagada, setMostrarRachaApagada] = useState(false);
   const esAdmin = miRol === "fundador" || miRol === "admin";
   const miembrosRef = useRef(miembros);
   useEffect(() => {
@@ -99,6 +100,23 @@ export default function SalaView({
       if (error) console.warn("No se pudo registrar la visita a la sala", error.message);
     });
   }, [sala.id, userId, practicing]);
+
+  // El aviso de racha apagada solo se enseña una vez por cada racha
+  // perdida (no cada vez que entras): se recuerda en este dispositivo.
+  useEffect(() => {
+    if (racha.actual !== 0 || racha.mejor === 0) return;
+    const clave = `racha-apagada-vista-${sala.id}-${racha.mejor}`;
+    const t = window.setTimeout(() => {
+      try {
+        if (window.localStorage.getItem(clave)) return;
+        window.localStorage.setItem(clave, "1");
+        setMostrarRachaApagada(true);
+      } catch {
+        setMostrarRachaApagada(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [sala.id, racha.actual, racha.mejor]);
 
   // Tiempo real: si alguien se une/sale, añade una bebida/SOJA suelta, o
   // arranca una noche mientras estás viendo la sala, se refresca sola en
@@ -144,8 +162,19 @@ export default function SalaView({
         () => router.refresh()
       )
       .subscribe();
+
+    // Red de seguridad: en móvil, dejar la pestaña en segundo plano puede
+    // cortar la conexión de Realtime sin que se reconecte sola al volver.
+    // Al recuperar el foco, un refresh de más no molesta y evita quedarte
+    // viendo datos viejos (p. ej. que alguien ya inició una noche).
+    function alVolver() {
+      if (document.visibilityState === "visible") router.refresh();
+    }
+    document.addEventListener("visibilitychange", alVolver);
+
     return () => {
       supabase.removeChannel(canal);
+      document.removeEventListener("visibilitychange", alVolver);
     };
   }, [sala.id, router, practicing]);
 
@@ -252,11 +281,21 @@ export default function SalaView({
           </span>
         </div>
       )}
-      {esPermanente && racha.actual === 0 && racha.mejor > 0 && (
-        <div className="mb-4 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-center text-sm text-texto2">
-          Se te apagó la racha (llegaste a {racha.mejor} día
-          {racha.mejor === 1 ? "" : "s"}). Registra algo hoy para empezar otra
-          🔥
+      {esPermanente && mostrarRachaApagada && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-borde bg-tarjeta px-4 py-3 text-sm text-texto2">
+          <span>
+            Se te apagó la racha (llegaste a {racha.mejor} día
+            {racha.mejor === 1 ? "" : "s"}). Registra algo hoy para empezar otra
+            🔥
+          </span>
+          <button
+            type="button"
+            onClick={() => setMostrarRachaApagada(false)}
+            aria-label="Cerrar aviso"
+            className="shrink-0 text-texto2 active:scale-95"
+          >
+            ✕
+          </button>
         </div>
       )}
 
@@ -295,10 +334,10 @@ export default function SalaView({
           className="mb-8 block rounded-3xl border-2 border-ambar bg-tarjeta p-6 text-center transition active:scale-[0.98]"
         >
           <span className="font-titulo text-2xl text-ambar">
-            ⏳ NOCHE PENDIENTE
+            🌙 Noche iniciada, esperando compañía
           </span>
           <p className="text-sm text-texto2">
-            Esperando a que se una alguien más para arrancar
+            Ya se ha creado: en cuanto se una alguien más, arranca de verdad
           </p>
         </Link>
       ) : nocheActiva ? (
