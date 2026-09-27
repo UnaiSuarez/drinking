@@ -40,7 +40,7 @@ import {
   parseTiendaState,
 } from "@/lib/tienda";
 import { parseAvatarConfig } from "@/lib/avatar";
-import { MARCO_INFO, type MarcoPerfil } from "@/lib/marcos";
+import { MARCO_INFO, MARCO_ORDEN, type MarcoPerfil } from "@/lib/marcos";
 
 const RAREZA_ESTILO: Record<
   CartaRareza,
@@ -315,7 +315,7 @@ export default function InventarioClient({
         <h2 className="mb-3 font-titulo text-xl text-texto">Mis marcos</h2>
         <FrameListAnimations />
         <ul className="grid grid-cols-2 gap-3">
-          {tienda.marcos.map((id) => (
+          {[...tienda.marcos].sort((a, b) => MARCO_ORDEN.indexOf(a) - MARCO_ORDEN.indexOf(b)).map((id) => (
             <li key={id} className="rounded-lg border border-borde bg-tarjeta p-3 text-center">
               <AvatarFramePreview animateTrigger={animateFrames} config={avatar} marco={id} titulo={MARCO_INFO[id].nombre} subtitulo={MARCO_INFO[id].descripcion} triggerClassName="mx-auto h-20 w-20" previewClassName="h-72 w-72" />
               <p className="mt-2 min-h-10 font-titulo text-sm text-texto">{MARCO_INFO[id].nombre}</p>

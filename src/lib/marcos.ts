@@ -28,29 +28,41 @@ export type MarcoPerfil =
   | "liga-maestro"
   | "liga-challenger";
 
+/**
+ * Orden de "peor a mejor" para mostrar marcos en galerías (Inventario,
+ * mejorMarco()). Sigue la misma progresión de rareza que TIENDA_MARCOS
+ * (común → rara → épica → legendaria), con los marcos de nivel/prestigio
+ * intercalados en el tramo que les corresponde y la liga al final, como su
+ * propia escalera independiente.
+ */
 export const MARCO_ORDEN: MarcoPerfil[] = [
+  // Común
   "madera",
-  "plata",
-  "oro",
-  "neon",
-  "llamas",
-  "challenger",
-  "pixel",
-  "hielo",
-  "vip",
-  "cosmico",
   "cobre",
   "espuma",
   "pegatinas",
+  "pixel",
+  // Rara
+  "plata",
+  "hielo",
   "disco",
   "prisma",
   "glitch",
+  // Épica
+  "vip",
+  "cosmico",
   "magma",
   "aureola",
-  "trono",
   "portal",
-  "tormenta",
   "reliquia",
+  // Legendaria
+  "trono",
+  "tormenta",
+  "neon",
+  "llamas",
+  "challenger",
+  "oro",
+  // Liga (escalera propia de la temporada)
   "liga-bronce",
   "liga-plata",
   "liga-oro",

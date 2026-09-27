@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import BackButton from "@/components/BackButton";
-import AvatarFrame from "@/components/AvatarFrame";
+import AvatarFramePreview from "@/components/AvatarFramePreview";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
 import { MARCO_INFO, MARCO_NIVEL_HITOS, MARCO_PRESTIGIO_HITOS, marcoPorLiga, type MarcoPerfil } from "@/lib/marcos";
@@ -122,11 +122,13 @@ export default async function NivelesPage({
             🏆 Tu liga esta temporada
           </p>
           <div className="flex items-center gap-4">
-            <AvatarFrame
+            <AvatarFramePreview
               config={avatarConfig}
               marco={marcoLiga}
-              className="h-16 w-16"
-              imageSizes="64px"
+              titulo={division.nombre}
+              subtitulo={`${ligaInfo.pl} PL · ${ligaInfo.nombreTemporada}`}
+              triggerClassName="h-16 w-16"
+              previewClassName="h-72 w-72"
             />
             <div className="min-w-0 flex-1">
               <p className={`font-titulo text-base ${division.color}`}>
@@ -160,11 +162,13 @@ export default async function NivelesPage({
                   : "border-borde bg-tarjeta opacity-80"
               }`}
             >
-              <AvatarFrame
+              <AvatarFramePreview
                 config={avatarConfig}
                 marco={marco}
-                className="h-16 w-16"
-                imageSizes="64px"
+                titulo={info.nombre}
+                subtitulo={info.descripcion}
+                triggerClassName="h-16 w-16"
+                previewClassName="h-72 w-72"
               />
               <div className="min-w-0 flex-1">
                 <p className="font-titulo text-lg text-texto">
@@ -189,7 +193,7 @@ export default async function NivelesPage({
       <h2 className="mb-3 mt-8 font-titulo text-xl text-ambar">Marcos de prestigio</h2>
       <ul className="space-y-3">
         {MARCO_PRESTIGIO_HITOS.map(({ prestigio, marco }) => <li key={prestigio} className="flex items-center gap-4 rounded-lg border border-borde bg-tarjeta p-4">
-          <AvatarFrame config={avatarConfig} marco={marco} className="h-16 w-16" imageSizes="64px" animated={false} />
+          <AvatarFramePreview config={avatarConfig} marco={marco} titulo={MARCO_INFO[marco].nombre} subtitulo={`Prestigio ${prestigio}`} triggerClassName="h-16 w-16" previewClassName="h-72 w-72" />
           <div className="min-w-0"><p className="font-titulo text-texto">Prestigio {prestigio}</p><p className="text-sm text-ambar">{MARCO_INFO[marco].nombre}</p>{marcosObtenidos.includes(marco) && <p className="text-xs text-lima">En tu inventario</p>}</div>
         </li>)}
       </ul>
@@ -216,11 +220,13 @@ export default async function NivelesPage({
                   : "border-borde bg-tarjeta opacity-80"
               }`}
             >
-              <AvatarFrame
+              <AvatarFramePreview
                 config={avatarConfig}
                 marco={hito.marco}
-                className="h-16 w-16"
-                imageSizes="64px"
+                titulo={division.nombre}
+                subtitulo={hito.esTop1 ? "Nº1 de la sala con 300+ PL" : `${hito.pl}+ PL`}
+                triggerClassName="h-16 w-16"
+                previewClassName="h-72 w-72"
               />
               <div className="min-w-0 flex-1">
                 <p className={`font-titulo text-lg ${division.color}`}>
