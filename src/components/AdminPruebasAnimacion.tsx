@@ -25,6 +25,7 @@ function recompensaCarta(carta: CartaCofre): RecompensaCofre {
     nombre: carta.nombre,
     rareza: carta.rareza,
     imagen: carta.imagen,
+    icono: carta.icono,
     descripcion: carta.descripcion,
     oculta: Boolean(carta.oculta),
   };

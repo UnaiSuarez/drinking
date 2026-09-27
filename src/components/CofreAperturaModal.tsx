@@ -13,6 +13,7 @@ import { prepararAudioCofre, sonarCofre } from "@/lib/cofreAudio";
 import { centroEn, chispas, fogonazo, onda, particulasAscendentes, sinMovimiento, temblor, vortice } from "@/lib/cofreFx";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
 import { animationMode } from "@/lib/animationSettings";
+import CartaArte from "@/components/CartaArte";
 
 gsap.registerPlugin(useGSAP);
 
@@ -387,6 +388,8 @@ export default function CofreAperturaModal({
                     {secreta && <span className="cofre-reward-aura" />}
                     {recompensa.tipo === "fragmentoPersonaje" ? (
                       <PiezaPersonaje recompensa={recompensa} desvelada={desveladas.includes(index)} />
+                    ) : recompensa.tipo === "carta" ? (
+                      <CartaArte imagen={recompensa.imagen} icono={recompensa.icono} rareza={recompensa.rareza} alt={recompensa.nombre} className="relative z-10 aspect-square w-full rounded-md object-contain" sizes="120px" />
                     ) : (
                       <Image src={recompensa.imagen} alt={recompensa.nombre} width={768} height={768} className="relative z-10 aspect-square w-full rounded-md object-contain" sizes="120px" />
                     )}
@@ -728,16 +731,27 @@ function PremioGrande({
               </>
             )}
             {modo !== "fragmento" && (
-              <Image
-                src={modo === "skin" && recompensa.tipo === "skin" && !fallo ? recompensa.ilustracion : recompensa.imagen}
-                onError={() => setFallo(true)}
-                alt=""
-                width={modo === "skin" ? 1024 : 768}
-                height={modo === "skin" ? 1536 : 768}
-                className="cofre-grand-reveal__image"
-                sizes="300px"
-                priority
-              />
+              recompensa.tipo === "carta" ? (
+                <CartaArte
+                  imagen={recompensa.imagen}
+                  icono={recompensa.icono}
+                  rareza={recompensa.rareza}
+                  alt=""
+                  className="cofre-grand-reveal__image"
+                  sizes="300px"
+                />
+              ) : (
+                <Image
+                  src={modo === "skin" && recompensa.tipo === "skin" && !fallo ? recompensa.ilustracion : recompensa.imagen}
+                  onError={() => setFallo(true)}
+                  alt=""
+                  width={modo === "skin" ? 1024 : 768}
+                  height={modo === "skin" ? 1536 : 768}
+                  className="cofre-grand-reveal__image"
+                  sizes="300px"
+                  priority
+                />
+              )
             )}
           </span>
           <strong className="cofre-grand-reveal__name" aria-label={recompensa.nombre}>

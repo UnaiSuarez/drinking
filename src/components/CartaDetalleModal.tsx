@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import { REVERSOS_CARTA, type CartaCofre, type CartaRareza } from "@/lib/cofresDesign";
 import { sinMovimiento } from "@/lib/cofreFx";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
+import CartaArte from "@/components/CartaArte";
 
 gsap.registerPlugin(useGSAP);
 
@@ -84,7 +85,6 @@ export default function CartaDetalleModal({
 
   if (typeof document === "undefined") return null;
 
-  const imagen = bloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
   const titulo = bloqueada ? "???" : carta.nombre;
   const descripcion = bloqueada
     ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."
@@ -114,14 +114,25 @@ export default function CartaDetalleModal({
         </div>
         <div className="carta-detalle__art relative mx-auto mb-4 aspect-square w-40 overflow-hidden rounded-2xl bg-fondo/70">
           {!bloqueada && carta.oculta && <span className="cofre-reward-aura" />}
-          <Image
-            src={imagen}
-            alt={titulo}
-            width={768}
-            height={768}
-            className="relative z-10 h-full w-full object-cover"
-            sizes="160px"
-          />
+          {bloqueada ? (
+            <Image
+              src={REVERSOS_CARTA.exclusiva}
+              alt={titulo}
+              width={768}
+              height={768}
+              className="relative z-10 h-full w-full object-cover"
+              sizes="160px"
+            />
+          ) : (
+            <CartaArte
+              imagen={carta.imagen}
+              icono={carta.icono}
+              rareza={carta.rareza}
+              alt={titulo}
+              className="relative z-10 h-full w-full object-cover"
+              sizes="160px"
+            />
+          )}
           <span className="carta-detalle__glare" aria-hidden="true" />
         </div>
         <div className="carta-detalle__texto">

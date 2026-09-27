@@ -9,6 +9,7 @@ import {
   type CartaRareza,
 } from "@/lib/cofresDesign";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
+import CartaArte from "@/components/CartaArte";
 
 const RAREZA_ESTILO: Record<
   CartaRareza,
@@ -62,7 +63,6 @@ export default function CofresCartasGrid({
           const secreta = carta.oculta
             ? "cofre-card-secret border-purple-400/70"
             : rareza.borde;
-          const imagen = bloqueada ? REVERSOS_CARTA.exclusiva : carta.imagen;
           const titulo = bloqueada ? "???" : carta.nombre;
           const descripcion = bloqueada
             ? "Carta exclusiva oculta. Se revelara al conseguirla en cofres."
@@ -104,14 +104,25 @@ export default function CofresCartasGrid({
                     {!bloqueada && carta.oculta && (
                       <span className="cofre-reward-aura" />
                     )}
-                    <Image
-                      src={imagen}
-                      alt={titulo}
-                      width={768}
-                      height={768}
-                      className="relative z-10 aspect-square w-full object-cover"
-                      sizes="180px"
-                    />
+                    {bloqueada ? (
+                      <Image
+                        src={REVERSOS_CARTA.exclusiva}
+                        alt={titulo}
+                        width={768}
+                        height={768}
+                        className="relative z-10 aspect-square w-full object-cover"
+                        sizes="180px"
+                      />
+                    ) : (
+                      <CartaArte
+                        imagen={carta.imagen}
+                        icono={carta.icono}
+                        rareza={carta.rareza}
+                        alt={titulo}
+                        className="relative z-10 aspect-square w-full object-cover"
+                        sizes="180px"
+                      />
+                    )}
                   </div>
                   <div className="mb-1 flex items-center justify-between gap-2">
                     <p className="font-titulo text-sm leading-tight text-texto">

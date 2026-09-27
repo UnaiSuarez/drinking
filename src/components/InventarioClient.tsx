@@ -13,6 +13,7 @@ import {
   type CofreTipo,
 } from "@/lib/cofresDesign";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
+import CartaArte from "@/components/CartaArte";
 import CofreAperturaModal from "@/components/CofreAperturaModal";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import FrameListAnimations, { useFrameListAnimations } from "@/components/FrameListAnimations";
@@ -475,11 +476,11 @@ export default function InventarioClient({
               >
                 <div className="relative mb-3 overflow-hidden rounded-xl bg-fondo/70">
                   {carta.oculta && <span className="cofre-reward-aura" />}
-                  <Image
-                    src={carta.imagen}
+                  <CartaArte
+                    imagen={carta.imagen}
+                    icono={carta.icono}
+                    rareza={carta.rareza}
                     alt={carta.nombre}
-                    width={768}
-                    height={768}
                     className="relative z-10 aspect-square w-full object-cover"
                     sizes="180px"
                   />

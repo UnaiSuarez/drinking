@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { CARTAS_COFRES, type CartaCofre } from "@/lib/cofresDesign";
+import { CARTAS_COFRES, REVERSOS_CARTA, type CartaCofre } from "@/lib/cofresDesign";
 import {
   cartasActivasDeNoche,
   cartaPorId,
@@ -516,7 +516,9 @@ export default function NocheLive({
   );
   const cartasUsables = useMemo(
     () =>
-      CARTAS_COFRES.filter((carta) => (miInventario.cartas[carta.id] ?? 0) > 0),
+      CARTAS_COFRES.filter(
+        (carta) => carta.contexto !== "sala" && (miInventario.cartas[carta.id] ?? 0) > 0
+      ),
     [miInventario.cartas]
   );
 
@@ -1623,7 +1625,7 @@ export default function NocheLive({
                       key={carta.id}
                       className="rounded-2xl border border-borde bg-fondo/60 p-3"
                     >
-                      <NightCardSummary image={carta.imagen} name={carta.nombre} effect={carta.efecto} quantity={cantidad} onClick={() => setCartaDetalle(carta)} />
+                      <NightCardSummary image={carta.imagen ?? REVERSOS_CARTA.comun} name={carta.nombre} effect={carta.efecto} quantity={cantidad} onClick={() => setCartaDetalle(carta)} />
 
                       {requiereObjetivo && (
                         <select

@@ -14,6 +14,7 @@ import BebidaSueltaLogger, {
 } from "@/components/BebidaSueltaLogger";
 import SojasLogger from "@/components/SojasLogger";
 import AvanceMedallasSala from "@/components/AvanceMedallasSala";
+import CartasSalaClient from "@/components/CartasSalaClient";
 import { useTraining } from "@/components/TrainingContext";
 
 export type Miembro = {
@@ -268,6 +269,13 @@ export default function SalaView({
           />
           <SojasLogger salaId={sala.id} />
           {!practicing && <AvanceMedallasSala salaId={sala.id} userId={userId} />}
+          {!practicing && (
+            <CartasSalaClient
+              salaId={sala.id}
+              userId={userId}
+              miembros={miembros.map((m) => ({ id: m.id, nombre: m.nombre }))}
+            />
+          )}
         </>
       )}
 

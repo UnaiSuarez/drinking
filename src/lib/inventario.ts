@@ -67,7 +67,8 @@ export type RecompensaCofre =
       cartaId: string;
       nombre: string;
       rareza: CartaRareza;
-      imagen: string;
+      imagen?: string;
+      icono?: string;
       descripcion: string;
       oculta: boolean;
     }
@@ -265,6 +266,7 @@ function recompensaDesdeCarta(carta: CartaCofre): RecompensaCofre {
     nombre: carta.nombre,
     rareza: carta.rareza,
     imagen: carta.imagen,
+    icono: carta.icono,
     descripcion: carta.descripcion,
     oculta: Boolean(carta.oculta),
   };

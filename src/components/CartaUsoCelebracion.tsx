@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, type CSSProperties } from "react";
-import Image from "next/image";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import type { CartaCofre, CartaRareza } from "@/lib/cofresDesign";
 import { centroEn, chispas, fogonazo, onda, sinMovimiento, temblor } from "@/lib/cofreFx";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
+import CartaArte from "@/components/CartaArte";
 
 gsap.registerPlugin(useGSAP);
 
@@ -151,8 +151,10 @@ export default function CartaUsoCelebracion({
           <span className="carta-uso__multiplier" aria-hidden="true">×10</span>
         )}
         <div className="carta-uso__art relative mx-auto aspect-square w-52 max-w-[62vw] overflow-hidden rounded-lg border-2 bg-fondo">
-          <Image
-            src={carta.imagen}
+          <CartaArte
+            imagen={carta.imagen}
+            icono={carta.icono}
+            rareza={carta.rareza}
             alt=""
             fill
             className="object-cover"

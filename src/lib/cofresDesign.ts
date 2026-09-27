@@ -7,7 +7,15 @@ export type CartaCofre = {
   rareza: CartaRareza;
   alcance: CartaAlcance;
   oculta?: boolean;
-  imagen: string;
+  /** Sin arte de IA todavía: se pinta con CartaArte usando `icono` de
+   * respaldo. Las 36 cartas de noche originales siempre lo llevan. */
+  imagen?: string;
+  /** Emoji de respaldo para cartas sin `imagen` (ver CartaArte). */
+  icono?: string;
+  /** "sala": exclusiva de sala permanente, se usa en cualquier momento
+   * desde `registrar_bebida_suelta` (sin PL, no depende de una noche
+   * abierta). Sin este campo, la carta es de noche como siempre. */
+  contexto?: "sala";
   descripcion: string;
   efecto: string;
 };
@@ -434,5 +442,159 @@ export const CARTAS_COFRES: CartaCofre[] = [
     imagen: "/cards/ai/items/caliz-final-boss.webp",
     descripcion: "La copa que aparece cuando la noche pide jefe final.",
     efecto: "Tu ultima bebida antes del cierre vale x5 si acabas en podio.",
+  },
+
+  // Cartas exclusivas de sala permanente: se usan en cualquier momento,
+  // sin depender de una noche abierta. No hay PL en sala permanente, así
+  // que pagan en XP y chapas. Sin arte de IA todavía (icono de respaldo).
+  {
+    id: "ronda-extra",
+    nombre: "Ronda Extra",
+    rareza: "comun",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "🍹",
+    descripcion: "Una ronda que invita la casa.",
+    efecto: "Tu próxima bebida suelta en esta sala da +15 XP extra.",
+  },
+  {
+    id: "confesion-de-barra",
+    nombre: "Confesión de Barra",
+    rareza: "comun",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "💬",
+    descripcion: "Cuenta algo y que quede constancia.",
+    efecto: "Si tu próxima bebida suelta lleva comentario, ganas chapas extra.",
+  },
+  {
+    id: "chapa-doble-o-nada",
+    nombre: "Chapa Doble o Nada",
+    rareza: "comun",
+    alcance: "economia",
+    contexto: "sala",
+    icono: "🪙",
+    descripcion: "Cara o cruz, sin mirar atrás.",
+    efecto: "Apuestas tus chapas a cara o cruz al instante: aciertas y las duplicas, fallas y las pierdes.",
+  },
+  {
+    id: "espia-de-barra",
+    nombre: "Espía de Barra",
+    rareza: "comun",
+    alcance: "objetivo",
+    contexto: "sala",
+    icono: "🕵️",
+    descripcion: "Cotillear el inventario ajeno, sin pedir permiso.",
+    efecto: "Ves qué cartas tiene guardadas otro jugador de la sala.",
+  },
+  {
+    id: "copa-doble",
+    nombre: "Copa Doble",
+    rareza: "rara",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "🍻",
+    descripcion: "Una bebida que cunde el doble.",
+    efecto: "Duplica la XP de tu próxima bebida suelta en esta sala.",
+  },
+  {
+    id: "autografo",
+    nombre: "Autógrafo",
+    rareza: "rara",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "✍️",
+    descripcion: "Firma la ronda aunque no digas nada.",
+    efecto: "Tu próxima bebida suelta cuenta como comentada, aunque no escribas nada.",
+  },
+  {
+    id: "ronda-de-la-noche",
+    nombre: "Ronda de la Noche",
+    rareza: "rara",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "🌙",
+    descripcion: "Para quien trasnocha fuera de una noche de verdad.",
+    efecto: "Si tu próxima bebida suelta es entre las 00:00 y las 06:00, da XP extra.",
+  },
+  {
+    id: "ronda-pagada",
+    nombre: "Ronda Pagada",
+    rareza: "rara",
+    alcance: "objetivo",
+    contexto: "sala",
+    icono: "🎁",
+    descripcion: "Invitas sin que te lo pidan.",
+    efecto: "Eliges a alguien de la sala: su próxima bebida suelta da XP extra, a tu cargo.",
+  },
+  {
+    id: "regalo-anonimo",
+    nombre: "Regalo Anónimo",
+    rareza: "rara",
+    alcance: "objetivo",
+    contexto: "sala",
+    icono: "🎭",
+    descripcion: "Un detalle sin firma.",
+    efecto: "Le mandas chapas tuyas a otro jugador sin que sepa quién se las manda.",
+  },
+  {
+    id: "cazador-de-rarezas",
+    nombre: "Cazador de Rarezas",
+    rareza: "epica",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "🧭",
+    descripcion: "Para quien va a por lo que le falta.",
+    efecto: "Si tu próxima bebida suelta es de un tipo nuevo en tu colección, da chapas extra.",
+  },
+  {
+    id: "cata-a-ciegas",
+    nombre: "Cata a Ciegas",
+    rareza: "epica",
+    alcance: "personal",
+    contexto: "sala",
+    icono: "🙈",
+    descripcion: "Repetir también tiene premio de consolación.",
+    efecto: "Si tu próxima bebida suelta es de un tipo que ya tenías en tu colección, da chapas de todos modos.",
+  },
+  {
+    id: "chuleta",
+    nombre: "Chuleta",
+    rareza: "epica",
+    alcance: "objetivo",
+    contexto: "sala",
+    icono: "🥸",
+    descripcion: "Copiar en el examen de la barra.",
+    efecto: "Le robas una carta común o rara del inventario a quien elijas.",
+  },
+  {
+    id: "fiebre-de-sala",
+    nombre: "Fiebre de Sala",
+    rareza: "epica",
+    alcance: "global",
+    contexto: "sala",
+    icono: "🔥",
+    descripcion: "La sala entera se anima a la vez.",
+    efecto: "Durante 24 horas, cualquiera que registre una bebida suelta en la sala gana XP extra.",
+  },
+  {
+    id: "duplicado-expres",
+    nombre: "Duplicado Exprés",
+    rareza: "legendaria",
+    alcance: "economia",
+    contexto: "sala",
+    icono: "✨",
+    descripcion: "Fotocopiadora de emergencia.",
+    efecto: "Duplicas una carta común o rara de tu propio inventario, al instante.",
+  },
+  {
+    id: "barra-libre-para-todos",
+    nombre: "Barra Libre para Todos",
+    rareza: "legendaria",
+    alcance: "global",
+    contexto: "sala",
+    icono: "🍾",
+    descripcion: "Invita la casa, invita todo el mundo.",
+    efecto: "Cada miembro activo de la sala recibe un cofre común gratis, de golpe.",
   },
 ];
