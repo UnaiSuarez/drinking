@@ -385,7 +385,7 @@ export default function SalaView({
             Cancelar
           </button>
         </div>
-      ) : esAdmin ? (
+      ) : (
         <button
           onClick={() => {
             setMinFecha(
@@ -397,12 +397,6 @@ export default function SalaView({
         >
           {esTemporada ? "🗓️ Iniciar temporada" : "🌙 Iniciar noche"}
         </button>
-      ) : (
-        <div className="mb-8 rounded-3xl border border-borde bg-tarjeta p-6 text-center">
-          <p className="text-texto2">
-            😴 No hay noche activa. Un admin puede iniciarla.
-          </p>
-        </div>
       )}
 
       </div>

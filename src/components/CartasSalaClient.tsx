@@ -6,6 +6,7 @@ import { CARTAS_COFRES, type CartaCofre } from "@/lib/cofresDesign";
 import CartaArte from "@/components/CartaArte";
 
 type Pendiente = { carta_id: string; creado_por: string; creado_en: string } | null;
+type EventoCarta = { carta_id: string; usuario_id: string; objetivo_id: string | null };
 
 const CARTAS_SALA = CARTAS_COFRES.filter((c) => c.contexto === "sala");
 const CARTAS_ROBABLES = CARTAS_COFRES.filter((c) => c.rareza === "comun" || c.rareza === "rara");
@@ -13,6 +14,29 @@ const CARTAS_ROBABLES = CARTAS_COFRES.filter((c) => c.rareza === "comun" || c.ra
 function objetoConfig(raw: unknown): Record<string, unknown> {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) return {};
   return raw as Record<string, unknown>;
+}
+
+/** null si el evento no le importa a nadie más (cartas que solo te afectan
+ * a ti mismo), o si es deliberadamente silencioso (Espía de Barra: parte
+ * de la gracia es que el objetivo no se entere). */
+function textoEvento(evento: EventoCarta, userId: string, miembros: { id: string; nombre: string }[]): string | null {
+  if (evento.usuario_id === userId) return null;
+  const nombreDe = (id: string) => miembros.find((m) => m.id === id)?.nombre ?? "alguien";
+  const soyObjetivo = evento.objetivo_id === userId;
+  switch (evento.carta_id) {
+    case "ronda-pagada":
+      return soyObjetivo ? `🎁 ${nombreDe(evento.usuario_id)} te ha pagado una ronda: tu próxima bebida suelta da XP extra.` : null;
+    case "chuleta":
+      return soyObjetivo ? `🥸 ${nombreDe(evento.usuario_id)} te ha robado una carta.` : null;
+    case "regalo-anonimo":
+      return soyObjetivo ? "🎁 Has recibido chapas de un regalo anónimo." : null;
+    case "fiebre-de-sala":
+      return "🔥 ¡Fiebre de sala activada! XP extra durante 24h para quien registre algo.";
+    case "barra-libre-para-todos":
+      return "🍾 ¡Barra libre! Has recibido un cofre común gratis.";
+    default:
+      return null;
+  }
 }
 
 export default function CartasSalaClient({
@@ -36,16 +60,20 @@ export default function CartasSalaClient({
   const [cartaRobada, setCartaRobada] = useState(CARTAS_ROBABLES[0]?.id ?? "");
   const [cartaDuplicada, setCartaDuplicada] = useState("");
   const [espionaje, setEspionaje] = useState<{ nombre: string; cartas: Record<string, number> } | null>(null);
+  const [fiebreHasta, setFiebreHasta] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
 
   const cargar = useCallback(async () => {
-    const [{ data: perfil }, { data: pend }] = await Promise.all([
+    const [{ data: perfil }, { data: pend }, { data: sala }] = await Promise.all([
       supabase.from("perfiles").select("avatar_config").eq("id", userId).single(),
       supabase.rpc("mi_carta_pendiente_sala", { p_sala: salaId }),
+      supabase.from("salas").select("config").eq("id", salaId).single(),
     ]);
     const inventario = objetoConfig(objetoConfig(perfil?.avatar_config).inventario);
     const cartasInv = (inventario.cartas as Record<string, number> | undefined) ?? {};
     setCartas(cartasInv);
     setPendiente((pend as Pendiente) ?? null);
+    setFiebreHasta((objetoConfig(sala?.config).fiebre_hasta as string | undefined) ?? null);
     setCargando(false);
   }, [supabase, salaId, userId]);
 
@@ -53,6 +81,39 @@ export default function CartasSalaClient({
     const t = window.setTimeout(() => void cargar(), 0);
     return () => window.clearTimeout(t);
   }, [cargar]);
+
+  // Tiempo real: mi propio efecto pendiente puede llegar de otro jugador
+  // (Ronda Pagada), la fiebre de sala la puede activar cualquiera, y los
+  // eventos de carta avisan de robos, regalos y demás sin recargar.
+  useEffect(() => {
+    const canal = supabase
+      .channel(`cartas-sala-${salaId}-${userId}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "cartas_pendientes_sala", filter: `usuario_id=eq.${userId}` },
+        () => void cargar()
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "salas", filter: `id=eq.${salaId}` },
+        () => void cargar()
+      )
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "eventos_carta_sala", filter: `sala_id=eq.${salaId}` },
+        (payload) => {
+          const evento = payload.new as EventoCarta;
+          const texto = textoEvento(evento, userId, miembros);
+          if (texto) setAviso(texto);
+          if (evento.objetivo_id === userId || evento.usuario_id !== userId) void cargar();
+        }
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(canal);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [supabase, salaId, userId]);
 
   const misCartas = useMemo(
     () => CARTAS_SALA.filter((carta) => (cartas[carta.id] ?? 0) > 0),
@@ -143,6 +204,14 @@ export default function CartasSalaClient({
           <span aria-hidden="true" className="text-base text-texto2 transition group-open:rotate-180">⌄</span>
         </summary>
         <div className="border-t border-borde p-4 pt-3">
+          {fiebreHasta && new Date(fiebreHasta) > new Date() && (
+            <p className="mb-3 rounded-xl bg-rosa/10 px-3 py-2 text-xs text-rosa">
+              🔥 Fiebre de sala activa hasta las {new Date(fiebreHasta).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}: XP extra para quien registre algo.
+            </p>
+          )}
+          {aviso && (
+            <p role="status" className="mb-3 rounded-xl bg-rosa/10 px-3 py-2 text-xs text-rosa">{aviso}</p>
+          )}
           {pendiente && (
             <p className="mb-3 rounded-xl bg-ambar/10 px-3 py-2 text-xs text-ambar">
               Tienes un efecto listo para tu próxima bebida suelta: {CARTAS_COFRES.find((c) => c.id === pendiente.carta_id)?.nombre ?? pendiente.carta_id}.
