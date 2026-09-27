@@ -78,6 +78,8 @@ export default function CofreAperturaModal({
   recompensas: RecompensaCofre[];
   onClose: () => void;
 }) {
+  const [motionMode] = useState(animationMode);
+  const revealTimers = useRef(new Set<ReturnType<typeof setTimeout>>());
   const [etapa, setEtapa] = useState<EtapaApertura>("sellado");
   const [fases, setFases] = useState<FaseCarta[]>(() => recompensas.map(() => "oculta"));
   const [sonidoActivo, setSonidoActivo] = useState(true);
@@ -91,6 +93,10 @@ export default function CofreAperturaModal({
   const raiz = useRef<HTMLDivElement>(null);
   const sonido = useRef(true);
   useModalScrollLock(true);
+  useEffect(() => {
+    const timers = revealTimers.current;
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   useEffect(() => {
     sonido.current = sonidoActivo;
@@ -115,6 +121,12 @@ export default function CofreAperturaModal({
       if (!el) return;
       const q = gsap.utils.selector(el);
       const slots = q(".cofre-reward-slot");
+      if (motionMode === "balanced") {
+        // CSS owns the visual sequence; this timer also completes it in background tabs.
+        const timer = setTimeout(() => setEtapa("lista"), 1400 + Math.max(0, recompensas.length - 1) * 110);
+        if (sonido.current) sonarCofre("abrir");
+        return () => clearTimeout(timer);
+      }
       if (sinMovimiento()) {
         const duration = animationMode() === "balanced" ? 0.45 : 0.15;
         gsap.timeline({ onComplete: () => setEtapa("lista") })
@@ -199,6 +211,18 @@ export default function CofreAperturaModal({
     const modo: ModoPremio = frag ? (frag.completa ? "personaje" : "fragmento") : recompensa.tipo === "skin" ? "skin" : rareza === "unica" ? "unica" : "legendaria";
     const pantallaPropia = modo === "personaje" || modo === "fragmento";
 
+    if (motionMode === "balanced") {
+      setFases((actual) => actual.map((fase, i) => i === index ? "girando" : fase));
+      const timer = setTimeout(() => {
+        setFases((actual) => actual.map((fase, i) => i === index ? "revelada" : fase));
+        if (frag) setDesveladas((actual) => [...actual, index]);
+        revealTimers.current.delete(timer);
+      }, 460);
+      revealTimers.current.add(timer);
+      if (sonido.current) sonarCofre("revelar");
+      return;
+    }
+
     if (sinMovimiento()) {
       const card = el.querySelector(`[data-idx="${index}"] .gacha-card`);
       setFases((actual) => actual.map((fase, i) => i === index ? "girando" : fase));
@@ -270,6 +294,7 @@ export default function CofreAperturaModal({
     <div ref={raiz} className="fixed inset-0 z-50 flex items-center justify-center bg-fondo/92 p-3 backdrop-blur-sm">
       <div
         role="dialog"
+        data-motion={motionMode}
         aria-modal="true"
         aria-labelledby="titulo-apertura"
         className="cofre-apertura-modal max-h-[94dvh] w-full max-w-md overflow-y-auto rounded-xl border border-borde bg-tarjeta p-4 text-center shadow-2xl sm:p-5"
@@ -347,7 +372,7 @@ export default function CofreAperturaModal({
                 className={`cofre-reward-slot gacha-scene fase-${fase}`}
                 data-rarity={rareza}
                 data-kind={recompensa.tipo === "fragmentoPersonaje" ? "personaje" : recompensa.tipo === "skin" ? recompensa.skinTipo : secreta ? "exclusiva" : rareza}
-                style={{ "--reward-color": RAREZA_COLOR[rareza][0] } as CSSProperties}
+                style={{ "--reward-color": RAREZA_COLOR[rareza][0], "--card-delay": `${650 + index * 110}ms` } as CSSProperties}
               >
                 <span className="cofre-reward-halo" aria-hidden="true" />
                 <span className={`gacha-card relative block aspect-[3/4] ${secreta ? "cofre-reveal-secret" : ""}`}>

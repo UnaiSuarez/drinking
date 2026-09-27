@@ -30,24 +30,27 @@ const idx = (n: number) => Array.from({ length: n }, (_, i) => i);
 export default function AvatarFrameFx(props: { kind: FxKind; arte: boolean }) {
   const mode = useAnimationMode();
   if (mode === "minimal") return null;
-  if (mode === "balanced") return <BalancedFrameFx />;
+  if (mode === "balanced") return <BalancedFrameFx kind={props.kind} />;
   return <FullAvatarFrameFx {...props} />;
 }
 
-function BalancedFrameFx() {
+function BalancedFrameFx({ kind }: { kind: FxKind }) {
   const ref = useRef<HTMLSpanElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     let visible = false;
-    const update = () => { el.style.animationPlayState = visible && !document.hidden ? "running" : "paused"; };
+    const update = () => { el.style.setProperty("--balanced-play", visible && !document.hidden ? "running" : "paused"); };
     const observer = new IntersectionObserver(([entry]) => { visible = entry.isIntersecting; update(); });
     observer.observe(el);
     document.addEventListener("visibilitychange", update);
     update();
     return () => { observer.disconnect(); document.removeEventListener("visibilitychange", update); };
   }, []);
-  return <span ref={ref} className="frame-balanced-pulse" aria-hidden="true" />;
+  return <span ref={ref} className="balanced-frame-fx" data-kind={kind} aria-hidden="true">
+    <span className="balanced-frame-edge"><i /><i /></span>
+    <span className="balanced-frame-accents"><i /><i /><i /></span>
+  </span>;
 }
 
 function FullAvatarFrameFx({ kind, arte }: { kind: FxKind; arte: boolean }) {

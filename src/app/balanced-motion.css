@@ -1,0 +1,137 @@
+/* Balanced effects animate only transform and opacity inside a fixed paint area. */
+.balanced-frame-fx {
+  --balanced-play: paused;
+  --balanced-color: #fff0a0;
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  contain: strict;
+  overflow: hidden;
+  pointer-events: none;
+}
+.balanced-frame-edge, .balanced-frame-accents { position: absolute; inset: 3%; }
+.balanced-frame-edge {
+  padding: 9%;
+  border-radius: 22%;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+.balanced-frame-fx i { display: block; position: absolute; }
+.balanced-frame-edge i {
+  inset: 0;
+  background: conic-gradient(from 0deg, transparent 0deg 220deg, var(--balanced-color) 270deg, transparent 310deg);
+  --balanced-animation: balanced-orbit 7s linear infinite;
+}
+.balanced-frame-edge i + i { display: none; }
+.balanced-frame-accents i {
+  width: 7%; height: 7%; left: 13%; top: 17%;
+  background: var(--balanced-color);
+  clip-path: polygon(50% 0, 61% 38%, 100% 50%, 61% 62%, 50% 100%, 39% 62%, 0 50%, 39% 38%);
+  --balanced-animation: balanced-twinkle 3.6s ease-in-out infinite;
+}
+.balanced-frame-accents i:nth-child(2) { left: 82%; top: 65%; --balanced-delay: -1.2s; }
+.balanced-frame-accents i:nth-child(3) { left: 30%; top: 89%; --balanced-delay: -2.4s; }
+.balanced-frame-fx[data-kind="portal"] { --balanced-color: #c18aff; }
+.balanced-frame-fx[data-kind="portal"] .balanced-frame-edge { padding: 0; mask: none; }
+.balanced-frame-fx[data-kind="portal"] .balanced-frame-edge i {
+  inset: 1%; background: none; border: 2px solid transparent; border-top-color: #2de2e6; border-bottom-color: #ff59c7; border-radius: 50%;
+}
+.balanced-frame-fx[data-kind="portal"] .balanced-frame-edge i + i {
+  display: block; inset: 8%; border-top-color: #b598ff; border-bottom-color: transparent;
+  --balanced-animation: balanced-orbit 10s linear infinite reverse;
+}
+.balanced-frame-fx[data-kind="electric"] { --balanced-color: #a1f4ff; }
+.balanced-frame-fx[data-kind="electric"] .balanced-frame-edge i { --balanced-animation: balanced-flash 4s ease-out infinite; }
+.balanced-frame-fx[data-kind="electric"] .balanced-frame-accents i {
+  left: 6%; top: 18%; width: 13%; height: 62%;
+  clip-path: polygon(70% 0, 20% 38%, 57% 40%, 0 100%, 92% 48%, 58% 45%, 100% 0);
+  --balanced-animation: balanced-flash 4s ease-out infinite;
+}
+.balanced-frame-fx[data-kind="electric"] .balanced-frame-accents i:nth-child(2) { left: 83%; top: 25%; }
+.balanced-frame-fx[data-kind="electric"] .balanced-frame-accents i:nth-child(3) { display: none; }
+.balanced-frame-fx[data-kind="fire"] { --balanced-color: #ffaf45; }
+.balanced-frame-fx[data-kind="fire"] .balanced-frame-edge i {
+  background: linear-gradient(0deg, #ff7638, transparent 75%);
+  --balanced-animation: balanced-warmth 3s ease-in-out infinite;
+}
+.balanced-frame-fx[data-kind="fire"] .balanced-frame-accents i {
+  left: 8%; top: 59%; width: 15%; height: 30%;
+  background: linear-gradient(0deg, #ff6232, #ffd276 80%, transparent);
+  clip-path: polygon(50% 0, 68% 40%, 90% 23%, 100% 76%, 65% 100%, 20% 88%, 0 59%, 35% 67%);
+  transform-origin: bottom;
+  --balanced-animation: balanced-flame 2.6s ease-in-out infinite;
+}
+.balanced-frame-fx[data-kind="fire"] .balanced-frame-accents i:nth-child(2) { left: 79%; top: 58%; }
+.balanced-frame-fx[data-kind="fire"] .balanced-frame-accents i:nth-child(3) { left: 43%; top: 78%; height: 20%; }
+.balanced-frame-fx[data-kind="cristal"] { --balanced-color: #bdfaff; }
+.balanced-frame-fx[data-kind="cristal"] .balanced-frame-edge i,
+.balanced-frame-fx[data-kind="shine"] .balanced-frame-edge i,
+.balanced-frame-fx[data-kind="crown"] .balanced-frame-edge i {
+  background: linear-gradient(110deg, transparent 35%, var(--balanced-color) 50%, transparent 65%);
+  --balanced-animation: balanced-sweep 4.8s ease-in-out infinite;
+}
+.balanced-frame-fx[data-kind="disco"] .balanced-frame-edge i,
+.balanced-frame-fx[data-kind="prisma"] .balanced-frame-edge i {
+  background: conic-gradient(transparent, #3ce5e7, transparent 30%, #ff66c9, transparent 65%, #f8e580, transparent);
+  --balanced-animation: balanced-orbit 8s linear infinite;
+}
+.balanced-frame-fx[data-kind="disco"] { --balanced-color: #ffb4e9; }
+.balanced-frame-fx[data-kind="prisma"] { --balanced-color: #93f3fa; }
+.balanced-frame-fx[data-kind="cosmic"], .balanced-frame-fx[data-kind="dust"] { --balanced-color: #c7b7ff; }
+.balanced-frame-fx[data-kind="cosmic"] .balanced-frame-edge i,
+.balanced-frame-fx[data-kind="dust"] .balanced-frame-edge i,
+.balanced-frame-fx[data-kind="halo"] .balanced-frame-edge i {
+  background: radial-gradient(ellipse at 50% 90%, var(--balanced-color), transparent 75%);
+  --balanced-animation: balanced-warmth 4.5s ease-in-out infinite;
+}
+.balanced-frame-fx[data-kind="glitch"] { --balanced-color: #8efee0; }
+.balanced-frame-fx[data-kind="glitch"] .balanced-frame-edge i {
+  background: repeating-linear-gradient(0deg, transparent 0 20%, var(--balanced-color) 21% 24%, transparent 25% 40%);
+  --balanced-animation: balanced-signal 5s steps(1) infinite;
+}
+.balanced-frame-fx[data-kind="glitch"] .balanced-frame-accents { display: none; }
+html[data-animation-mode="balanced"] .balanced-frame-fx i {
+  animation: var(--balanced-animation) !important;
+  animation-delay: var(--balanced-delay, 0s) !important;
+  animation-play-state: var(--balanced-play) !important;
+}
+@keyframes balanced-orbit { to { transform: rotate(360deg); } }
+@keyframes balanced-twinkle { 0%, 100% { opacity: 0.15; transform: scale(.65); } 50% { opacity: .85; transform: scale(1); } }
+@keyframes balanced-flash { 0%, 65%, 79%, 100% { opacity: 0; } 70%, 75% { opacity: .85; } 73% { opacity: .2; } }
+@keyframes balanced-warmth { 0%, 100% { opacity: .2; } 50% { opacity: .6; } }
+@keyframes balanced-flame { 0%, 100% { opacity: .35; transform: translateY(3%) scaleY(.8); } 50% { opacity: .9; transform: translateY(-5%) scaleY(1); } }
+@keyframes balanced-sweep { 0%, 20% { opacity: 0; transform: translateX(-100%); } 45% { opacity: .8; } 70%, 100% { opacity: 0; transform: translateX(100%); } }
+@keyframes balanced-signal { 0%, 85%, 100% { opacity: 0; transform: translateX(0); } 88%, 95% { opacity: .7; transform: translateX(3%); } 91% { opacity: .3; transform: translateX(-3%); } }
+
+/* One-shot CSS chest sequence. No particle nodes or JS frame-by-frame work. */
+html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] .cofre-opening__chest {
+  animation: balanced-chest .6s ease-out both !important;
+}
+html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] .cofre-opening__closed {
+  animation: balanced-close .15s .4s linear both !important;
+}
+html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] .cofre-opening__open {
+  transform: none;
+  animation: balanced-open .25s .45s ease-out both !important;
+}
+html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] .cofre-opening__beam {
+  display: block; filter: none; height: 60%;
+  clip-path: polygon(25% 100%, 0 0, 100% 0, 75% 100%);
+  animation: balanced-light .75s .35s ease-out both !important;
+}
+html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] .cofre-reward-slot {
+  animation: balanced-drop .7s var(--card-delay) cubic-bezier(.22,.8,.35,1) both !important;
+}
+html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] .fase-girando .gacha-card {
+  animation: balanced-flip .45s ease-in-out both !important;
+}
+@keyframes balanced-chest { 0% { transform: scale(1); } 40% { transform: translateY(-5px) scale(1.04); } 70% { transform: translateY(2px) scale(.98); } 100% { transform: none; } }
+@keyframes balanced-close { to { opacity: 0; } }
+@keyframes balanced-open { from { opacity: 0; } to { opacity: 1; } }
+@keyframes balanced-light { 0% { opacity: 0; transform: scaleY(.2); } 35% { opacity: .65; transform: scaleY(1); } 100% { opacity: 0; transform: scaleY(1); } }
+@keyframes balanced-drop { 0% { opacity: 0; transform: translateY(-70px) scale(.86) rotate(-5deg); } 65% { opacity: 1; transform: translateY(5px) scale(1.02) rotate(1deg); } 100% { opacity: 1; transform: none; } }
+@keyframes balanced-flip { from { transform: rotateY(0); } to { transform: rotateY(180deg); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-animation-mode="balanced"] .balanced-frame-fx { display: none; }
+  html[data-animation-mode="balanced"] .cofre-apertura-modal[data-motion="balanced"] * { animation-duration: .001ms !important; animation-delay: 0ms !important; }
+}
