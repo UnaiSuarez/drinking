@@ -26,7 +26,7 @@ export default async function TiendaPage() {
   );
 
   const [catalogoBanners, bannersUsuario, bannerEquipado] = await Promise.all([
-    supabase.from("banners_catalogo").select("*").eq("exclusivo", false).order("precio"),
+    supabase.from("banners_catalogo").select("*").order("precio"),
     supabase.from("banners_usuario").select("banner_id").eq("usuario_id", user!.id),
     supabase.from("banner_equipado").select("banner_id").eq("usuario_id", user!.id).maybeSingle(),
   ]);

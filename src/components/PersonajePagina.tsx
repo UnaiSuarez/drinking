@@ -104,6 +104,7 @@ export default function PersonajePagina({
   const rareza = RAREZA[personaje.rareza];
   const normales = skinsDe(personajeId, "normal");
   const momentos = skinsDe(personajeId, "momento");
+  const eventos = skinsDe(personajeId, "evento");
   const posee = (skin: PersonajeSkin) => inventario.skins.includes(skin.id);
   const propio =
     AVATARES_GRATIS.some((item) => item.id === personajeId) ||
@@ -111,9 +112,10 @@ export default function PersonajePagina({
     inventario.personajesOcultos.includes(personajeId);
   const fragmentos = Math.min(FRAGMENTOS_PERSONAJE_NECESARIOS, inventario.personajeFragmentos[personajeId] ?? 0);
 
-  const skinVista = vista === "base" ? null : [...normales, ...momentos].find((skin) => skin.id === vista) ?? null;
+  const skinVista = vista === "base" ? null : [...normales, ...momentos, ...eventos].find((skin) => skin.id === vista) ?? null;
   const skinBloqueada = Boolean(skinVista) && !posee(skinVista as PersonajeSkin);
   const skinOculta = Boolean(skinVista?.tipo === "momento" && skinBloqueada);
+  const skinEventoBloqueada = Boolean(skinVista?.tipo === "evento" && skinBloqueada);
   const rarezaVista = skinVista && !skinOculta ? RAREZA[skinVista.rareza] : rareza;
   const equipadoBase = tienda.avatarEquipado === personajeId && !tienda.skinEquipada;
 
@@ -215,7 +217,7 @@ export default function PersonajePagina({
   }
 
   const equipadoVista = skinVista ? tienda.skinEquipada === skinVista.id && tienda.avatarEquipado === personajeId : equipadoBase;
-  const lista = pestana === "skins" ? normales : momentos;
+  const lista = pestana === "skins" ? [...normales, ...eventos] : momentos;
 
   function mostrarEnFicha(id: Vista) {
     setVista(id);
@@ -306,6 +308,10 @@ export default function PersonajePagina({
               <Link href="/cofres" className="block w-full rounded-xl border border-oro py-3 text-center font-titulo text-sm text-oro">
                 Ver cofres
               </Link>
+            ) : propio && skinEventoBloqueada ? (
+              <p className="rounded-xl border border-oro/50 bg-oro/10 py-3 text-center text-sm text-oro">
+                Se consigue completando el nivel legendario de cualquier evento de temporada
+              </p>
             ) : propio ? (
               <button
                 type="button"
@@ -377,7 +383,7 @@ export default function PersonajePagina({
               <h2 className="mb-3 font-titulo text-sm text-texto">Aspectos</h2>
               <div role="tablist" aria-label="Tipo de aspecto" className="mb-3 grid grid-cols-2 gap-2">
                 {([
-                  ["skins", "Skins", normales],
+                  ["skins", "Skins", [...normales, ...eventos]],
                   ["momentos", "Momentos históricos", momentos],
                 ] as const).map(([id, nombre, items]) => (
                   <button
@@ -414,7 +420,7 @@ export default function PersonajePagina({
                 {lista.map((skin) => {
                   const tiene = posee(skin);
                   const r = RAREZA[skin.rareza];
-                  const visible = tiene || skin.tipo === "normal";
+                  const visible = tiene || skin.tipo === "normal" || skin.tipo === "evento";
                   return (
                     <li key={skin.id}>
                       <button
@@ -431,7 +437,7 @@ export default function PersonajePagina({
                           {visible ? skin.nombre : "???"}
                         </span>
                         <span className="block text-[11px] text-texto2">
-                          {tiene ? "Conseguida" : skin.tipo === "normal" ? `${skin.precio} chapas` : "En cofres"}
+                          {tiene ? "Conseguida" : skin.tipo === "normal" ? `${skin.precio} chapas` : skin.tipo === "evento" ? "Evento" : "En cofres"}
                         </span>
                       </button>
                     </li>
@@ -446,7 +452,7 @@ export default function PersonajePagina({
                 </p>
               )}
               <p className="mt-3 text-[11px] text-texto2">
-                Las skins se compran aquí o salen en cofres. Los momentos históricos solo salen en cofres.
+                Las skins se compran aquí o salen en cofres. Los momentos históricos solo salen en cofres. Las de evento se consiguen completando un evento de temporada.
               </p>
 
               {skinVista && (
@@ -454,7 +460,7 @@ export default function PersonajePagina({
                   <p className={`font-titulo text-sm ${skinOculta ? "text-texto2" : RAREZA[skinVista.rareza].texto}`}>
                     {skinOculta ? "???" : skinVista.nombre}
                     <span className="ml-2 text-[10px] uppercase text-texto2">
-                      {skinVista.tipo === "momento" ? "Momento histórico" : RAREZA[skinVista.rareza].etiqueta}
+                      {skinVista.tipo === "momento" ? "Momento histórico" : skinVista.tipo === "evento" ? "Evento de temporada" : RAREZA[skinVista.rareza].etiqueta}
                     </span>
                   </p>
                   <p className="mt-1 text-xs text-texto2">

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Check, Lock, Palette } from 'lucide-react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
-import { BANNER_NAMES, BANNER_RARITIES, BANNER_REQUIREMENTS, type BannerItem } from '@/lib/banners';
+import { BANNER_NAMES, BANNER_ORDEN_EXCLUSIVO, BANNER_RARITIES, BANNER_REQUIREMENTS, type BannerItem } from '@/lib/banners';
 import ProfileBanner from './ProfileBanner';
 
 const RARITY_STYLES: Record<BannerItem['rareza'], { border: string; ring: string; text: string }> = {
@@ -16,9 +16,31 @@ const RARITY_STYLES: Record<BannerItem['rareza'], { border: string; ring: string
   exclusiva: { border: 'border-ambar/80', ring: 'ring-ambar', text: 'text-ambar' },
 };
 
+const RAREZA_TIER: Record<BannerItem['rareza'], number> = { comun: 0, rara: 1, epica: 2, legendaria: 3, exclusiva: 4 };
+
+// Mismo tier de rareza primero; dentro de "exclusiva", el orden narrativo
+// de BANNER_ORDEN_EXCLUSIVO (precio no sirve: todas valen 0). El resto se
+// ordena por precio, como antes.
+function compararBanners(a: BannerItem, b: BannerItem): number {
+  const tierA = RAREZA_TIER[a.rareza];
+  const tierB = RAREZA_TIER[b.rareza];
+  if (tierA !== tierB) return tierA - tierB;
+  if (a.exclusivo && b.exclusivo) {
+    const ia = BANNER_ORDEN_EXCLUSIVO.indexOf(a.id);
+    const ib = BANNER_ORDEN_EXCLUSIVO.indexOf(b.id);
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+  }
+  return a.precio - b.precio;
+}
+
+// Banners exclusivos: se ven y se explican en la tienda (comprables o no,
+// para saber cómo conseguirlos), no en "Mis banners" — así el inventario
+// solo muestra lo que ya tienes, sin exclusivos bloqueados de más.
 export default function BannerGallery({ items, owned, equipped, shop = false, embedded = false, onSaved }: { items: BannerItem[]; owned: string[]; equipped: string; shop?: boolean; embedded?: boolean; onSaved?: () => Promise<void> }) {
   const router = useRouter();
-  const visibleItems = items.filter((banner) => shop ? !banner.exclusivo : banner.exclusivo || owned.includes(banner.id) || banner.precio === 0);
+  const visibleItems = items
+    .filter((banner) => shop ? true : !banner.exclusivo && (owned.includes(banner.id) || banner.precio === 0))
+    .sort(compararBanners);
   const [selection, setSelection] = useState(visibleItems.some((banner) => banner.id === equipped) ? equipped : visibleItems[0]?.id ?? 'carbon');
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
@@ -53,7 +75,7 @@ export default function BannerGallery({ items, owned, equipped, shop = false, em
     <label className="mb-4 flex items-center gap-3 text-sm">Rareza
       <select value={rarity} onChange={(event) => setRarity(event.target.value)} className="min-h-11 min-w-0 flex-1 rounded-lg border border-borde bg-tarjeta px-3">
         <option value="all">Todas</option>
-        {Object.entries(BANNER_RARITIES).filter(([value]) => !shop || value !== 'exclusiva').map(([value,label]) => <option key={value} value={value}>{label}</option>)}
+        {Object.entries(BANNER_RARITIES).filter(([value]) => shop || value !== 'exclusiva').map(([value,label]) => <option key={value} value={value}>{label}</option>)}
       </select>
     </label>
     <ul className="grid grid-cols-2 gap-3" aria-label="Catálogo de banners">

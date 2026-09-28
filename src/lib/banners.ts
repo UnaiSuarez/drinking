@@ -79,6 +79,19 @@ export const BANNER_NAMES: Record<string, string> = {
   'maestro-prestigio': 'Maestro de Prestigio',
 };
 export const BANNER_RARITIES = { comun: 'Común', rara: 'Rara', epica: 'Épica', legendaria: 'Legendaria', exclusiva: 'Exclusiva' };
+/** Orden de exhibición dentro de la rareza "exclusiva" (todas tienen precio
+ * 0, así que ordenar por precio las deja en cualquier orden). Prestigio en
+ * su secuencia 1→6, luego otros logros, luego eventos de temporada
+ * agrupados por evento y nivel. Los que no estén aquí van al final, en el
+ * orden que devuelva la base de datos. */
+export const BANNER_ORDEN_EXCLUSIVO: string[] = [
+  'primer-juramento', 'guardian-esmeralda', 'corona-mareas', 'eclipse-real', 'cenit', 'maestro-prestigio',
+  'campeon', 'cumbre-after',
+  'noche-de-brujas', 'halloween-epico', 'halloween-legendario',
+  'luces-de-navidad', 'navidad-epico', 'navidad-legendario',
+  'anio-nuevo-comun', 'anio-nuevo-epico', 'anio-nuevo-legendario',
+  'chiringuito-de-verano', 'verano-epico', 'verano-legendario',
+];
 export const BANNER_ANIMATED = new Set(['aurora','ascuas','tormenta','dragon','observatorio','campeon','biblioteca-arcana','templo-glacial','forja-solar','viaje-estelar','cumbre-after']);
 export const BANNER_REQUIREMENTS: Record<string,string> = {
   'primer-juramento': 'Se desbloquea al alcanzar Prestigio 1.',
