@@ -1,6 +1,7 @@
 import BackButton from "@/components/BackButton";
 import TiendaClient from "@/components/TiendaClient";
 import { createClient } from "@/lib/supabase/server";
+import type { BannerItem } from "@/lib/banners";
 
 export default async function TiendaPage() {
   const supabase = await createClient();
@@ -24,6 +25,12 @@ export default async function TiendaPage() {
     0
   );
 
+  const [catalogoBanners, bannersUsuario, bannerEquipado] = await Promise.all([
+    supabase.from("banners_catalogo").select("*").eq("exclusivo", false).order("precio"),
+    supabase.from("banners_usuario").select("banner_id").eq("usuario_id", user!.id),
+    supabase.from("banner_equipado").select("banner_id").eq("usuario_id", user!.id).maybeSingle(),
+  ]);
+
   return (
     <main className="mx-auto min-h-dvh w-full max-w-md overflow-hidden px-5 pb-24 pt-8 [contain:paint]">
       <BackButton />
@@ -33,6 +40,11 @@ export default async function TiendaPage() {
         avatarConfigRaw={perfil?.avatar_config ?? null}
         xp={perfil?.xp ?? 0}
         plHistoricos={plHistoricos}
+        banners={catalogoBanners.error || bannersUsuario.error || bannerEquipado.error ? null : {
+          items: (catalogoBanners.data ?? []) as BannerItem[],
+          owned: (bannersUsuario.data ?? []).map((row) => row.banner_id),
+          equipped: bannerEquipado.data?.banner_id ?? "carbon",
+        }}
       />
     </main>
   );

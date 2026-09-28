@@ -1,21 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import BackButton from "@/components/BackButton";
+import Link from "next/link";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
 import { AVATAR_PREDETERMINADO, parseAvatarConfig } from "@/lib/avatar";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
 import { MARCO_INFO, MARCO_PRESTIGIO_HITOS, marcoPorLiga, marcosNivelHitos, type MarcoPerfil } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 import PrestigioPanel from "@/components/PrestigioPanel";
-import { calcularDivision } from "@/lib/liga";
+import { calcularDivision, DIVISIONES } from "@/lib/liga";
 
-const LIGA_HITOS: { pl: number; esTop1: boolean; marco: MarcoPerfil }[] = [
-  { pl: 0, esTop1: false, marco: "liga-bronce" },
-  { pl: 50, esTop1: false, marco: "liga-plata" },
-  { pl: 125, esTop1: false, marco: "liga-oro" },
-  { pl: 210, esTop1: false, marco: "liga-diamante" },
-  { pl: 300, esTop1: false, marco: "liga-maestro" },
-  { pl: 300, esTop1: true, marco: "liga-challenger" },
-];
+const LIGA_HITOS: { pl: number; esTop1: boolean; marco: MarcoPerfil }[] = DIVISIONES.map(
+  (division) => ({ pl: division.pl, esTop1: division.id === "challenger", marco: division.marco })
+);
 
 export default async function NivelesPage({
   searchParams,
@@ -83,7 +79,7 @@ export default async function NivelesPage({
           pl: lista[idx].pl,
           posicion: idx + 1,
           total: lista.length,
-          esTop1: idx === 0,
+          esTop1: idx === 0 && (lista.length === 1 || lista[0].pl > lista[1].pl),
         };
       }
     }
@@ -229,7 +225,7 @@ export default async function NivelesPage({
                 config={avatarConfig}
                 marco={hito.marco}
                 titulo={division.nombre}
-                subtitulo={hito.esTop1 ? "Nº1 de la sala con 300+ PL" : `${hito.pl}+ PL`}
+                subtitulo={hito.esTop1 ? `Nº1 de la sala con ${hito.pl}+ PL` : `${hito.pl}+ PL`}
                 triggerClassName="h-16 w-16"
                 previewClassName="h-72 w-72"
               />
@@ -241,13 +237,27 @@ export default async function NivelesPage({
                   )}
                 </p>
                 <p className="text-xs text-texto2">
-                  {hito.esTop1 ? "Nº1 de la sala con 300+ PL" : `${hito.pl}+ PL`}
+                  {hito.esTop1 ? `Nº1 de la sala con ${hito.pl}+ PL` : `${hito.pl}+ PL`}
                 </p>
               </div>
             </li>
           );
         })}
       </ul>
+
+      <section className="mt-6 border-t border-borde py-5 text-sm">
+        <h2 className="mb-2 font-titulo text-xl">Premios de liga</h2>
+        <p className="text-texto2">Una recompensa por división y temporada, solo por nuevos ascensos. Bajar y recuperar la división no repite el premio.</p>
+        <ul className="my-3 space-y-1 text-texto2">
+          <li>Plata: cofre común. Oro: común y 30 chapas.</li>
+          <li>Platino: épico. Diamante: épico y 60 chapas.</li>
+          <li>Maestro: legendario. Gran Maestro: legendario, 100 chapas y título.</li>
+          <li>Challenger: distinción del primer puesto, sin cofre por alternar el liderato.</li>
+        </ul>
+        <p className="text-texto2">Al cierre: un cofre por tu máximo rango por PL, después de 7 días de temporada y 4 días con noches jugadas. Común hasta Oro, épico en Platino y Diamante, legendario desde Maestro.</p>
+        <p className="mt-2 text-texto2">Con al menos 3 participantes, el podio suma premios: 1.º legendario y 150 chapas; 2.º épico y 75; 3.º épico y 40. Debes haber participado en 2 noches. El campeón sin empate gana también un banner exclusivo.</p>
+        <Link href="/liga/historial" className="mt-3 block min-h-11 content-center text-cian underline">Ver historial y premios entregados</Link>
+      </section>
 
       <p className="mt-6 rounded-2xl border border-borde bg-tarjeta/60 p-4 text-center text-xs text-texto2">
         Ningún marco se equipa solo: elige el que quieras llevar desde tu

@@ -1,0 +1,20 @@
+.banner { position: relative; isolation: isolate; width: 100%; aspect-ratio: 3 / 1; overflow: clip; contain: paint; border-radius: 8px; background: #25262b; --banner-play: paused; }
+.banner[data-design="jade"] { background: #17463b; }
+.banner[data-compact="true"] { border-radius: 4px; }
+.banner[data-design="carmesi"] { background: #642936; }
+.banner[data-design="circuito"] { background: repeating-linear-gradient(90deg, transparent 0 35px, #398573 36px 38px, transparent 39px 70px), repeating-linear-gradient(0deg, #132824 0 34px, #29564c 35px 37px); }
+.banner[data-design="art-deco"] { background: repeating-linear-gradient(60deg, transparent 0 45px, #aa9365 46px 48px, transparent 49px 90px), repeating-linear-gradient(-60deg, #24272b 0 45px, #aa9365 46px 48px, #24272b 49px 90px); }
+.banner[data-design="damero"] { background: repeating-conic-gradient(#3e4149 0% 25%, #191b20 0% 50%) 50% / 48px 48px; }
+.banner[data-design="aurora"] { background: linear-gradient(125deg, #162e3e, #267b69 48%, #344263 70%, #222633); }
+.banner[data-design="ascuas"] { background: linear-gradient(15deg, #301e22, #94372c 30%, #45232b 58%, #202126); }
+.banner[data-design="tormenta"] { background: linear-gradient(145deg, #153844, #295a66 55%, #213a48); }
+.light, .accent { display: none; position: absolute; pointer-events: none; inset: 0; }
+.banner[data-animated="true"]:not([data-mode="minimal"]) .light { display: block; background: linear-gradient(110deg, transparent 30%, #ffffff24 48%, transparent 65%); animation: sweep 8s ease-in-out infinite; animation-play-state: var(--banner-play); }
+.banner[data-design="ascuas"] .light { background: linear-gradient(0deg, #ff90364a, transparent 80%); animation-name: breathe; }
+.banner[data-design="tormenta"] .light { background: linear-gradient(135deg, transparent 39%, #b6faff50 40% 41%, transparent 42% 57%, #b6faff30 58% 59%, transparent 60%); animation-name: breathe; }
+.banner[data-mode="full"][data-animated="true"] .accent { display: block; inset: 12px; border-block: 1px solid #fff5; animation: breathe 5s ease-in-out infinite alternate; animation-play-state: var(--banner-play); }
+.content { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; padding-inline: 16px; }
+.content > button { width: 25%; height: auto; aspect-ratio: 1; }
+@keyframes sweep { 0%, 15% { transform: translateX(-85%); opacity: 0; } 50% { opacity: 1; } 85%, 100% { transform: translateX(85%); opacity: 0; } }
+@keyframes breathe { 0%, 100% { opacity: .12; } 50% { opacity: .8; } }
+@media (prefers-reduced-motion: reduce) { .light, .accent { display: none !important; animation: none !important; } }

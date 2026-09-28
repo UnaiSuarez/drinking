@@ -1,3 +1,5 @@
+import { calcularDivision } from "./liga";
+
 export type MarcoPerfil =
   | "madera"
   | "plata"
@@ -24,8 +26,10 @@ export type MarcoPerfil =
   | "liga-bronce"
   | "liga-plata"
   | "liga-oro"
+  | "liga-platino"
   | "liga-diamante"
   | "liga-maestro"
+  | "liga-gran-maestro"
   | "liga-challenger"
   // Marcos de nivel (ciclo 0, antes del primer prestigio). Exclusivos: no
   // están en la tienda, solo se consiguen subiendo de nivel.
@@ -104,8 +108,10 @@ export const MARCO_ORDEN: MarcoPerfil[] = [
   "liga-bronce",
   "liga-plata",
   "liga-oro",
+  "liga-platino",
   "liga-diamante",
   "liga-maestro",
+  "liga-gran-maestro",
   "liga-challenger",
 ];
 
@@ -216,6 +222,14 @@ export const MARCO_INFO: Record<
   "liga-diamante": {
     nombre: "Diamante Etílico",
     descripcion: "Cristales cian y luz fría para el tramo de élite.",
+  },
+  "liga-platino": {
+    nombre: "Platino de Barra",
+    descripcion: "Platino y jade para el siguiente escalón de la liga.",
+  },
+  "liga-gran-maestro": {
+    nombre: "Gran Maestro del After",
+    descripcion: "Metal oscuro y oro incandescente para la élite del After.",
   },
   "liga-maestro": {
     nombre: "Maestro Cubata",
@@ -341,12 +355,7 @@ export function marcoPorNivel(nivel: number, ciclo = 0): MarcoPerfil {
 }
 
 export function marcoPorLiga(pl: number, esTop1 = false): MarcoPerfil {
-  if (pl >= 300 && esTop1) return "liga-challenger";
-  if (pl >= 300) return "liga-maestro";
-  if (pl >= 210) return "liga-diamante";
-  if (pl >= 125) return "liga-oro";
-  if (pl >= 50) return "liga-plata";
-  return "liga-bronce";
+  return calcularDivision(pl, esTop1).marco;
 }
 
 export function mejorMarco(...marcos: MarcoPerfil[]): MarcoPerfil {

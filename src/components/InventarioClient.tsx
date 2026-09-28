@@ -433,18 +433,20 @@ export default function InventarioClient({
         </ul>
       </section>
 
-      <section>
-        <div className="mb-3 flex items-end justify-between gap-3">
-          <div>
-            <h2 className="font-titulo text-xl text-texto">Cartas</h2>
-            <p className="text-xs text-texto2">
+      <details className="group">
+        <summary className="mb-3 min-h-11 cursor-pointer marker:text-cian">
+        <span className="inline-flex w-[calc(100%-1.5rem)] items-end justify-between gap-3 align-middle">
+          <span>
+            <span className="block font-titulo text-xl text-texto">Cartas</span>
+            <span className="block text-xs text-texto2">
               {cartasConseguidas}/{CARTAS_COFRES.length} descubiertas
-            </p>
-          </div>
+            </span>
+          </span>
           <span className="rounded-full border border-borde bg-tarjeta px-3 py-1 font-titulo text-xs text-texto2">
             Acumulables
           </span>
-        </div>
+        </span>
+        </summary>
 
         {cartasConseguidas === 0 ? (
           <p className="rounded-2xl border border-dashed border-borde px-3 py-6 text-center text-sm text-texto2">
@@ -508,7 +510,7 @@ export default function InventarioClient({
           })}
         </ul>
         )}
-      </section>
+      </details>
 
       {apertura && (
         <CofreAperturaModal

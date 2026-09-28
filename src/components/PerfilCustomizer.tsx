@@ -63,8 +63,6 @@ export default function PerfilCustomizer({
     }
   }
 
-  if (medallas.length === 0 && titulosPrestigio.length === 0) return null;
-
   if (!abierto) {
     return (
       <button
@@ -152,6 +150,7 @@ export default function PerfilCustomizer({
           );
         })}
       </div>
+      {medallas.length === 0 && <p className="mb-4 text-sm text-texto2">Cuando consigas medallas podrás escoger hasta tres para tu vitrina.</p>}
 
       {error && <p role="alert" className="mb-3 text-sm text-rosa">{error}</p>}
       <div className="flex gap-2">

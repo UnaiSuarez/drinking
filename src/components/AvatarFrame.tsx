@@ -213,6 +213,22 @@ const MARCO_CLASES: Record<
     arte: "/frames/ai/items/liga-diamante.webp",
     animacion: "cristal",
   },
+  "liga-platino": {
+    base: "avatar-frame-plata",
+    inner: "from-[#f0fff9] via-[#65c9a5] to-[#354b44]",
+    metal: "#d5f5e9",
+    gema: "#59ddb1",
+    arte: "/frames/ai/items/liga-platino.webp",
+    animacion: "shine",
+  },
+  "liga-gran-maestro": {
+    base: "avatar-frame-vip",
+    inner: "from-[#ffec9f] via-[#ad7534] to-[#252124]",
+    metal: "#ffd878",
+    gema: "#ff754a",
+    arte: "/frames/ai/items/liga-gran-maestro.webp",
+    animacion: "corona",
+  },
   "liga-maestro": {
     base: "avatar-frame-liga-maestro",
     inner: "from-[#ffd54a] via-[#ff2e93] to-[#4d1231]",

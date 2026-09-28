@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ChartNoAxesCombined, CupSoda, TrendingUp } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { calcularDivision } from "@/lib/liga";
 import { marcoPorLiga } from "@/lib/marcos";
@@ -292,6 +293,23 @@ export default function SalaView({
         </div>
       </header>
 
+      <nav aria-label="Explorar sala" className="mb-6 grid grid-cols-3 gap-2">
+        <Link href={`/niveles?sala=${sala.id}`} className="flex min-h-20 min-w-0 flex-col justify-between rounded-lg border border-borde bg-tarjeta p-3 text-sm font-semibold text-texto transition-colors hover:border-cian/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cian">
+          <TrendingUp size={19} className="text-cian" aria-hidden="true" />
+          <span>Niveles</span>
+        </Link>
+        <Link href={`/sala/${sala.id}/estadisticas`} className="flex min-h-20 min-w-0 flex-col justify-between rounded-lg border border-borde bg-tarjeta p-3 text-sm font-semibold text-texto transition-colors hover:border-lima/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-lima">
+          <ChartNoAxesCombined size={19} className="text-lima" aria-hidden="true" />
+          <span>Estadísticas</span>
+        </Link>
+        {esPermanente && (
+          <Link href={`/sala/${sala.id}/registros`} className="flex min-h-20 min-w-0 flex-col justify-between rounded-lg border border-borde bg-tarjeta p-3 text-sm font-semibold text-texto transition-colors hover:border-rosa/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rosa">
+            <CupSoda size={19} className="text-rosa" aria-hidden="true" />
+            <span>Bebidas</span>
+          </Link>
+        )}
+      </nav>
+
       {cumpleanosHoy.length > 0 && (
         <div className="mb-4 rounded-2xl border border-rosa/50 bg-rosa/10 px-4 py-3 text-center text-sm text-texto">
           🎂 ¡Hoy es el cumpleaños de{" "}
@@ -501,28 +519,6 @@ export default function SalaView({
             </span>
           )}
         </div>
-        <div className="mb-3 flex flex-wrap gap-2">
-          <Link
-            href={`/niveles?sala=${sala.id}`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-cian/50 bg-cian/10 px-3 py-1.5 text-xs font-semibold text-cian transition active:scale-95"
-          >
-            📈 Ver niveles
-          </Link>
-          <Link
-            href={`/sala/${sala.id}/estadisticas`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-lima/50 bg-lima/10 px-3 py-1.5 text-xs font-semibold text-lima transition active:scale-95"
-          >
-            📊 Estadísticas
-          </Link>
-          {esPermanente && (
-            <Link
-              href={`/sala/${sala.id}/registros`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-rosa/50 bg-rosa/10 px-3 py-1.5 text-xs font-semibold text-rosa transition active:scale-95"
-            >
-              🥤 Bebidas de la sala
-            </Link>
-          )}
-        </div>
         {liga.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
             La liga arranca con vuestra primera noche 🌙
@@ -530,7 +526,8 @@ export default function SalaView({
         ) : (
           <ul className="space-y-2">
             {liga.map((e, i) => {
-              const div = calcularDivision(e.pl, i === 0);
+              const liderUnico = i === 0 && (liga.length === 1 || e.pl > liga[1].pl);
+              const div = calcularDivision(e.pl, liderUnico);
               return (
                 <li key={e.usuarioId}>
                   <Link
@@ -545,7 +542,7 @@ export default function SalaView({
                       </span>
                       <AvatarFramePreview
                         config={e.avatarConfig}
-                        marco={marcoPorLiga(e.pl, i === 0)}
+                        marco={marcoPorLiga(e.pl, liderUnico)}
                         titulo={e.nombre}
                         subtitulo={`${div.nombre} · ${e.pl} PL`}
                         triggerClassName="h-9 w-9"

@@ -7,14 +7,13 @@ import ProfileAchievementDetails from "@/components/ProfileAchievementDetails";
 import ColeccionBebidas, { type BebidaCatalogoItem } from "@/components/ColeccionBebidas";
 import PerfilCustomizer from "@/components/PerfilCustomizer";
 import PrestigioPanel from "@/components/PrestigioPanel";
-import { ShieldCheck } from "lucide-react";
+import { Backpack, ChartNoAxesCombined, ChevronRight, MapPinned, ShieldCheck, ShoppingBag } from "lucide-react";
 import { tituloPrestigio } from "@/lib/prestigio";
-import NombreEditor from "@/components/NombreEditor";
+import ProfileBanner from "@/components/ProfileBanner";
 import BackButton from "@/components/BackButton";
 import { progresoNivel } from "@/lib/niveles";
 import { parseAvatarConfig } from "@/lib/avatar";
 import { calcularDivision } from "@/lib/liga";
-import { marcoPorLiga } from "@/lib/marcos";
 import { parseTiendaState } from "@/lib/tienda";
 
 const RAREZA_ESTILO: Record<string, string> = {
@@ -45,6 +44,11 @@ export default async function PerfilPage({
     .single();
 
   if (!perfil) notFound();
+  const { data: banner } = await supabase.from("banner_equipado")
+    .select("banner_id").eq("usuario_id", id).maybeSingle();
+  const { data: titulosLiga } = user?.id === id
+    ? await supabase.from("titulos_liga").select("titulo").eq("usuario_id", id)
+    : { data: null };
   const avatar = parseAvatarConfig(perfil.avatar_config);
   const tienda = parseTiendaState(perfil.avatar_config);
   const nivel = progresoNivel(perfil.xp ?? 0);
@@ -127,7 +131,7 @@ export default async function PerfilPage({
         pl: entrada?.pl ?? 0,
         posicion: indice >= 0 ? indice + 1 : null,
         jugadores: ligaSala.length,
-        esTop1: indice === 0,
+        esTop1: indice === 0 && (ligaSala.length === 1 || ligaSala[0].pl > ligaSala[1].pl),
       };
     } else {
       rankingSala = {
@@ -144,9 +148,6 @@ export default async function PerfilPage({
   const divisionSala = rankingSala
     ? calcularDivision(rankingSala.pl, rankingSala.esTop1)
     : null;
-  const marcoLigaSala = rankingSala
-    ? marcoPorLiga(rankingSala.pl, rankingSala.esTop1)
-    : "madera";
 
   // Medallas agrupadas con contador
   const coleccion = new Map<
@@ -237,17 +238,19 @@ export default async function PerfilPage({
 
       <header className="mb-8 mt-4 text-center">
         <div className="mb-4 flex flex-col items-center">
+          <ProfileBanner id={banner?.banner_id ?? "carbon"}>
           <AvatarFramePreview
             config={avatar}
             marco={marcoPersonal}
             titulo={perfil.nombre}
             subtitulo={`Nivel ${nivel.nivel}`}
-            triggerClassName="h-32 w-32"
+            triggerClassName="h-full w-full"
             previewClassName="h-80 w-80"
           />
-          <p className="mt-3 font-titulo text-sm text-cian">
+          </ProfileBanner>
+          {!puedeVerPrivado && <p className="mt-3 font-titulo text-sm text-cian">
             Nivel {nivel.nivel}
-          </p>
+          </p>}
         </div>
 
         <h1 className="font-titulo text-3xl text-texto">
@@ -269,8 +272,10 @@ export default async function PerfilPage({
             )}
           </div>
         )}
-        {vitrinaSlugs.length > 0 && (
-          <div className="mx-auto my-3 flex max-w-sm justify-center gap-2" aria-label="Vitrina de medallas">
+        {(esMiPerfil || vitrinaSlugs.some((slug) => coleccion.has(slug))) && (
+          <div className="mx-auto my-3 max-w-sm" aria-label="Vitrina de medallas">
+            <p className="mb-2 font-titulo text-xs text-texto2">Vitrina de medallas</p>
+            <div className="flex justify-center gap-2">
             {vitrinaSlugs.slice(0, 3).map((slug) => {
               const m = coleccion.get(slug);
               if (!m) return null;
@@ -280,9 +285,15 @@ export default async function PerfilPage({
                 {m.repetible && <p className="text-xs text-ambar">×{m.n}</p>}
               </div>;
             })}
+            {!vitrinaSlugs.some((slug) => coleccion.has(slug)) &&
+              <p className="py-2 text-xs text-texto2">Aún no hay medallas expuestas.</p>}
+            </div>
           </div>
         )}
-        {esMiPerfil && <NombreEditor actual={perfil.nombre} />}
+        {esMiPerfil && <div className="my-3 flex flex-wrap justify-center gap-4 text-sm text-cian">
+          <Link href="/banners" className="min-h-11 content-center underline">Personalizar banner</Link>
+          <Link href="/liga/historial" className="min-h-11 content-center underline">Premios de liga</Link>
+        </div>}
         <p className="mb-3 text-xs text-texto2">
           En El Ranking desde{" "}
           {new Date(perfil.created_at).toLocaleDateString("es-ES", {
@@ -298,21 +309,8 @@ export default async function PerfilPage({
           </p>
         )}
         {puedeVerPrivado && <div className={`mb-5 grid gap-3 text-left ${rankingSala ? "grid-cols-2" : "grid-cols-1"}`}>
-          <section className="rounded-2xl border border-cian/50 bg-tarjeta p-3">
-            <p className="mb-2 font-titulo text-xs uppercase text-cian">
-              Nivel personal
-            </p>
-            <div className="mb-2 flex justify-center">
-              <AvatarFramePreview
-                config={avatar}
-                marco={marcoPersonal}
-                titulo={perfil.nombre}
-                subtitulo={`Nivel personal ${nivel.nivel}`}
-                triggerClassName="h-24 w-24"
-                previewClassName="h-72 w-72"
-              />
-            </div>
-            <p className="mb-2 text-center font-titulo text-xl text-texto">
+          <section className="min-w-0 border-y border-cian/30 py-3">
+            <p className="mb-2 font-titulo text-lg text-cian">
               Nivel {nivel.nivel}
             </p>
             <div className="mb-1 flex justify-between text-[11px] text-texto2">
@@ -334,24 +332,10 @@ export default async function PerfilPage({
             </div>
           </section>
 
-          {rankingSala && <section className="rounded-2xl border border-ambar/50 bg-tarjeta p-3">
+          {rankingSala && <section className="min-w-0 border-y border-ambar/30 py-3">
             <p className="mb-2 font-titulo text-xs uppercase text-ambar">
               Liga de sala
             </p>
-            <div className="mb-2 flex justify-center">
-              <AvatarFramePreview
-                config={avatar}
-                marco={marcoLigaSala}
-                titulo={divisionSala?.nombre ?? "Liga de sala"}
-                subtitulo={
-                  rankingSala
-                    ? `${rankingSala.salaNombre} · ${rankingSala.pl} PL`
-                    : "Sin sala"
-                }
-                triggerClassName="h-24 w-24"
-                previewClassName="h-72 w-72"
-              />
-            </div>
             {rankingSala && divisionSala ? (
               <>
                 <p className="text-center font-titulo text-lg text-texto">
@@ -409,49 +393,52 @@ export default async function PerfilPage({
           </div>
         )}
 
-        {esMiPerfil && <PrestigioPanel ciclo={ciclo} nivel={nivel.nivel} />}
+        {esMiPerfil && <details className="mb-4 text-left" open={nivel.nivel >= 50}>
+          <summary className="min-h-11 cursor-pointer content-center text-sm text-ambar">Próximo prestigio · {tituloPrestigio(ciclo + 1)}</summary>
+          <PrestigioPanel ciclo={ciclo} nivel={nivel.nivel} />
+        </details>}
 
-        <div className="mx-auto mb-2 flex flex-wrap justify-center gap-2">
+        <nav aria-label="Secciones del perfil" className="mb-4 grid grid-cols-2 gap-2 text-left">
           {esMiPerfil && <>
             <Link
               href="/tienda"
-              className="rounded-xl border border-ambar px-4 py-2 text-xs text-ambar active:scale-95"
+              className="flex min-h-12 items-center gap-2 rounded-lg border border-borde bg-tarjeta/50 px-3 text-sm text-texto transition hover:border-ambar focus-visible:outline-2 focus-visible:outline-ambar"
             >
-              🪙 Tienda
+              <ShoppingBag size={18} className="shrink-0 text-ambar" aria-hidden="true" /><span className="min-w-0 flex-1">Tienda</span><ChevronRight size={15} className="shrink-0 text-texto2" aria-hidden="true" />
             </Link>
             <Link
               href="/inventario"
-              className="rounded-xl border border-cian px-4 py-2 text-xs text-cian active:scale-95"
+              className="flex min-h-12 items-center gap-2 rounded-lg border border-borde bg-tarjeta/50 px-3 text-sm text-texto transition hover:border-cian focus-visible:outline-2 focus-visible:outline-cian"
             >
-              🎴 Inventario
+              <Backpack size={18} className="shrink-0 text-cian" aria-hidden="true" /><span className="min-w-0 flex-1">Inventario</span><ChevronRight size={15} className="shrink-0 text-texto2" aria-hidden="true" />
             </Link>
             <Link
               href="/mapa"
-              className="rounded-xl border border-rosa px-4 py-2 text-xs text-rosa active:scale-95"
+              className="flex min-h-12 items-center gap-2 rounded-lg border border-borde bg-tarjeta/50 px-3 text-sm text-texto transition hover:border-rosa focus-visible:outline-2 focus-visible:outline-rosa"
             >
-              🗺️ Mapa de sitios
+              <MapPinned size={18} className="shrink-0 text-rosa" aria-hidden="true" /><span className="min-w-0 flex-1">Mapa de sitios</span><ChevronRight size={15} className="shrink-0 text-texto2" aria-hidden="true" />
             </Link>
           </>}
           {esAmigoAceptado && (
             <Link
               href={`/mapa/amigo/${id}`}
-              className="rounded-xl border border-rosa px-4 py-2 text-xs text-rosa active:scale-95"
+              className="flex min-h-12 items-center gap-2 rounded-lg border border-borde bg-tarjeta/50 px-3 text-sm text-texto transition hover:border-rosa focus-visible:outline-2 focus-visible:outline-rosa"
             >
-              🗺️ Sus sitios
+              <MapPinned size={18} className="shrink-0 text-rosa" aria-hidden="true" /><span className="min-w-0 flex-1">Sus sitios</span><ChevronRight size={15} className="shrink-0 text-texto2" aria-hidden="true" />
             </Link>
           )}
           {puedeVerPrivado && (
             <Link
               href={`/perfil/${id}/estadisticas${salaContexto ? `?sala=${salaContexto.id}` : ""}`}
-              className="rounded-xl border border-lima px-4 py-2 text-xs text-lima active:scale-95"
+              className="flex min-h-12 items-center gap-2 rounded-lg border border-borde bg-tarjeta/50 px-3 text-sm text-texto transition hover:border-lima focus-visible:outline-2 focus-visible:outline-lima"
             >
-              📊 Estadísticas
+              <ChartNoAxesCombined size={18} className="shrink-0 text-lima" aria-hidden="true" /><span className="min-w-0 flex-1">Estadísticas</span><ChevronRight size={15} className="shrink-0 text-texto2" aria-hidden="true" />
             </Link>
           )}
-        </div>
+        </nav>
         {esMiPerfil && (
           <PerfilCustomizer
-            titulosPrestigio={(prestigios ?? []).map((p) => tituloPrestigio(p.ciclo))}
+            titulosPrestigio={[...(prestigios ?? []).map((p) => tituloPrestigio(p.ciclo)), ...(titulosLiga ?? []).map((t) => t.titulo)]}
             tituloActual={perfil.titulo}
             vitrinaActual={vitrinaSlugs}
             medallas={medallasOrdenadas.map((m) => ({
@@ -465,15 +452,15 @@ export default async function PerfilPage({
       </header>
 
       {/* Colección de medallas */}
-      {puedeVerPrivado && <section className="mb-8">
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="font-titulo text-xl text-texto">
+      {puedeVerPrivado && <details className="mb-8">
+        <summary className="mb-3 min-h-11 cursor-pointer content-center font-titulo text-xl marker:text-cian">
+          <span className="text-texto">
             🏅 Medallas ({medallasOrdenadas.length})
-          </h2>
-          <Link href="/logros" className="text-xs text-cian underline">
+          </span>
+        </summary>
+          <Link href="/logros" className="mb-3 inline-flex min-h-11 items-center text-xs text-cian underline">
             Ver catálogo completo
           </Link>
-        </div>
         {medallasOrdenadas.length === 0 ? (
           <p className="rounded-2xl border border-borde bg-tarjeta p-6 text-center text-sm text-texto2">
             Vitrina con telarañas… 🕸️ Las medallas se ganan saliendo.
@@ -507,7 +494,7 @@ export default async function PerfilPage({
             ))}
           </ul>
         )}
-      </section>}
+      </details>}
 
       {puedeVerPrivado && <ColeccionBebidas items={coleccionBebidas} />}
     </main>

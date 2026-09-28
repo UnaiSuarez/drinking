@@ -366,8 +366,8 @@ export default async function PodioPage({
         despues: plDespues,
         posicionDespues: idxDespues + 1,
         totalLiga: lista.length,
-        esTop1Antes: idxAntes === 0,
-        esTop1Despues: idxDespues === 0,
+        esTop1Antes: idxAntes === 0 && (listaAntes.length === 1 || listaAntes[0].pl > listaAntes[1].pl),
+        esTop1Despues: idxDespues === 0 && (lista.length === 1 || lista[0].pl > lista[1].pl),
         desglose: desglosePl,
       };
     }

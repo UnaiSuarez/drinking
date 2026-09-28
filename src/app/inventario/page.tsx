@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { Palette } from "lucide-react";
 import BackButton from "@/components/BackButton";
 import InventarioClient from "@/components/InventarioClient";
 import { createClient } from "@/lib/supabase/server";
@@ -30,6 +32,7 @@ export default async function InventarioPage() {
   return (
     <main className="inventory-catalog mx-auto min-h-dvh w-full max-w-md overflow-hidden px-5 pb-24 pt-8 [contain:paint]">
       <BackButton />
+      <Link href="/banners" className="my-4 flex min-h-11 items-center justify-center gap-2 rounded-lg border border-cian text-cian"><Palette size={18} />Mis banners</Link>
       <InventarioClient
         userId={user.id}
         nombre={perfil?.nombre ?? "tu perfil"}

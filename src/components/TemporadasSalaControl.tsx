@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 export type TemporadaSala = {
@@ -127,6 +128,8 @@ export default function TemporadasSalaControl({
         siguiente noche que se cierre crea la próxima automáticamente si no
         hay ninguna activa.
       </p>
+      <p className="mt-2 text-xs text-texto2">Los cofres y chapas de liga se entregan automáticamente cuando se cumplen los requisitos. El premio escrito sigue siendo el premio que acuerde vuestra sala.</p>
+      <Link href={`/niveles?sala=${salaId}`} className="mt-2 inline-block min-h-11 content-center text-xs text-cian underline">Divisiones y recompensas automáticas</Link>
 
       {error && <p role="alert" className="mt-2 text-sm text-rosa">{error}</p>}
 

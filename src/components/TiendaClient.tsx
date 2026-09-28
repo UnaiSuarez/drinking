@@ -5,6 +5,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import BannerGallery from "@/components/BannerGallery";
+import type { BannerItem } from "@/lib/banners";
 import FrameListAnimations, { useFrameListAnimations } from "@/components/FrameListAnimations";
 import { fxDeMarco } from "@/lib/marcoFx";
 import { PersonajeFichaTrigger } from "@/components/PersonajeFicha";
@@ -88,12 +90,14 @@ export default function TiendaClient({
   avatarConfigRaw,
   xp,
   plHistoricos,
+  banners,
 }: {
   userId: string;
   nombre: string;
   avatarConfigRaw: unknown;
   xp: number;
   plHistoricos: number;
+  banners: { items: BannerItem[]; owned: string[]; equipped: string } | null;
 }) {
   const animateFrames = useFrameListAnimations();
   const router = useRouter();
@@ -122,6 +126,16 @@ export default function TiendaClient({
     setRawConfig(nextConfig);
     router.refresh();
     return true;
+  }
+
+  async function actualizarTrasBanner() {
+    const { data, error } = await createClient()
+      .from("perfiles")
+      .select("avatar_config")
+      .eq("id", userId)
+      .single();
+    if (error || !data) throw new Error("El banner se guardó, pero no se pudo actualizar el saldo. Recarga la tienda.");
+    setRawConfig(data.avatar_config);
   }
 
   async function comprarMarco(id: MarcoPerfil, precio: number) {
@@ -416,6 +430,11 @@ export default function TiendaClient({
             );
           })}
         </ul>
+      </section>
+
+      <section id="banners" className="mb-8 scroll-mt-20">
+        {banners ? <BannerGallery shop embedded {...banners} onSaved={actualizarTrasBanner} /> :
+          <p role="alert" className="text-sm text-rosa">No se pudieron cargar los banners. Vuelve a intentarlo.</p>}
       </section>
 
       <section>

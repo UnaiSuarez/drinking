@@ -5,7 +5,7 @@ import AdminPruebasAnimacion from "@/components/AdminPruebasAnimacion";
 import BackButton from "@/components/BackButton";
 import { createClient } from "@/lib/supabase/client";
 import { CARTAS_COFRES, COFRES_TIPOS } from "@/lib/cofresDesign";
-import { parseInventarioState, totalItems } from "@/lib/inventario";
+import { FRAGMENTOS_PERSONAJE_NECESARIOS, parseInventarioState, totalItems } from "@/lib/inventario";
 import { PERSONAJES_OCULTOS, calcularSaldoChapas, parseTiendaState, skinsDisponibles } from "@/lib/tienda";
 import { progresoNivel } from "@/lib/niveles";
 
@@ -21,6 +21,8 @@ type PerfilDetalle = {
   cartas: number;
   cofres: number;
   ciclo: number;
+  personajesOcultos: string[];
+  personajeFragmentos: Record<string, number>;
 };
 
 export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
@@ -40,6 +42,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
   const [cofreId, setCofreId] = useState<string>(COFRES_TIPOS[0]?.id ?? "");
   const [deltaCofre, setDeltaCofre] = useState("1");
   const [skinId, setSkinId] = useState(skinsDisponibles()[0]?.id ?? "");
+  const [personajeId, setPersonajeId] = useState(PERSONAJES_OCULTOS[0]?.id ?? "");
   const [logroSlug, setLogroSlug] = useState(logros[0]?.slug ?? "");
   const [confirmacionReset, setConfirmacionReset] = useState("");
 
@@ -87,6 +90,8 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
       cartas: totalItems(inventario.cartas),
       cofres: totalItems(inventario.cofres),
       ciclo: prestigioRaw?.ciclo ?? 0,
+      personajesOcultos: inventario.personajesOcultos,
+      personajeFragmentos: inventario.personajeFragmentos,
     });
   }
 
@@ -117,7 +122,7 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
       <header className="mb-6">
         <p className="font-titulo text-3xl text-ambar">🛠️ Panel de admin</p>
         <p className="mt-2 text-sm text-texto2">
-          Dar o quitar monedas, XP, cartas, cofres y medallas a cualquier
+          Dar o quitar monedas, XP, cartas, cofres y medallas, o desbloquear personajes a cualquier
           jugador.
         </p>
       </header>
@@ -354,6 +359,40 @@ export default function AdminPanel({ logros }: { logros: LogroInfo[] }) {
               className="w-full rounded-xl bg-cian py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
             >
               Aplicar
+            </button>
+          </section>
+
+          <section className="rounded-2xl border border-borde bg-tarjeta p-4">
+            <p className="mb-2 font-titulo text-sm text-texto">🔓 Personajes ocultos</p>
+            <select
+              value={personajeId}
+              onChange={(e) => setPersonajeId(e.target.value)}
+              className="mb-2 w-full rounded-xl border border-borde bg-fondo px-3 py-2 text-sm text-texto"
+            >
+              {PERSONAJES_OCULTOS.map((personaje) => (
+                <option key={personaje.id} value={personaje.id}>
+                  {personaje.nombre} ({personaje.nombreReal})
+                </option>
+              ))}
+            </select>
+            <p className="mb-3 text-xs text-texto2">
+              {seleccionado.personajesOcultos.includes(personajeId)
+                ? "Ya desbloqueado"
+                : `Fragmentos: ${Math.min(seleccionado.personajeFragmentos[personajeId] ?? 0, FRAGMENTOS_PERSONAJE_NECESARIOS)}/${FRAGMENTOS_PERSONAJE_NECESARIOS}`}
+            </p>
+            <button
+              disabled={aplicando || !personajeId || seleccionado.personajesOcultos.includes(personajeId)}
+              onClick={() =>
+                aplicar(() =>
+                  supabase.rpc("admin_desbloquear_personaje", {
+                    p_usuario: seleccionado.id,
+                    p_personaje_id: personajeId,
+                  })
+                )
+              }
+              className="w-full rounded-xl bg-lima py-2 font-titulo text-sm text-fondo active:scale-95 disabled:opacity-50"
+            >
+              Desbloquear personaje
             </button>
           </section>
 

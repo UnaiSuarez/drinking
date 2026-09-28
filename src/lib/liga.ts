@@ -1,25 +1,19 @@
-export type Division = {
-  nombre: string;
-  icono: string;
-  /** Clase de color Tailwind para el texto */
-  color: string;
-};
+export const DIVISIONES = [
+  { id: "bronce", nombre: "Bronce Resacoso", icono: "🪨", color: "text-bronce", pl: 0, marco: "liga-bronce" },
+  { id: "plata", nombre: "Plata Tambaleante", icono: "🥂", color: "text-plata", pl: 50, marco: "liga-plata" },
+  { id: "oro", nombre: "Oro Litrona", icono: "🍺", color: "text-ambar", pl: 125, marco: "liga-oro" },
+  { id: "platino", nombre: "Platino de Barra", icono: "⚜️", color: "text-emerald-300", pl: 170, marco: "liga-platino" },
+  { id: "diamante", nombre: "Diamante Etílico", icono: "💎", color: "text-cian", pl: 230, marco: "liga-diamante" },
+  { id: "maestro", nombre: "Maestro Cubata", icono: "🔥", color: "text-rosa", pl: 320, marco: "liga-maestro" },
+  { id: "gran-maestro", nombre: "Gran Maestro del After", icono: "🌟", color: "text-amber-200", pl: 450, marco: "liga-gran-maestro" },
+  { id: "challenger", nombre: "Challenger del Vodka", icono: "👑", color: "text-oro", pl: 600, marco: "liga-challenger" },
+] as const;
 
-/**
- * Divisiones con umbrales fijos calibrados para el "peor caso" (~5 noches
- * buenas completan la escalera). Ver DISEÑO.md §4.1. Challenger es único:
- * el nº1 en PL de la sala, siempre que tenga 300+.
- */
+export type Division = (typeof DIVISIONES)[number];
+
+/** Challenger requires both the points threshold and first place. */
 export function calcularDivision(pl: number, esTop1: boolean): Division {
-  if (pl >= 300 && esTop1)
-    return { nombre: "Challenger del Vodka", icono: "👑", color: "text-oro" };
-  if (pl >= 300)
-    return { nombre: "Maestro Cubata", icono: "🔥", color: "text-rosa" };
-  if (pl >= 210)
-    return { nombre: "Diamante Etílico", icono: "💎", color: "text-cian" };
-  if (pl >= 125)
-    return { nombre: "Oro Litrona", icono: "🍺", color: "text-ambar" };
-  if (pl >= 50)
-    return { nombre: "Plata Tambaleante", icono: "🥂", color: "text-plata" };
-  return { nombre: "Bronce Resacoso", icono: "🪨", color: "text-bronce" };
+  return [...DIVISIONES].reverse().find((division) =>
+    pl >= division.pl && (division.id !== "challenger" || esTop1)
+  ) ?? DIVISIONES[0];
 }

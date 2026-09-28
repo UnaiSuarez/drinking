@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { animationMode } from "@/lib/animationSettings";
 import AvatarFrame from "@/components/AvatarFrame";
 import { type AvatarConfig } from "@/lib/avatar";
-import { calcularDivision } from "@/lib/liga";
+import { calcularDivision, DIVISIONES } from "@/lib/liga";
 import { MARCO_INFO, marcoPorLiga, marcoPorNivel, type MarcoPerfil } from "@/lib/marcos";
 import { progresoNivel, xpTotalParaNivel } from "@/lib/niveles";
 
@@ -182,12 +182,12 @@ export function RevealLiga({
 
   const divisionAntes = calcularDivision(liga.antes, liga.esTop1Antes);
   const divisionDespues = calcularDivision(liga.despues, liga.esTop1Despues);
-  const cambioDivision = divisionAntes.nombre !== divisionDespues.nombre;
+  const cambioDivision = divisionDespues.pl > divisionAntes.pl;
   const marcoDespues = marcoPorLiga(liga.despues, liga.esTop1Despues);
 
   // Tramo de PL dentro de la división actual: usamos los mismos umbrales que
   // calcularDivision para mostrar cuánto falta para el siguiente escalón.
-  const UMBRALES = [0, 50, 125, 210, 300];
+  const UMBRALES = DIVISIONES.filter((division) => division.id !== "challenger").map((division) => division.pl);
   const techoDivision = (pl: number) => UMBRALES.find((u) => pl < u) ?? pl + 50;
   const sueloDivision = (pl: number) => [...UMBRALES].reverse().find((u) => pl >= u) ?? 0;
   const suelo = sueloDivision(liga.despues);

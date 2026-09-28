@@ -6,6 +6,7 @@ export type FxKind =
 
 /** Cada marco animado tiene su propio comportamiento. */
 const FX_POR_MARCO: Partial<Record<MarcoPerfil, FxKind>> = {
+  "liga-platino": "shine", "liga-gran-maestro": "crown",
   plata: "shine", oro: "shine", vip: "shine", "liga-plata": "shine", "liga-oro": "shine",
   hielo: "cristal", "liga-diamante": "cristal",
   challenger: "electric", tormenta: "electric", "liga-challenger": "electric",
