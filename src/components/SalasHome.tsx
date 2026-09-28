@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { useModalScrollLock } from "@/lib/useModalScrollLock";
@@ -23,6 +23,7 @@ export default function SalasHome({
   salas: SalaResumen[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [modo, setModo] = useState<"ninguno" | "crear" | "unirse">("ninguno");
   const [nombreSala, setNombreSala] = useState("");
   const [tipoSala, setTipoSala] = useState<"normal" | "temporada" | "permanente">(
@@ -37,6 +38,20 @@ export default function SalasHome({
   const [nombreConfirmacion, setNombreConfirmacion] = useState("");
   const [eliminando, setEliminando] = useState(false);
   useModalScrollLock(Boolean(salaAEliminar));
+
+  // Enlace del código QR de una sala (?codigo=XXXXX): abre directo el
+  // formulario de unirse con el código ya puesto.
+  useEffect(() => {
+    const p = searchParams.get("codigo");
+    if (!p) return;
+    const t = window.setTimeout(() => {
+      setCodigo(p.toUpperCase());
+      setModo("unirse");
+    }, 0);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const salasActivas = salas.filter((sala) => !sala.archivadaAt);
   const salasArchivadas = salas.filter((sala) => sala.archivadaAt && sala.rol === "fundador");
 

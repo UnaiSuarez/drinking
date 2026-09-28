@@ -1,6 +1,7 @@
 export const NIVEL_PRESTIGIO = 50;
 
 export function tituloPrestigio(ciclo: number): string {
+  if (ciclo === 6) return "Maestro de Prestigio";
   return ciclo === 1 ? "Primera Ascensión" : `Ascensión ${ciclo}`;
 }
 

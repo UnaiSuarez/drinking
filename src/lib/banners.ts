@@ -36,6 +36,16 @@ export const BANNER_IMAGES: Record<string, string> = {
   'noche-de-brujas': '/banners/noche-de-brujas.webp',
   'luces-de-navidad': '/banners/luces-de-navidad.webp',
   'chiringuito-de-verano': '/banners/chiringuito-de-verano.webp',
+  'halloween-epico': '/banners/halloween-epico.webp',
+  'halloween-legendario': '/banners/halloween-legendario.webp',
+  'navidad-epico': '/banners/navidad-epico.webp',
+  'navidad-legendario': '/banners/navidad-legendario.webp',
+  'anio-nuevo-comun': '/banners/anio-nuevo-comun.webp',
+  'anio-nuevo-epico': '/banners/anio-nuevo-epico.webp',
+  'anio-nuevo-legendario': '/banners/anio-nuevo-legendario.webp',
+  'verano-epico': '/banners/verano-epico.webp',
+  'verano-legendario': '/banners/verano-legendario.webp',
+  'maestro-prestigio': '/banners/maestro-prestigio.webp',
 };
 export const BANNER_NAMES: Record<string, string> = {
   'mesa-billar': 'Mesa de billar',
@@ -61,6 +71,12 @@ export const BANNER_NAMES: Record<string, string> = {
   'forja-solar': 'Forja solar', 'viaje-estelar': 'Viaje estelar', 'cumbre-after': 'Cumbre del After',
   'noche-de-brujas': 'Noche de brujas', 'luces-de-navidad': 'Luces de Navidad',
   'chiringuito-de-verano': 'Chiringuito de verano',
+  'halloween-epico': 'Aquelarre', 'halloween-legendario': 'Señor de las Sombras',
+  'navidad-epico': 'Estrella de Belén', 'navidad-legendario': 'Espíritu de la Navidad',
+  'anio-nuevo-comun': 'Brindis de Medianoche', 'anio-nuevo-epico': 'Confeti Dorado',
+  'anio-nuevo-legendario': 'Campanadas Legendarias',
+  'verano-epico': 'Atardecer de Playa', 'verano-legendario': 'Rey del Verano',
+  'maestro-prestigio': 'Maestro de Prestigio',
 };
 export const BANNER_RARITIES = { comun: 'Común', rara: 'Rara', epica: 'Épica', legendaria: 'Legendaria', exclusiva: 'Exclusiva' };
 export const BANNER_ANIMATED = new Set(['aurora','ascuas','tormenta','dragon','observatorio','campeon','biblioteca-arcana','templo-glacial','forja-solar','viaje-estelar','cumbre-after']);
@@ -73,6 +89,16 @@ export const BANNER_REQUIREMENTS: Record<string,string> = {
   campeon: 'Campeón sin empate de una temporada de 7 días, con 3 participantes y 4 noches en días distintos. Debes participar en al menos 2 noches.',
   'cumbre-after': 'Se desbloquea con un nuevo ascenso a Gran Maestro del After (450 PL). No se vende ni se concede por ascensos anteriores.',
   'noche-de-brujas': 'Registra algo entre el 20 de octubre y el 2 de noviembre para llevártela.',
-  'luces-de-navidad': 'Registra algo entre el 15 de diciembre y el 6 de enero para llevártela.',
+  'luces-de-navidad': 'Registra algo entre el 15 y el 30 de diciembre para llevártela.',
   'chiringuito-de-verano': 'Registra algo entre el 21 de junio y el 21 de septiembre para llevártela.',
+  'halloween-epico': 'Registra algo 5 días distintos durante Halloween (20 oct–2 nov).',
+  'halloween-legendario': 'Gana una noche durante Halloween (20 oct–2 nov).',
+  'navidad-epico': 'Registra algo 5 días distintos durante Navidad (15–30 dic).',
+  'navidad-legendario': 'Gana una noche durante Navidad (15–30 dic).',
+  'anio-nuevo-comun': 'Registra algo entre el 31 de diciembre y el 2 de enero para llevártela.',
+  'anio-nuevo-epico': 'Registra algo varios días durante Año Nuevo (31 dic–2 ene).',
+  'anio-nuevo-legendario': 'Gana una noche durante Año Nuevo (31 dic–2 ene). El más difícil: solo 3 días al año.',
+  'verano-epico': 'Registra algo 5 días distintos durante el verano (21 jun–21 sep).',
+  'verano-legendario': 'Gana una noche durante el verano (21 jun–21 sep).',
+  'maestro-prestigio': 'Se desbloquea al alcanzar Prestigio 6, el único más allá del infinito.',
 };

@@ -259,7 +259,14 @@ export default async function PerfilPage({
             <span className="ml-2 text-sm text-texto2">(tú)</span>
           )}
         </h1>
-        {ciclo > 0 && <p className="my-1 flex items-center justify-center gap-1.5 text-sm text-oro"><ShieldCheck size={18} aria-hidden="true" />Prestigio {ciclo}</p>}
+        {ciclo >= 6 ? (
+          <p className="my-1 flex items-center justify-center gap-1.5 text-sm font-titulo text-oro">
+            <ShieldCheck size={18} aria-hidden="true" />
+            👑 Maestro de Prestigio
+          </p>
+        ) : (
+          ciclo > 0 && <p className="my-1 flex items-center justify-center gap-1.5 text-sm text-oro"><ShieldCheck size={18} aria-hidden="true" />Prestigio {ciclo}</p>
+        )}
         {perfil.titulo && (
           <div>
             {medallasOrdenadas.find((m) => m.nombre === perfil.titulo) ? (

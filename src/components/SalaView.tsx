@@ -18,6 +18,7 @@ import AvanceMedallasSala from "@/components/AvanceMedallasSala";
 import CartasSalaClient from "@/components/CartasSalaClient";
 import AvisosCartasSalaClient from "@/components/AvisosCartasSalaClient";
 import MomentosAlbumClient from "@/components/MomentosAlbumClient";
+import CodigoQrModal from "@/components/CodigoQrModal";
 import { useTraining } from "@/components/TrainingContext";
 
 export type Miembro = {
@@ -38,6 +39,7 @@ export type EntradaLiga = {
   nombre: string;
   avatarConfig: AvatarConfig;
   pl: number;
+  esMaestroPrestigio?: boolean;
 };
 
 const DURACIONES = [
@@ -60,6 +62,7 @@ export default function SalaView({
   nocheActiva,
   nochesCerradas,
   temporada,
+  temporadaCerrada,
   liga,
 }: {
   sala: { id: string; nombre: string; codigo: string };
@@ -74,6 +77,7 @@ export default function SalaView({
   nocheActiva: { id: string; estado: "activa" | "cerrando" | "pendiente" } | null;
   nochesCerradas: NocheResumen[];
   temporada: { id: string; nombre: string; fin: string } | null;
+  temporadaCerrada: { id: string; nombre: string } | null;
   liga: EntradaLiga[];
 }) {
   const router = useRouter();
@@ -85,7 +89,9 @@ export default function SalaView({
   const [errorFecha, setErrorFecha] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
+  const [mostrarQr, setMostrarQr] = useState(false);
   const [mostrarRachaApagada, setMostrarRachaApagada] = useState(false);
+  const [mostrarRecapTemporada, setMostrarRecapTemporada] = useState(false);
   const [cumpleanosHoy, setCumpleanosHoy] = useState<{ id: string; nombre: string }[]>([]);
   const [miRegaloCumple, setMiRegaloCumple] = useState(false);
   const esAdmin = miRol === "fundador" || miRol === "admin";
@@ -101,6 +107,13 @@ export default function SalaView({
     const supabase = createClient();
     void supabase.rpc("marcar_visita_sala", { p_sala: sala.id }).then(({ error }) => {
       if (error) console.warn("No se pudo registrar la visita a la sala", error.message);
+    });
+    // Nivel legendario de un evento de temporada (ganar una noche durante
+    // la ventana): solo se puede comprobar una vez la noche está cerrada,
+    // así que se revisa aquí (cada visita a la sala) y no solo al
+    // registrar una bebida. Idempotente en el servidor.
+    void supabase.rpc("otorgar_recompensas_temporada").then(({ error }) => {
+      if (error) console.warn("No se pudo comprobar las recompensas de temporada", error.message);
     });
   }, [sala.id, userId, practicing]);
 
@@ -143,6 +156,23 @@ export default function SalaView({
     }, 0);
     return () => window.clearTimeout(t);
   }, [sala.id, racha.actual, racha.mejor]);
+
+  // Aviso de "temporada terminada, ver resumen": una vez por temporada
+  // cerrada y por dispositivo, igual que el de la racha apagada.
+  useEffect(() => {
+    if (!temporadaCerrada) return;
+    const clave = `temporada-recap-vista-${temporadaCerrada.id}`;
+    const t = window.setTimeout(() => {
+      try {
+        if (window.localStorage.getItem(clave)) return;
+        window.localStorage.setItem(clave, "1");
+        setMostrarRecapTemporada(true);
+      } catch {
+        setMostrarRecapTemporada(true);
+      }
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [temporadaCerrada]);
 
   // Tiempo real: si alguien se une/sale, añade una bebida/SOJA suelta, o
   // arranca una noche mientras estás viendo la sala, se refresca sola en
@@ -289,9 +319,24 @@ export default function SalaView({
             >
               {copiado ? "¡Copiado!" : `${sala.codigo} 📤`}
             </button>
+            <button
+              onClick={() => setMostrarQr(true)}
+              aria-label="Ver código QR para unirse"
+              className="rounded-xl border border-cian px-3 py-2 text-sm text-cian active:scale-95"
+            >
+              📱
+            </button>
           </div>
         </div>
       </header>
+
+      {mostrarQr && (
+        <CodigoQrModal
+          codigo={sala.codigo}
+          salaNombre={sala.nombre}
+          onCerrar={() => setMostrarQr(false)}
+        />
+      )}
 
       <nav aria-label="Explorar sala" className="mb-6 grid grid-cols-3 gap-2">
         <Link href={`/niveles?sala=${sala.id}`} className="flex min-h-20 min-w-0 flex-col justify-between rounded-lg border border-borde bg-tarjeta p-3 text-sm font-semibold text-texto transition-colors hover:border-cian/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cian">
@@ -348,6 +393,22 @@ export default function SalaView({
           <button
             type="button"
             onClick={() => setMostrarRachaApagada(false)}
+            aria-label="Cerrar aviso"
+            className="shrink-0 text-texto2 active:scale-95"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {mostrarRecapTemporada && temporadaCerrada && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-oro/50 bg-oro/10 px-4 py-3 text-sm text-texto">
+          <Link href={`/sala/${sala.id}/temporada/${temporadaCerrada.id}`} className="underline-offset-2 hover:underline">
+            🏆 La temporada &quot;{temporadaCerrada.nombre}&quot; ha terminado — ver resumen
+          </Link>
+          <button
+            type="button"
+            onClick={() => setMostrarRecapTemporada(false)}
             aria-label="Cerrar aviso"
             className="shrink-0 text-texto2 active:scale-95"
           >
@@ -550,6 +611,9 @@ export default function SalaView({
                         asSpan
                       />
                       <span>
+                        {e.esMaestroPrestigio && (
+                          <span title="Maestro de Prestigio" aria-label="Maestro de Prestigio">👑 </span>
+                        )}
                         {e.nombre}
                         {e.usuarioId === userId && (
                           <span className="ml-1 text-xs text-texto2">(tú)</span>

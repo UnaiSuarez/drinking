@@ -37,6 +37,7 @@ export default async function SalaPage({
     { data: nocheActiva },
     { data: nochesCerradasRaw },
     { data: temporada },
+    { data: temporadaCerrada },
     { data: misRegistros },
   ] = await Promise.all([
     esPermanente
@@ -76,6 +77,14 @@ export default async function SalaPage({
       .eq("sala_id", id)
       .eq("estado", "activa")
       .gt("fin", new Date().toISOString())
+      .maybeSingle(),
+    supabase
+      .from("temporadas")
+      .select("id, nombre")
+      .eq("sala_id", id)
+      .eq("estado", "cerrada")
+      .order("fin", { ascending: false })
+      .limit(1)
       .maybeSingle(),
     esPermanente && user
       ? supabase
@@ -135,6 +144,13 @@ export default async function SalaPage({
       .select("usuario_id, pl")
       .eq("temporada_id", temporada.id)
       .order("pl", { ascending: false });
+    const { data: maestrosPrestigioRaw } = await supabase
+      .from("prestigios")
+      .select("usuario_id")
+      .gte("ciclo", 6)
+      .in("usuario_id", miembros.map((m) => m.id));
+    const maestrosPrestigio = new Set((maestrosPrestigioRaw ?? []).map((p) => p.usuario_id));
+
     // Solo cuenta en la liga quien sigue siendo miembro de la sala ahora
     // mismo: si alguien se fue (o era un invitado ya expirado), su PL no
     // debe seguir ocupando un puesto ni aparecer como "???".
@@ -146,6 +162,7 @@ export default async function SalaPage({
         nombre: e.miembro!.nombre,
         avatarConfig: e.miembro!.avatarConfig,
         pl: e.pl,
+        esMaestroPrestigio: maestrosPrestigio.has(e.usuario_id),
       }));
   }
 
@@ -167,6 +184,7 @@ export default async function SalaPage({
       }
       nochesCerradas={nochesCerradas}
       temporada={temporada}
+      temporadaCerrada={temporadaCerrada}
       liga={liga}
     />
   );

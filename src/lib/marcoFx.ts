@@ -17,6 +17,9 @@ const FX_POR_MARCO: Partial<Record<MarcoPerfil, FxKind>> = {
   zafiro: "cristal", rubi: "shine", esmeralda: "shine", platino: "shine",
   obsidiana: "glitch", amatista: "cosmic", topacio: "shine", granate: "fire", corona: "crown",
   eclipse: "electric", supernova: "fire", quasar: "cosmic", singularidad: "portal", infinito: "prisma",
+  "maestro-prestigio": "crown",
+  "halloween-legendario": "glitch", "navidad-legendario": "crown",
+  "anio-nuevo-legendario": "electric", "verano-legendario": "shine",
 };
 
 export function fxDeMarco(marco: MarcoPerfil): FxKind | null {

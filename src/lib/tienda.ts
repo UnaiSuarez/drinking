@@ -29,13 +29,16 @@ export type TiendaMarco = {
   rareza: TiendaRareza;
 };
 
-export type SkinTipo = "normal" | "momento";
+export type SkinTipo = "normal" | "momento" | "evento";
 
 /** Variante de un personaje secreto. Solo se consigue en cofres y solo después
  * de desbloquear al personaje.
  * - normal: aspecto alternativo con rareza (p. ej. "militar"); no lleva relato.
  * - momento: un día que ocurrió de verdad; lleva fecha y una historia real
- *   aportada por el grupo (nunca inventada). */
+ *   aportada por el grupo (nunca inventada).
+ * - evento: gratis, se concede al completar el nivel legendario de
+ *   cualquier evento de temporada (ver otorgar_recompensas_temporada en
+ *   Supabase). No se compra ni sale en cofres. */
 export type PersonajeSkin = {
   id: string;
   personajeId: string;
@@ -505,6 +508,16 @@ export function skinNormal(datos: {
   return { ...datos, tipo: "normal", precio: PRECIO_SKIN[datos.rareza], ...rutasSkin(datos.personajeId, datos.id) };
 }
 
+export function skinEvento(datos: {
+  id: string;
+  personajeId: string;
+  nombre: string;
+  descripcion?: string;
+  pendiente?: boolean;
+}): PersonajeSkin {
+  return { rareza: "legendaria", ...datos, tipo: "evento", ...rutasSkin(datos.personajeId, datos.id) };
+}
+
 export function momentoHistorico(datos: {
   id: string;
   personajeId: string;
@@ -546,6 +559,14 @@ export const SKINS_PERSONAJES: PersonajeSkin[] = [
   skinNormal({ id: "paseo-barrio", personajeId: "guardian-cubata", nombre: "Paseo de barrio", rareza: "comun" }),
   skinNormal({ id: "capitan-cubierta", personajeId: "guardian-cubata", nombre: "Capitán de cubierta", rareza: "epica" }),
   skinNormal({ id: "motero-medianoche", personajeId: "guardian-cubata", nombre: "Motero de medianoche", rareza: "epica" }),
+
+  // Skins de evento: gratis, una por personaje, al completar el nivel
+  // legendario de cualquier evento de temporada.
+  skinEvento({ id: "ultimo-ronda-evento", personajeId: "ultimo-ronda", nombre: "Leyenda de temporada" }),
+  skinEvento({ id: "jefe-after-evento", personajeId: "jefe-after", nombre: "Leyenda de temporada" }),
+  skinEvento({ id: "guardian-cubata-evento", personajeId: "guardian-cubata", nombre: "Leyenda de temporada" }),
+  skinEvento({ id: "narrador-noche-evento", personajeId: "narrador-noche", nombre: "Leyenda de temporada" }),
+  skinEvento({ id: "silencioso-letal-evento", personajeId: "silencioso-letal", nombre: "Leyenda de temporada" }),
 ];
 
 /** Skins con arte listo (las pendientes no se muestran a los jugadores). */

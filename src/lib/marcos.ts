@@ -50,7 +50,24 @@ export type MarcoPerfil =
   | "supernova"
   | "quasar"
   | "singularidad"
-  | "infinito";
+  | "infinito"
+  // Prestigio 6: el único más allá del infinito. Exclusivo, una sola vez.
+  | "maestro-prestigio"
+  // Eventos de temporada (calendario), 3 por evento. Exclusivos: se
+  // consiguen participando durante la ventana de fechas de cada uno, ver
+  // src/lib/temporadaCosmetica.ts.
+  | "halloween-comun"
+  | "halloween-epico"
+  | "halloween-legendario"
+  | "navidad-comun"
+  | "navidad-epico"
+  | "navidad-legendario"
+  | "anio-nuevo-comun"
+  | "anio-nuevo-epico"
+  | "anio-nuevo-legendario"
+  | "verano-comun"
+  | "verano-epico"
+  | "verano-legendario";
 
 /**
  * Orden de "peor a mejor" para mostrar marcos en galerías (Inventario,
@@ -113,6 +130,21 @@ export const MARCO_ORDEN: MarcoPerfil[] = [
   "liga-maestro",
   "liga-gran-maestro",
   "liga-challenger",
+  // Eventos de temporada
+  "halloween-comun",
+  "navidad-comun",
+  "anio-nuevo-comun",
+  "verano-comun",
+  "halloween-epico",
+  "navidad-epico",
+  "anio-nuevo-epico",
+  "verano-epico",
+  "halloween-legendario",
+  "navidad-legendario",
+  "anio-nuevo-legendario",
+  "verano-legendario",
+  // Más allá del infinito
+  "maestro-prestigio",
 ];
 
 export const MARCO_INFO: Record<
@@ -298,6 +330,58 @@ export const MARCO_INFO: Record<
   infinito: {
     nombre: "Infinito",
     descripcion: "Recompensa del 5º prestigio. Exclusivo, no se vende.",
+  },
+  "maestro-prestigio": {
+    nombre: "Maestro de Prestigio",
+    descripcion: "Recompensa del 6º prestigio, el único más allá del infinito. Exclusivo, no se vende.",
+  },
+  "halloween-comun": {
+    nombre: "Calabaza de Halloween",
+    descripcion: "Por participar durante Halloween (20 oct–2 nov). Exclusivo de temporada.",
+  },
+  "halloween-epico": {
+    nombre: "Aquelarre",
+    descripcion: "Por registrar algo 5 días distintos durante Halloween. Exclusivo de temporada.",
+  },
+  "halloween-legendario": {
+    nombre: "Señor de las Sombras",
+    descripcion: "Por ganar una noche durante Halloween. Exclusivo de temporada.",
+  },
+  "navidad-comun": {
+    nombre: "Gorro Navideño",
+    descripcion: "Por participar durante Navidad (15–30 dic). Exclusivo de temporada.",
+  },
+  "navidad-epico": {
+    nombre: "Estrella de Belén",
+    descripcion: "Por registrar algo 5 días distintos durante Navidad. Exclusivo de temporada.",
+  },
+  "navidad-legendario": {
+    nombre: "Espíritu de la Navidad",
+    descripcion: "Por ganar una noche durante Navidad. Exclusivo de temporada.",
+  },
+  "anio-nuevo-comun": {
+    nombre: "Brindis de Medianoche",
+    descripcion: "Por participar en Nochevieja/Año Nuevo (31 dic–2 ene). Exclusivo de temporada.",
+  },
+  "anio-nuevo-epico": {
+    nombre: "Confeti Dorado",
+    descripcion: "Por registrar algo varios días durante Año Nuevo. Exclusivo de temporada.",
+  },
+  "anio-nuevo-legendario": {
+    nombre: "Campanadas Legendarias",
+    descripcion: "Por ganar una noche durante Año Nuevo. El más difícil de pillar: solo 3 días al año.",
+  },
+  "verano-comun": {
+    nombre: "Chiringuito",
+    descripcion: "Por participar durante el verano (21 jun–21 sep). Exclusivo de temporada.",
+  },
+  "verano-epico": {
+    nombre: "Atardecer de Playa",
+    descripcion: "Por registrar algo 5 días distintos durante el verano. Exclusivo de temporada.",
+  },
+  "verano-legendario": {
+    nombre: "Rey del Verano",
+    descripcion: "Por ganar una noche durante el verano. Exclusivo de temporada.",
   },
 };
 

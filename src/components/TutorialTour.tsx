@@ -160,7 +160,7 @@ export default function TutorialTour({ userId, initial, loadError }: {
       {(step.chapter === "Tu sala y tus registros" || step.id === "learn-night") ? <SalaView sala={{ id: "training-room", nombre: "Sala de entrenamiento", codigo: "PRUEBA" }}
         esTemporada={false} esPermanente={true} bebidasSueltas={drinks} catalogoBebidas={catalog}
         racha={{ actual: 0, mejor: 0 }} miembros={[{ id: userId, nombre: "Tú", rol: "fundador", avatarConfig: AVATAR_PREDETERMINADO }, { id: "training-guide", nombre: "Guía", rol: "miembro", avatarConfig: AVATAR_PREDETERMINADO }]}
-        miRol="fundador" userId={userId} nocheActiva={null} nochesCerradas={[]} temporada={null} liga={[]} />
+        miRol="fundador" userId={userId} nocheActiva={null} nochesCerradas={[]} temporada={null} temporadaCerrada={null} liga={[]} />
       : <main className="mx-auto max-w-md px-5 py-8">
         {(["learn-card", "learn-close", "learn-review"] as string[]).includes(step.id) && <>
           <h1 className="font-titulo text-3xl text-ambar">Noche de entrenamiento</h1>

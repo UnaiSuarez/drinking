@@ -140,11 +140,12 @@ export default function BebidaSueltaLogger({
       xp: data.xp_ganada,
     });
     if (navigator.vibrate) navigator.vibrate(40);
-    // Banner de temporada (Halloween/Navidad/Verano): gratis por participar
-    // durante esas fechas. Idempotente en el servidor, así que llamarlo en
-    // cada registro no da banners de más ni hace falta comprobar antes.
-    void supabase.rpc("otorgar_banner_temporada").then(({ error }) => {
-      if (error) console.warn("No se pudo comprobar el banner de temporada", error.message);
+    // Recompensas de evento de temporada (Halloween/Navidad/Año Nuevo/
+    // Verano): banner+marco por nivel (común/épico/legendario), y la skin
+    // de evento de los 5 personajes al llegar a legendario. Idempotente en
+    // el servidor, así que llamarlo en cada registro no da nada de más.
+    void supabase.rpc("otorgar_recompensas_temporada").then(({ error }) => {
+      if (error) console.warn("No se pudo comprobar las recompensas de temporada", error.message);
     });
     fetch("/api/notificar-bebida", {
       method: "POST",
