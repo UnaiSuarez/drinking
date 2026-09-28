@@ -135,15 +135,18 @@ export default async function SalaPage({
       .select("usuario_id, pl")
       .eq("temporada_id", temporada.id)
       .order("pl", { ascending: false });
-    liga = (ligaRaw ?? []).map((e) => {
-      const miembro = miembros.find((m) => m.id === e.usuario_id);
-      return {
+    // Solo cuenta en la liga quien sigue siendo miembro de la sala ahora
+    // mismo: si alguien se fue (o era un invitado ya expirado), su PL no
+    // debe seguir ocupando un puesto ni aparecer como "???".
+    liga = (ligaRaw ?? [])
+      .map((e) => ({ ...e, miembro: miembros.find((m) => m.id === e.usuario_id) }))
+      .filter((e) => e.miembro)
+      .map((e) => ({
         usuarioId: e.usuario_id,
-        nombre: miembro?.nombre ?? "???",
-        avatarConfig: miembro?.avatarConfig ?? parseAvatarConfig(null),
+        nombre: e.miembro!.nombre,
+        avatarConfig: e.miembro!.avatarConfig,
         pl: e.pl,
-      };
-    });
+      }));
   }
 
   return (
