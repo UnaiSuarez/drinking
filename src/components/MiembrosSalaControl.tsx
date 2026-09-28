@@ -14,6 +14,7 @@ const ROL_NOMBRE: Record<string, string> = {
   fundador: "Fundador",
   admin: "Admin",
   miembro: "Miembro",
+  invitado: "Invitado",
 };
 
 export default function MiembrosSalaControl({
@@ -56,7 +57,7 @@ export default function MiembrosSalaControl({
           const puedoExpulsar =
             m.usuarioId !== miMiembroId &&
             m.rol !== "fundador" &&
-            (miRol === "fundador" || m.rol === "miembro");
+            (miRol === "fundador" || m.rol === "miembro" || m.rol === "invitado");
           return (
             <li
               key={m.usuarioId}

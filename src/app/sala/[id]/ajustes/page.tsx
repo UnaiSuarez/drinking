@@ -6,6 +6,7 @@ import ArchivarSalaControl from "@/components/ArchivarSalaControl";
 import RenombrarSalaControl from "@/components/RenombrarSalaControl";
 import MiembrosSalaControl from "@/components/MiembrosSalaControl";
 import TemporadasSalaControl from "@/components/TemporadasSalaControl";
+import ExportarSalaControl from "@/components/ExportarSalaControl";
 
 export default async function AjustesSalaPage({
   params,
@@ -90,6 +91,8 @@ export default async function AjustesSalaPage({
       />
 
       <TemporadasSalaControl salaId={sala.id} temporadas={temporadas} />
+
+      <ExportarSalaControl salaId={sala.id} />
 
       <h2 className="mt-8 font-titulo text-xl text-texto">Balance de liga</h2>
       <p className="mb-6 text-sm text-texto2">

@@ -85,6 +85,8 @@ export default function SalaView({
   const [cargando, setCargando] = useState(false);
   const [copiado, setCopiado] = useState(false);
   const [mostrarRachaApagada, setMostrarRachaApagada] = useState(false);
+  const [cumpleanosHoy, setCumpleanosHoy] = useState<{ id: string; nombre: string }[]>([]);
+  const [miRegaloCumple, setMiRegaloCumple] = useState(false);
   const esAdmin = miRol === "fundador" || miRol === "admin";
   const miembrosRef = useRef(miembros);
   useEffect(() => {
@@ -100,6 +102,29 @@ export default function SalaView({
       if (error) console.warn("No se pudo registrar la visita a la sala", error.message);
     });
   }, [sala.id, userId, practicing]);
+
+  // Quién cumple años hoy en esta sala (aviso para todos) y el regalo del
+  // propio cumpleañero (un cofre, una vez al año; es idempotente en el
+  // servidor así que llamarlo en cada visita no da cofres de más).
+  useEffect(() => {
+    if (practicing) return;
+    const supabase = createClient();
+    void supabase
+      .rpc("cumpleanos_hoy_en_sala", { p_sala: sala.id })
+      .then(({ data, error }) => {
+        if (error) return console.warn("No se pudo comprobar cumpleaños", error.message);
+        setCumpleanosHoy(
+          (data ?? []).map((f: { usuario_id: string; nombre: string }) => ({
+            id: f.usuario_id,
+            nombre: f.nombre,
+          }))
+        );
+      });
+    void supabase.rpc("regalo_cumpleanos_hoy").then(({ data, error }) => {
+      if (error) return console.warn("No se pudo dar el regalo de cumpleaños", error.message);
+      if (data) setMiRegaloCumple(true);
+    });
+  }, [sala.id, practicing]);
 
   // El aviso de racha apagada solo se enseña una vez por cada racha
   // perdida (no cada vez que entras): se recuerda en este dispositivo.
@@ -267,6 +292,20 @@ export default function SalaView({
         </div>
       </header>
 
+      {cumpleanosHoy.length > 0 && (
+        <div className="mb-4 rounded-2xl border border-rosa/50 bg-rosa/10 px-4 py-3 text-center text-sm text-texto">
+          🎂 ¡Hoy es el cumpleaños de{" "}
+          <span className="font-titulo text-rosa">
+            {cumpleanosHoy.map((c) => c.nombre).join(" y ")}
+          </span>
+          !
+          {miRegaloCumple && cumpleanosHoy.some((c) => c.id === userId) && (
+            <span className="block text-xs text-texto2">
+              🎁 Te llevas un cofre épico de regalo
+            </span>
+          )}
+        </div>
+      )}
       {esPermanente && racha.actual > 0 && (
         <div className="mb-4 flex items-center justify-center gap-2 rounded-2xl border border-ambar/50 bg-ambar/10 px-4 py-3 text-center">
           <span className="text-2xl">🔥</span>

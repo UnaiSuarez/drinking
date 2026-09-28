@@ -32,6 +32,7 @@ import MedalIcon from "@/components/MedalIcon";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CartaUsoCelebracion from "@/components/CartaUsoCelebracion";
 import SojasLogger from "@/components/SojasLogger";
+import InvitarNocheControl from "@/components/InvitarNocheControl";
 
 export type Bebida = {
   id: number;
@@ -1342,6 +1343,8 @@ export default function NocheLive({
           </div>
         )}
       </header>
+
+      {!enGracia && <InvitarNocheControl nocheId={noche.id} />}
 
       {esAdmin && estadoNoche === "activa" && (
         <div className="mb-6">

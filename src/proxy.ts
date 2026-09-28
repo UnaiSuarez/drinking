@@ -34,7 +34,8 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
-  const esPublica = path === "/login" || path.startsWith("/auth");
+  const esPublica =
+    path === "/login" || path.startsWith("/auth") || path.startsWith("/invitado");
 
   if (!user && !esPublica) {
     const url = request.nextUrl.clone();

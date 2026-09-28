@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { parseAvatarConfig, type AvatarConfig } from "@/lib/avatar";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import InvitarNocheControl from "@/components/InvitarNocheControl";
 
 type JugadorPendiente = {
   id: string;
@@ -212,6 +213,8 @@ export default function NochePendiente({
           </ul>
         )}
       </section>
+
+      <InvitarNocheControl nocheId={nocheId} />
 
       {!unido && (
         <button

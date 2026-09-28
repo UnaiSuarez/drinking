@@ -5,6 +5,60 @@ import { calcularRacha } from "@/lib/racha";
 
 const COLORES = ["bg-ambar", "bg-cian", "bg-rosa", "bg-lima", "bg-oro"] as const;
 
+/** Sparkline SVG del PL acumulado noche a noche en la temporada activa. Sin
+ * librería de gráficas (el resto de la app tampoco usa ninguna): un
+ * polígono relleno bajo una polilínea, con el eje Y normalizado entre el
+ * mínimo y el máximo de la serie. */
+function EvolucionPl({ puntos }: { puntos: { fecha: string; total: number }[] }) {
+  const ancho = 300;
+  const alto = 100;
+  const margen = 8;
+  const valores = puntos.map((p) => p.total);
+  const minValor = Math.min(0, ...valores);
+  const maxValor = Math.max(...valores);
+  const rango = maxValor - minValor || 1;
+  const x = (i: number) =>
+    puntos.length > 1 ? (i / (puntos.length - 1)) * ancho : ancho / 2;
+  const y = (valor: number) =>
+    alto - margen - ((valor - minValor) / rango) * (alto - margen * 2);
+
+  const coords = puntos.map((p, i) => `${x(i)},${y(p.total)}`).join(" ");
+  const area = `0,${alto} ${coords} ${ancho},${alto}`;
+  const ultimo = puntos[puntos.length - 1];
+
+  return (
+    <div>
+      <p className="mb-2 font-titulo text-3xl text-ambar">
+        {ultimo.total} PL <span className="text-sm text-texto2">acumulados</span>
+      </p>
+      <svg
+        viewBox={`0 0 ${ancho} ${alto}`}
+        className="h-24 w-full overflow-visible"
+        role="img"
+        aria-label={`Evolución de tu PL esta temporada: de ${puntos[0].total} a ${ultimo.total}`}
+      >
+        <polygon points={area} className="fill-ambar/15" />
+        <polyline
+          points={coords}
+          fill="none"
+          className="stroke-ambar"
+          strokeWidth={2}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      </svg>
+      <div className="mt-1 flex justify-between text-[10px] text-texto2">
+        <span>
+          {new Date(puntos[0].fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+        </span>
+        <span>
+          {new Date(ultimo.fecha).toLocaleDateString("es-ES", { day: "numeric", month: "short" })}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 function BarraLista({
   filas,
 }: {
@@ -231,6 +285,26 @@ export default async function EstadisticasSalaPage({
     return !desde || new Date(r.ts) >= desde;
   });
 
+  const { data: nochesPlRaw } = temporada
+    ? await supabase
+        .from("noche_jugadores")
+        .select("pl_ganados, noches!inner(inicio, sala_id, estado)")
+        .eq("usuario_id", user!.id)
+        .eq("noches.sala_id", id)
+        .eq("noches.estado", "cerrada")
+        .gte("noches.inicio", temporada.inicio)
+        .order("inicio", { referencedTable: "noches", ascending: true })
+    : { data: null };
+
+  const puntosPl = (nochesPlRaw ?? [])
+    .reduce<{ fecha: string; total: number }[]>((acc, f) => {
+      const fecha = (f.noches as unknown as { inicio: string } | null)?.inicio;
+      if (!fecha) return acc;
+      const anterior = acc[acc.length - 1]?.total ?? 0;
+      acc.push({ fecha, total: anterior + (f.pl_ganados ?? 0) });
+      return acc;
+    }, []);
+
   const sojasPropias: { ts: string }[] = [];
   if (!jugadorSeleccionado || jugadorSeleccionado === user!.id) {
     for (let desdeFila = 0; ; desdeFila += 1000) {
@@ -368,6 +442,13 @@ export default async function EstadisticasSalaPage({
           : `De ${sala.nombre} en el periodo elegido.`}
       </p>
 
+      <Link
+        href={`/sala/${id}/resumen`}
+        className="mb-6 block rounded-2xl border border-ambar/50 bg-ambar/10 px-4 py-3 text-center text-sm font-semibold text-ambar active:scale-95"
+      >
+        🎉 Ver el resumen del año
+      </Link>
+
       <div className="mb-6 flex flex-wrap gap-2">
         {RANGOS.filter((r) => r.valor !== "temporada" || temporada).map((r) => (
           <Link
@@ -434,6 +515,15 @@ export default async function EstadisticasSalaPage({
         <div><p className="font-titulo text-2xl text-texto">{mediaPorNoche}</p><p className="text-xs text-texto2">bebidas por noche</p></div>
         {esPermanente && <p className="col-span-2 text-xs text-texto2">{enNoches} en noches · {sueltas} sueltas</p>}
       </section>
+
+      {puntosPl.length > 1 && (
+        <section className="mb-8 rounded-3xl border border-borde bg-tarjeta p-5">
+          <h2 className="mb-4 font-titulo text-xl text-texto">
+            📈 Tu evolución de Liga esta temporada
+          </h2>
+          <EvolucionPl puntos={puntosPl} />
+        </section>
+      )}
 
       {total === 0 ? (
         <p className="rounded-2xl border border-borde bg-tarjeta p-5 text-center text-sm text-texto2">
