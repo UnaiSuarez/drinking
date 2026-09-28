@@ -34,7 +34,7 @@ export type SkinTipo = "normal" | "momento" | "evento";
 /** Variante de un personaje secreto. Solo se consigue en cofres y solo después
  * de desbloquear al personaje.
  * - normal: aspecto alternativo con rareza (p. ej. "militar"); no lleva relato.
- * - momento: un día que ocurrió de verdad; lleva fecha y una historia real
+ * - momento: un día que ocurrió de verdad; lleva una historia real y, si se conoce, fecha
  *   aportada por el grupo (nunca inventada).
  * - evento: gratis, se concede al completar el nivel legendario de
  *   cualquier evento de temporada (ver otorgar_recompensas_temporada en
@@ -522,8 +522,8 @@ export function momentoHistorico(datos: {
   id: string;
   personajeId: string;
   nombre: string;
-  /** Fecha real del día, tal como se quiere mostrar (p. ej. "14 de agosto de 2025"). */
-  fecha: string;
+  /** Fecha real del día, cuando se conozca (p. ej. "14 de agosto de 2025"). */
+  fecha?: string;
   /** Relato real aportado por el grupo. Si aún no está, se muestra "pendiente". */
   historia?: string;
   rareza?: CartaRareza;
@@ -559,6 +559,15 @@ export const SKINS_PERSONAJES: PersonajeSkin[] = [
   skinNormal({ id: "paseo-barrio", personajeId: "guardian-cubata", nombre: "Paseo de barrio", rareza: "comun" }),
   skinNormal({ id: "capitan-cubierta", personajeId: "guardian-cubata", nombre: "Capitán de cubierta", rareza: "epica" }),
   skinNormal({ id: "motero-medianoche", personajeId: "guardian-cubata", nombre: "Motero de medianoche", rareza: "epica" }),
+
+  momentoHistorico({
+    id: "manos-de-mantequilla", personajeId: "narrador-noche", nombre: "Manos de mantequilla",
+    historia: "Una noche de fiesta, Ramón tiró un vaso de cristal al suelo delante del segurata de la discoteca y le dijo: «Manos de mantequilla».",
+  }),
+  momentoHistorico({
+    id: "pilares-manta-termica", personajeId: "guardian-cubata", nombre: "Pilares bajo la manta",
+    historia: "Durante las fiestas del Pilar en Zaragoza, Unai bebió demasiado. La noche terminó en una silla de ruedas, envuelto en una manta térmica.",
+  }),
 
   // Skins de evento: gratis, una por personaje, al completar el nivel
   // legendario de cualquier evento de temporada.
