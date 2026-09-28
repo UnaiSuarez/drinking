@@ -33,13 +33,15 @@ function compararBanners(a: BannerItem, b: BannerItem): number {
   return a.precio - b.precio;
 }
 
-// Banners exclusivos: se ven y se explican en la tienda (comprables o no,
-// para saber cómo conseguirlos), no en "Mis banners" — así el inventario
-// solo muestra lo que ya tienes, sin exclusivos bloqueados de más.
+// Banners exclusivos bloqueados: se ven y se explican en la tienda
+// (aunque no se compren, para saber cómo conseguirlos), no en "Mis
+// banners" — así el inventario no se llena de candados. Uno ya
+// desbloqueado sí sigue saliendo en el inventario, para poder equiparlo
+// sin tener que ir a la tienda a buscarlo.
 export default function BannerGallery({ items, owned, equipped, shop = false, embedded = false, onSaved }: { items: BannerItem[]; owned: string[]; equipped: string; shop?: boolean; embedded?: boolean; onSaved?: () => Promise<void> }) {
   const router = useRouter();
   const visibleItems = items
-    .filter((banner) => shop ? true : !banner.exclusivo && (owned.includes(banner.id) || banner.precio === 0))
+    .filter((banner) => shop ? true : owned.includes(banner.id) || (!banner.exclusivo && banner.precio === 0))
     .sort(compararBanners);
   const [selection, setSelection] = useState(visibleItems.some((banner) => banner.id === equipped) ? equipped : visibleItems[0]?.id ?? 'carbon');
   const [busy, setBusy] = useState(false);
@@ -75,7 +77,7 @@ export default function BannerGallery({ items, owned, equipped, shop = false, em
     <label className="mb-4 flex items-center gap-3 text-sm">Rareza
       <select value={rarity} onChange={(event) => setRarity(event.target.value)} className="min-h-11 min-w-0 flex-1 rounded-lg border border-borde bg-tarjeta px-3">
         <option value="all">Todas</option>
-        {Object.entries(BANNER_RARITIES).filter(([value]) => shop || value !== 'exclusiva').map(([value,label]) => <option key={value} value={value}>{label}</option>)}
+        {Object.entries(BANNER_RARITIES).map(([value,label]) => <option key={value} value={value}>{label}</option>)}
       </select>
     </label>
     <ul className="grid grid-cols-2 gap-3" aria-label="Catálogo de banners">
