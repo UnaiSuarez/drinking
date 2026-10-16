@@ -122,7 +122,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "objetivo",
     imagen: "/cards/ai/items/cubata-obligatorio.webp",
     descripcion: "Elige a alguien y mandale el recado con elegancia.",
-    efecto: "El objetivo gana +5 PL extra si su proxima bebida es un cubata. Si no lo es, simplemente no recibe el bonus.",
+    efecto: "El objetivo gana +5 PL extra si su primera bebida en los proximos 45 minutos es un cubata o combinado. Si es otra cosa, no recibe nada.",
   },
   {
     id: "chupito-castigo",
@@ -131,7 +131,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "objetivo",
     imagen: "/cards/ai/items/chupito-castigo.webp",
     descripcion: "Una mini sentencia de barra.",
-    efecto: "Elige a alguien: su proxima bebida puntua solo si es chupito.",
+    efecto: "Elige a alguien: durante 30 minutos su primera bebida solo puntua si es chupito (y ademas da +3 PL). Cualquier otra vale 0 PL.",
   },
   {
     id: "ronda-relampago",
@@ -149,7 +149,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "defensa",
     imagen: "/cards/ai/items/escudo-resaca.webp",
     descripcion: "Agua bendita contra ataques de barra.",
-    efecto: "Bloquea la proxima carta de objetivo que te lancen esta noche.",
+    efecto: "Durante 20 minutos, las cartas de objetivo que te lancen no tienen efecto.",
   },
   {
     id: "cambio-de-vaso",
@@ -185,7 +185,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/pirata-del-hielo.webp",
     descripcion: "Frio, barato y con mala idea.",
-    efecto: "Tu proximo refresco o agua tambien suma +1 PL.",
+    efecto: "Durante 30 minutos, tu primer refresco o agua (que vale 0 PL) suma +1 PL.",
   },
   {
     id: "ticket-barra-libre",
@@ -194,7 +194,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/ticket-barra-libre.webp",
     descripcion: "Un pase dorado para no mirar atras.",
-    efecto: "Tu siguiente bebida da +4 PL si no repites el tipo anterior.",
+    efecto: "Durante 30 minutos, tu primera bebida da +4 PL si es de un tipo distinto al de tu bebida anterior.",
   },
   {
     id: "ultimo-aviso",
@@ -212,7 +212,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/salpicon-puntos.webp",
     descripcion: "Puntos pequenos, pero con mucho ruido.",
-    efecto: "Gana entre 1 y 5 PL al usarla.",
+    efecto: "Gana al instante entre 1 y 5 PL (se sortea al usarla y se te dice cuantos).",
   },
   {
     id: "brindis-forzado",
@@ -230,7 +230,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/doble-o-nada.webp",
     descripcion: "Moderadamente mala idea.",
-    efecto: "Tu proxima bebida vale x2, pero si tardas mas de 30 minutos se pierde.",
+    efecto: "Tu primera bebida en los proximos 30 minutos vale x2. Si no registras ninguna a tiempo, se pierde.",
   },
   {
     id: "triple-amenaza",
@@ -239,7 +239,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/triple-amenaza.webp",
     descripcion: "Tres tragos conceptuales, una sola sonrisa.",
-    efecto: "Tus proximas 3 bebidas distintas dan +3 PL cada una.",
+    efecto: "Durante 90 minutos, tus 3 primeras bebidas de tipo distinto a la anterior dan +3 PL cada una.",
   },
   {
     id: "noche-x10",
@@ -293,7 +293,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "defensa",
     imagen: "/cards/ai/items/espejo-borracho.webp",
     descripcion: "Lo que venia hacia ti vuelve con efecto.",
-    efecto: "Devuelve la proxima carta de objetivo a quien la uso.",
+    efecto: "Durante 20 minutos, las cartas de objetivo que te lancen rebotan a quien las uso.",
   },
   {
     id: "remontada-imposible",
@@ -302,7 +302,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/remontada-imposible.webp",
     descripcion: "Para cuando ir ultimo ya es parte del personaje.",
-    efecto: "Si vas ultimo, tus proximas 2 bebidas dan +6 PL.",
+    efecto: "Solo si vas ultimo al usarla: durante 45 minutos tus 2 primeras bebidas dan +6 PL cada una. Si no vas ultimo, no hace nada.",
   },
   {
     id: "maldicion-del-lider",
@@ -329,7 +329,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "global",
     imagen: "/cards/ai/items/ruleta-del-bar.webp",
     descripcion: "Nadie sabe que va a pasar, que es lo correcto.",
-    efecto: "Activa al azar un mini evento comun para toda la noche.",
+    efecto: "Se gasta y activa al azar Ronda Relampago, Ultimo Aviso o Confeti Caos. Se te dice cual ha salido.",
   },
   {
     id: "trono-del-campeon",
@@ -338,7 +338,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/trono-del-campeon.webp",
     descripcion: "Sentarse ahi cuesta puntos y dignidad.",
-    efecto: "Si acabas primero tras usarla, ganas un cofre epico extra.",
+    efecto: "Al cerrar la noche, si acabas en 1er puesto, ganas un cofre epico extra.",
   },
   {
     id: "tormenta-challenger",
@@ -347,7 +347,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "global",
     imagen: "/cards/ai/items/tormenta-challenger.webp",
     descripcion: "Rayos, ranking y malas decisiones sincronizadas.",
-    efecto: "Durante 10 minutos, las bebidas del top 3 valen x2.",
+    efecto: "Durante 10 minutos, las bebidas de quienes acaben la noche en el top 3 valen x2 (se aplica al cerrar).",
   },
   {
     id: "jackpot-siete",
@@ -356,7 +356,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "economia",
     imagen: "/cards/ai/items/jackpot-siete.webp",
     descripcion: "Cuando sale, se nota en la tienda.",
-    efecto: "Gana una cantidad aleatoria de chapas con opcion de premio grande.",
+    efecto: "Gana al instante entre 20 y 79 chapas (se sortea al usarla y se te dice cuantas).",
   },
   {
     id: "luna-llena",
@@ -374,7 +374,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "global",
     imagen: "/cards/ai/items/confeti-caos.webp",
     descripcion: "No arregla nada, pero queda precioso.",
-    efecto: "Lanza una celebracion global y da +1 PL a todos los presentes.",
+    efecto: "Da +1 PL al instante a todos los jugadores de la noche, tu incluido.",
   },
   {
     id: "sombra-del-after",
@@ -384,7 +384,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     oculta: true,
     imagen: "/cards/ai/items/sombra-del-after.webp",
     descripcion: "Carta oculta. Su efecto exacto se revela al conseguirla.",
-    efecto: "Se activa de madrugada y convierte una desventaja en bonus.",
+    efecto: "Solo de madrugada (antes de las 6:00 UTC) y solo si vas por debajo de la mitad del ranking: ganas +5 PL al cerrar.",
   },
   {
     id: "dado-maldito",
@@ -394,7 +394,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     oculta: true,
     imagen: "/cards/ai/items/dado-maldito.webp",
     descripcion: "Carta oculta. Nadie sabe si ayuda o castiga.",
-    efecto: "Tira un resultado imprevisible que afecta a toda la sala.",
+    efecto: "Tira un dado: +3 PL a todos, -2 PL a todos, o +10 PL para un jugador al azar. Se te dice que ha salido.",
   },
   {
     id: "brindis-prohibido",
@@ -404,7 +404,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     oculta: true,
     imagen: "/cards/ai/items/brindis-prohibido.webp",
     descripcion: "Carta oculta con brillo morado intenso.",
-    efecto: "Obliga a dos jugadores a compartir destino de puntos durante un tramo.",
+    efecto: "Durante 30 minutos tu y el objetivo repartis a partes iguales los PL que sumeis entre los dos en ese tramo.",
   },
   {
     id: "coronacion-secreta",
@@ -414,7 +414,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     oculta: true,
     imagen: "/cards/ai/items/coronacion-secreta.webp",
     descripcion: "Carta oculta legendaria. Sale poco y se recuerda mucho.",
-    efecto: "Si remontas hasta podio tras usarla, recibes un cofre legendario.",
+    efecto: "Solo si no estas en el podio al usarla: si acabas la noche en el podio, recibes un cofre legendario.",
   },
   {
     id: "lluvia-de-chapas",
@@ -432,7 +432,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "global",
     imagen: "/cards/ai/items/meteorito-de-caos.webp",
     descripcion: "Una carta para romper la calma.",
-    efecto: "Cancela todos los bonus activos y reparte +5 PL aleatorios entre 3 jugadores.",
+    efecto: "Cancela todos los bonus activos y da +5 PL a 3 jugadores al azar. Se te dice a quien le ha tocado.",
   },
   {
     id: "caliz-final-boss",
@@ -441,7 +441,7 @@ export const CARTAS_COFRES: CartaCofre[] = [
     alcance: "personal",
     imagen: "/cards/ai/items/caliz-final-boss.webp",
     descripcion: "La copa que aparece cuando la noche pide jefe final.",
-    efecto: "Tu ultima bebida antes del cierre vale x5 si acabas en podio.",
+    efecto: "Al cerrar la noche, si acabas en el podio, tu ultima bebida vale x5.",
   },
 
   // Cartas exclusivas de sala permanente: se usan en cualquier momento,

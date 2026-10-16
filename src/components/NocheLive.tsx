@@ -29,6 +29,7 @@ import {
 } from "@/lib/avatar";
 import { parseTiendaState } from "@/lib/tienda";
 import AvatarFramePreview from "@/components/AvatarFramePreview";
+import { textoCartaActiva, type FilaSuelta } from "@/lib/cartaTextos";
 import MedalIcon from "@/components/MedalIcon";
 import CartaDetalleModal from "@/components/CartaDetalleModal";
 import CartaUsoCelebracion from "@/components/CartaUsoCelebracion";
@@ -673,40 +674,53 @@ export default function NocheLive({
   const [rankingServidor, setRankingServidor] = useState<
     Map<string, { puntos: number; bebidas: number }>
   >(new Map());
-  const [sueltasServidor, setSueltasServidor] = useState<Map<string, number>>(
+  const [sueltasServidor, setSueltasServidor] = useState<Map<string, FilaSuelta[]>>(
     new Map()
   );
+  const sueltasRef = useRef<Map<string, FilaSuelta[]>>(new Map());
+  const refrescarServidor = useCallback(async () => {
+    const [rankingRes, sueltasRes] = await Promise.all([
+      supabase.rpc("ranking_en_vivo", { p_noche: noche.id }),
+      supabase.rpc("sueltas_en_vivo", { p_noche: noche.id }),
+    ]);
+    if (rankingRes.data) {
+      setRankingServidor(
+        new Map(
+          (rankingRes.data as { usuario_id: string; puntos: number; bebidas: number }[]).map(
+            (r) => [r.usuario_id, { puntos: r.puntos, bebidas: r.bebidas }]
+          )
+        )
+      );
+    }
+    if (!sueltasRes.data) return sueltasRef.current;
+    const porActiva = new Map<string, FilaSuelta[]>();
+    for (const s of sueltasRes.data as {
+      activa_id: string | null;
+      carta_id: string;
+      usuario_id: string;
+      pl: number;
+    }[]) {
+      if (!s.activa_id) continue;
+      const lista = porActiva.get(s.activa_id) ?? [];
+      lista.push({ cartaId: s.carta_id, usuarioId: s.usuario_id, pl: s.pl });
+      porActiva.set(s.activa_id, lista);
+    }
+    sueltasRef.current = porActiva;
+    setSueltasServidor(porActiva);
+    return porActiva;
+  }, [supabase, noche.id]);
   useEffect(() => {
-    let cancelado = false;
     (async () => {
-      const [rankingRes, sueltasRes] = await Promise.all([
-        supabase.rpc("ranking_en_vivo", { p_noche: noche.id }),
-        supabase.rpc("sueltas_en_vivo", { p_noche: noche.id }),
-      ]);
-      if (cancelado) return;
-      if (rankingRes.data) {
-        setRankingServidor(
-          new Map(
-            (rankingRes.data as { usuario_id: string; puntos: number; bebidas: number }[]).map(
-              (r) => [r.usuario_id, { puntos: r.puntos, bebidas: r.bebidas }]
-            )
-          )
-        );
-      }
-      if (sueltasRes.data) {
-        setSueltasServidor(
-          new Map(
-            (sueltasRes.data as { activa_id: string | null; pl: number }[])
-              .filter((s) => s.activa_id)
-              .map((s) => [s.activa_id as string, s.pl])
-          )
-        );
-      }
+      await refrescarServidor();
     })();
-    return () => {
-      cancelado = true;
-    };
-  }, [supabase, noche.id, registros, jugadores]);
+  }, [refrescarServidor, registros, jugadores]);
+
+  const textoActiva = (activa: CartaActiva, extra?: { chapas?: number; cartaNombre?: string }) =>
+    textoCartaActiva(activa, {
+      filas: sueltasServidor.get(activa.id),
+      nombres: jugadoresMap,
+      ...extra,
+    });
   const cartasUsables = useMemo(
     () =>
       CARTAS_COFRES.filter(
@@ -1100,12 +1114,12 @@ export default function NocheLive({
         setMensajeCarta(error.message);
         return;
       }
-      setMensajeCarta(
+      const mensaje =
         carta.id === "mano-larga"
-          ? `Le robaste "${cartaPorId(data?.carta)?.nombre ?? data?.carta}" a ${objetivo.nombre}.`
-          : `Le cambiaste la carta activa a ${objetivo.nombre}.`
-      );
-      setCartaCelebracion({ carta, detalle: objetivo.nombre });
+          ? `Le robaste "${cartaPorId(data?.carta)?.nombre ?? data?.carta}" a ${objetivo.nombre}. Ya está en tu inventario.`
+          : `Le cambiaste la carta activa a ${objetivo.nombre}.`;
+      setMensajeCarta(mensaje);
+      setCartaCelebracion({ carta, detalle: mensaje });
       router.refresh();
       return;
     }
@@ -1119,8 +1133,21 @@ export default function NocheLive({
         setMensajeCarta(error.message);
         return;
       }
-      setMensajeCarta("¡Meteorito de Caos! Todos los bonus activos han desaparecido.");
-      setCartaCelebracion({ carta });
+      // El meteorito reparte +5 PL a 3 jugadores sorteados en el servidor:
+      // se consulta el resultado real para decir a quién ha tocado.
+      const antes = new Set(sueltasRef.current.keys());
+      const ahoraFilas = await refrescarServidor();
+      const nuevas = [...ahoraFilas.entries()].find(
+        ([id, filas]) => !antes.has(id) && filas[0]?.cartaId === "meteorito-de-caos"
+      );
+      const agraciados = (nuevas?.[1] ?? [])
+        .filter((f) => f.pl === 5)
+        .map((f) => jugadoresMap.get(f.usuarioId) ?? "???");
+      const mensaje = agraciados.length
+        ? `Todos los bonus activos han desaparecido. +5 PL para ${agraciados.join(", ")}.`
+        : "Todos los bonus activos han desaparecido y se han repartido +5 PL entre 3 jugadores.";
+      setMensajeCarta(`¡Meteorito de Caos! ${mensaje}`);
+      setCartaCelebracion({ carta, detalle: mensaje });
       router.refresh();
       return;
     }
@@ -1182,9 +1209,11 @@ export default function NocheLive({
 
     // Cartas de chapas: la recompensa se aplica ya en el cliente, igual que
     // al abrir un cofre (no dependen del cierre de la noche).
+    let chapasGanadas: number | undefined;
     if (carta.id === "jackpot-siete" || carta.id === "lluvia-de-chapas") {
       const tienda = parseTiendaState(configActual);
       const chapas = chapasPorCartaEconomia(carta.id, miPosicionAhora);
+      chapasGanadas = chapas;
       nextConfig = {
         ...nextConfig,
         tienda: { ...tienda, bonus: tienda.bonus + chapas },
@@ -1226,22 +1255,29 @@ export default function NocheLive({
             : jugador
         )
       );
-      setMensajeCarta(
-        carta.id === "ruleta-del-bar"
-          ? `¡La ruleta eligió: ${cartaPorId(cartaIdEfectiva)?.nombre ?? cartaIdEfectiva}!`
-          : objetivo
-            ? `${carta.nombre} enviada a ${objetivo.nombre}.`
-            : `${carta.nombre} activada.`
-      );
       if (carta.id === "copia-de-seguridad") setCartaADuplicar("");
       if (navigator.vibrate) navigator.vibrate([40, 30, 80]);
-      setCartaCelebracion({
-        carta,
-        detalle:
-          carta.id === "ruleta-del-bar"
-            ? cartaPorId(cartaIdEfectiva)?.nombre
-            : objetivo?.nombre,
+
+      // Qué ha hecho exactamente la carta. Para las que dependen de un
+      // sorteo del servidor (Salpicón, Dado Maldito, Confeti...) se consulta
+      // el resultado real ya calculado.
+      const activaNueva = resultado.inventario.cartasActivas[0];
+      const filasNuevas = (await refrescarServidor()).get(activaNueva.id);
+      const efectiva = cartaPorId(cartaIdEfectiva);
+      let detalle = textoCartaActiva(activaNueva, {
+        filas: filasNuevas,
+        nombres: jugadoresMap,
+        chapas: chapasGanadas,
+        cartaNombre: carta.id === "copia-de-seguridad" ? cartaPorId(cartaADuplicar)?.nombre : undefined,
       });
+      if (carta.id === "ruleta-del-bar") {
+        detalle = `La ruleta eligió ${efectiva?.nombre ?? cartaIdEfectiva}. ${detalle}`;
+      }
+      setMensajeCarta(
+        detalle ||
+          (objetivo ? `${carta.nombre} enviada a ${objetivo.nombre}.` : `${carta.nombre} activada.`)
+      );
+      setCartaCelebracion({ carta, detalle: detalle || objetivo?.nombre });
     }
     setUsandoCarta(null);
   }
@@ -1969,9 +2005,9 @@ export default function NocheLive({
                       ? ` → ${activa.objetivoNombre}`
                       : " ha activado la carta"}
                   </p>
-                  {activa.objetivoId === userId && (
-                    <p className="mt-1 text-xs text-texto2">{carta.efecto}</p>
-                  )}
+                  <p className="mt-1 text-xs text-texto2">
+                    {textoActiva(activa) || carta.efecto}
+                  </p>
                 </li>
               );
             })}
@@ -2043,7 +2079,12 @@ export default function NocheLive({
               if (item.kind === "carta") {
                 const c = item.carta;
                 const info = cartaPorId(c.cartaId);
-                const pl = sueltasServidor.get(c.id);
+                const filasCarta = sueltasServidor.get(c.id) ?? [];
+                const plPropio = filasCarta
+                  .filter((f) => f.usuarioId === c.usuarioId)
+                  .reduce((acc, f) => acc + f.pl, 0);
+                const pl = filasCarta.length > 0 ? plPropio : undefined;
+                const explicacion = textoActiva(c);
                 return (
                   <li
                     key={`carta-${c.id}`}
@@ -2066,6 +2107,9 @@ export default function NocheLive({
                         >
                           {pl >= 0 ? `+${pl}` : pl} PL
                         </span>
+                      )}
+                      {explicacion && (
+                        <span className="mt-0.5 block text-xs text-texto2">{explicacion}</span>
                       )}
                     </span>
                     <span className="text-xs text-texto2">

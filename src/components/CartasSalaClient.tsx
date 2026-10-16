@@ -161,12 +161,22 @@ export default function CartasSalaClient({
       } else if (carta.id === "chapa-doble-o-nada" && data && typeof data === "object") {
         const gana = (data as { gana?: boolean }).gana;
         setMensaje(gana ? "¡Cara! Chapas duplicadas." : "Cruz... chapas perdidas.");
-      } else if (carta.id === "chuleta") {
-        setCartaRobada("");
-        setCartasDelObjetivo([]);
-        setMensaje("Hecho ✓");
       } else {
-        setMensaje("Hecho ✓");
+        const nombreObjetivo = miembros.find((m) => m.id === objetivo)?.nombre ?? "ese jugador";
+        const nombreCarta = (id: string) => CARTAS_COFRES.find((c) => c.id === id)?.nombre ?? id;
+        if (carta.id === "chuleta") {
+          setMensaje(`Le robaste "${nombreCarta(cartaRobada)}" a ${nombreObjetivo}. Ya está en tu inventario.`);
+          setCartaRobada("");
+          setCartasDelObjetivo([]);
+        } else if (carta.id === "regalo-anonimo") {
+          setMensaje(`Enviaste ${Number(regalo) || 0} chapas a ${nombreObjetivo}. No sabrá que fuiste tú.`);
+        } else if (carta.id === "duplicado-expres") {
+          setMensaje(`Duplicaste "${nombreCarta(cartaDuplicada)}". Ahora tienes una más en tu inventario.`);
+        } else if (carta.id === "ronda-pagada") {
+          setMensaje(`Pagas tú: la próxima bebida suelta de ${nombreObjetivo} en esta sala dará XP extra.`);
+        } else {
+          setMensaje(`${carta.nombre} activada. ${carta.efecto}`);
+        }
       }
       await cargar();
     }

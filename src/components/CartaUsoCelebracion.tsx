@@ -44,7 +44,9 @@ export default function CartaUsoCelebracion({
   const raiz = useRef<HTMLDivElement>(null);
   useModalScrollLock(true);
   useEffect(() => {
-    const timer = window.setTimeout(onClose, sinMovimiento() ? 900 : 3000);
+    // Con texto de resultado hace falta tiempo para leerlo.
+    const base = detalle ? 7000 : 3000;
+    const timer = window.setTimeout(onClose, sinMovimiento() ? Math.min(base, 4500) : base);
     const cerrarConEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
@@ -53,7 +55,7 @@ export default function CartaUsoCelebracion({
       window.clearTimeout(timer);
       window.removeEventListener("keydown", cerrarConEscape);
     };
-  }, [onClose]);
+  }, [onClose, detalle]);
 
   const especial = Boolean(carta.oculta);
   const color = especial ? "#ad6cff" : RAREZA_COLOR[carta.rareza];
@@ -168,7 +170,7 @@ export default function CartaUsoCelebracion({
         <p className="carta-uso__label mt-1 font-titulo text-2xl text-texto">
           {carta.nombre}
         </p>
-        {detalle && <p className="carta-uso__label mt-1 text-sm text-texto2">{detalle}</p>}
+        {detalle && <p className="carta-uso__label mt-2 text-base leading-snug text-texto">{detalle}</p>}
         <button
           type="button"
           onClick={onClose}
