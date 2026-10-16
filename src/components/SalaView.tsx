@@ -338,6 +338,27 @@ export default function SalaView({
         />
       )}
 
+      {nocheActiva && (
+        <Link
+          href={`/noche/${nocheActiva.id}`}
+          className={`mb-6 block rounded-3xl p-5 text-center transition active:scale-[0.98] ${
+            nocheActiva.estado === "pendiente"
+              ? "border-2 border-ambar bg-tarjeta"
+              : "bg-ambar pulso-neon"
+          }`}
+        >
+          <span
+            className={`font-titulo text-xl ${
+              nocheActiva.estado === "pendiente" ? "text-ambar" : "text-fondo"
+            }`}
+          >
+            {nocheActiva.estado === "pendiente"
+              ? "🌙 Noche iniciada, esperando compañía"
+              : "🌙 NOCHE EN CURSO — toca para entrar"}
+          </span>
+        </Link>
+      )}
+
       <nav aria-label="Explorar sala" className="mb-6 grid grid-cols-3 gap-2">
         <Link href={`/niveles?sala=${sala.id}`} className="flex min-h-20 min-w-0 flex-col justify-between rounded-lg border border-borde bg-tarjeta p-3 text-sm font-semibold text-texto transition-colors hover:border-cian/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cian">
           <TrendingUp size={19} className="text-cian" aria-hidden="true" />
@@ -446,31 +467,7 @@ export default function SalaView({
       )}
 
       <div data-training="night">
-      {nocheActiva && nocheActiva.estado === "pendiente" ? (
-        <Link
-          href={`/noche/${nocheActiva.id}`}
-          className="mb-8 block rounded-3xl border-2 border-ambar bg-tarjeta p-6 text-center transition active:scale-[0.98]"
-        >
-          <span className="font-titulo text-2xl text-ambar">
-            🌙 Noche iniciada, esperando compañía
-          </span>
-          <p className="text-sm text-texto2">
-            Ya se ha creado: en cuanto se una alguien más, arranca de verdad
-          </p>
-        </Link>
-      ) : nocheActiva ? (
-        <Link
-          href={`/noche/${nocheActiva.id}`}
-          className="mb-8 block rounded-3xl bg-ambar p-6 text-center transition active:scale-[0.98] pulso-neon"
-        >
-          <span className="font-titulo text-2xl text-fondo">
-            🌙 NOCHE EN CURSO
-          </span>
-          <p className="text-sm font-semibold text-fondo/70">
-            Toca para entrar y registrar
-          </p>
-        </Link>
-      ) : eligiendoDuracion ? (
+      {nocheActiva ? null : eligiendoDuracion ? (
         <div className="mb-8 rounded-3xl border border-borde bg-tarjeta p-6">
           {esTemporada ? (
             <>
