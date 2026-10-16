@@ -607,12 +607,26 @@ export function chapasPorCartaEconomia(
   return 0;
 }
 
-export function cartasActivasDeNoche(rawConfigs: unknown[], nocheId: string, ahora = Date.now()) {
+/**
+ * Todas las cartas usadas en la noche (hayan expirado o no). Para recalcular
+ * puntos de una bebida ya registrada hace falta el historial completo: si
+ * Noche x10 se jugó hace 10 minutos y ya "expiró" para la UI, la bebida que
+ * se registró DENTRO de su ventana de 5 minutos sigue debiendo contar el
+ * x10 para siempre (igual que calcula finalizar_noche, que no depende de la
+ * hora actual). Filtrar aquí por `ahora` rompía justo eso.
+ */
+export function cartasDeNoche(rawConfigs: unknown[], nocheId: string) {
   return rawConfigs
     .flatMap((raw) => parseInventarioState(raw).cartasActivas)
-    .filter((activa) => {
-      if (activa.nocheId !== nocheId) return false;
-      if (!activa.expiraEn) return true;
-      return new Date(activa.expiraEn).getTime() > ahora;
-    });
+    .filter((activa) => activa.nocheId === nocheId);
+}
+
+/** Solo las que siguen vigentes ahora mismo (para UI: "efectos activos",
+ * bloquear acciones, etc.). Para puntuar bebidas ya registradas usa
+ * `cartasDeNoche`, no esta. */
+export function cartasActivasDeNoche(rawConfigs: unknown[], nocheId: string, ahora = Date.now()) {
+  return cartasDeNoche(rawConfigs, nocheId).filter((activa) => {
+    if (!activa.expiraEn) return true;
+    return new Date(activa.expiraEn).getTime() > ahora;
+  });
 }

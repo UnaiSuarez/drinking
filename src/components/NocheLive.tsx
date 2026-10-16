@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client";
 import { CARTAS_COFRES, REVERSOS_CARTA, type CartaCofre } from "@/lib/cofresDesign";
 import {
   cartasActivasDeNoche,
+  cartasDeNoche,
   cartaPorId,
   chapasPorCartaEconomia,
   parseInventarioState,
@@ -643,6 +644,17 @@ export default function NocheLive({
       ),
     [jugadores, noche.id, ahora]
   );
+  // Historial completo (sin filtrar por "sigue vigente ahora"): para
+  // puntuar una bebida ya registrada hace falta saber qué cartas había
+  // activas EN ESE MOMENTO, no cuáles siguen activas ahora mismo. Si se usa
+  // `cartasActivas` (la de arriba) para esto, el bono desaparece del
+  // marcador en cuanto pasa la ventana de la carta, aunque la bebida sí lo
+  // ganó. `cartasActivas` sigue siendo la correcta para "qué está activo
+  // ahora" (bloquear acciones, la lista de Efectos activos).
+  const cartasNoche = useMemo(
+    () => cartasDeNoche(jugadores.map((jugador) => jugador.avatarConfigRaw), noche.id),
+    [jugadores, noche.id]
+  );
   const cartasUsables = useMemo(
     () =>
       CARTAS_COFRES.filter(
@@ -1070,7 +1082,7 @@ export default function NocheLive({
       registros,
       jugadoresMap,
       bebidasMap,
-      cartasActivas
+      cartasNoche
     );
     const miPosicionAhora = rankingActual.findIndex((r) => r.id === userId) + 1;
     const enPodioAhora = miPosicionAhora >= 1 && miPosicionAhora <= 3;
@@ -1339,8 +1351,8 @@ export default function NocheLive({
     ahora - new Date(miUltimoRegistro.ts).getTime() < 30000;
 
   const ranking = useMemo(
-    () => calcularRanking(jugadores, registros, jugadoresMap, bebidasMap, cartasActivas),
-    [jugadores, registros, bebidasMap, jugadoresMap, cartasActivas]
+    () => calcularRanking(jugadores, registros, jugadoresMap, bebidasMap, cartasNoche),
+    [jugadores, registros, bebidasMap, jugadoresMap, cartasNoche]
   );
 
   // Todas las cartas jugadas esta noche (a diferencia de `cartasActivas`, no
@@ -1998,7 +2010,7 @@ export default function NocheLive({
 
               const r = item.registro;
               const b = bebidasMap.get(r.bebida_tipo_id);
-              const desglose = desglosePuntosRegistro(r, registros, bebidasMap, cartasActivas);
+              const desglose = desglosePuntosRegistro(r, registros, bebidasMap, cartasNoche);
               return (
                 <li
                   key={r.id}
