@@ -430,7 +430,8 @@ function calcularRanking(
   registros: Registro[],
   jugadoresMap: Map<string, string>,
   bebidasMap: Map<number, Bebida>,
-  cartasActivas: CartaActiva[]
+  cartasActivas: CartaActiva[],
+  rankingServidor?: Map<string, { puntos: number; bebidas: number }>
 ) {
   const totales = new Map<string, { bebidas: number; puntos: number }>();
   for (const j of jugadores) totales.set(j.id, { bebidas: 0, puntos: 0 });
@@ -442,14 +443,21 @@ function calcularRanking(
       t.puntos += puntosRegistro(r, registros, bebidasMap, cartasActivas);
     }
   }
+  // El total del servidor (ranking_en_vivo) es la fuente autorizada: incluye
+  // también las cartas "sueltas" (Salpicón de Puntos, etc.) que no cuelgan
+  // de un registro propio y que este cálculo local no puede ver. Mientras
+  // llega la respuesta del servidor se usa el cálculo local como mejor
+  // aproximación disponible.
   return [...totales.entries()]
     .map(([id, t]) => {
       const j = jugadores.find((x) => x.id === id);
+      const servidor = rankingServidor?.get(id);
       return {
         id,
         nombre: jugadoresMap.get(id) ?? "???",
         avatarConfig: j?.avatarConfig ?? parseAvatarConfig(null),
-        ...t,
+        bebidas: servidor?.bebidas ?? t.bebidas,
+        puntos: servidor?.puntos ?? t.puntos,
       };
     })
     .sort((a, b) => b.puntos - a.puntos || b.bebidas - a.bebidas);
@@ -655,6 +663,50 @@ export default function NocheLive({
     () => cartasDeNoche(jugadores.map((jugador) => jugador.avatarConfigRaw), noche.id),
     [jugadores, noche.id]
   );
+
+  // Ranking y bonos de cartas "sueltas" calculados en el servidor
+  // (ranking_en_vivo / sueltas_en_vivo): usan la MISMA lógica que
+  // finalizar_noche, así que cartas como Salpicón de Puntos (que no
+  // cuelgan de un registro propio y usan un sorteo determinista que no se
+  // puede reproducir fielmente en el cliente) se reflejan en el marcador y
+  // en el feed al momento, no solo al cerrar la noche.
+  const [rankingServidor, setRankingServidor] = useState<
+    Map<string, { puntos: number; bebidas: number }>
+  >(new Map());
+  const [sueltasServidor, setSueltasServidor] = useState<Map<string, number>>(
+    new Map()
+  );
+  useEffect(() => {
+    let cancelado = false;
+    (async () => {
+      const [rankingRes, sueltasRes] = await Promise.all([
+        supabase.rpc("ranking_en_vivo", { p_noche: noche.id }),
+        supabase.rpc("sueltas_en_vivo", { p_noche: noche.id }),
+      ]);
+      if (cancelado) return;
+      if (rankingRes.data) {
+        setRankingServidor(
+          new Map(
+            (rankingRes.data as { usuario_id: string; puntos: number; bebidas: number }[]).map(
+              (r) => [r.usuario_id, { puntos: r.puntos, bebidas: r.bebidas }]
+            )
+          )
+        );
+      }
+      if (sueltasRes.data) {
+        setSueltasServidor(
+          new Map(
+            (sueltasRes.data as { activa_id: string | null; pl: number }[])
+              .filter((s) => s.activa_id)
+              .map((s) => [s.activa_id as string, s.pl])
+          )
+        );
+      }
+    })();
+    return () => {
+      cancelado = true;
+    };
+  }, [supabase, noche.id, registros, jugadores]);
   const cartasUsables = useMemo(
     () =>
       CARTAS_COFRES.filter(
@@ -1351,8 +1403,16 @@ export default function NocheLive({
     ahora - new Date(miUltimoRegistro.ts).getTime() < 30000;
 
   const ranking = useMemo(
-    () => calcularRanking(jugadores, registros, jugadoresMap, bebidasMap, cartasNoche),
-    [jugadores, registros, bebidasMap, jugadoresMap, cartasNoche]
+    () =>
+      calcularRanking(
+        jugadores,
+        registros,
+        jugadoresMap,
+        bebidasMap,
+        cartasNoche,
+        rankingServidor
+      ),
+    [jugadores, registros, bebidasMap, jugadoresMap, cartasNoche, rankingServidor]
   );
 
   // Todas las cartas jugadas esta noche (a diferencia de `cartasActivas`, no
@@ -1983,6 +2043,7 @@ export default function NocheLive({
               if (item.kind === "carta") {
                 const c = item.carta;
                 const info = cartaPorId(c.cartaId);
+                const pl = sueltasServidor.get(c.id);
                 return (
                   <li
                     key={`carta-${c.id}`}
@@ -1996,6 +2057,15 @@ export default function NocheLive({
                           {" "}
                           → <span className="text-cian">{c.objetivoNombre}</span>
                         </>
+                      )}
+                      {pl !== undefined && pl !== 0 && (
+                        <span
+                          className={`ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                            pl >= 0 ? "bg-lima/20 text-lima" : "bg-rosa/20 text-rosa"
+                          }`}
+                        >
+                          {pl >= 0 ? `+${pl}` : pl} PL
+                        </span>
                       )}
                     </span>
                     <span className="text-xs text-texto2">
