@@ -464,6 +464,32 @@ function calcularRanking(
     .sort((a, b) => b.puntos - a.puntos || b.bebidas - a.bebidas);
 }
 
+function CuentaAtras({ hasta }: { hasta: string }) {
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setAhora(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
+  const total = Math.max(0, Math.floor((new Date(hasta).getTime() - ahora) / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const texto =
+    h > 0
+      ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
+      : `${m}:${String(s).padStart(2, "0")}`;
+  return (
+    <span
+      className={`shrink-0 rounded-full px-2 py-0.5 font-titulo text-xs tabular-nums ${
+        total <= 30 ? "bg-rosa/20 text-rosa" : "bg-cian/15 text-cian"
+      }`}
+      aria-label={`Quedan ${texto}`}
+    >
+      ⏱ {texto}
+    </span>
+  );
+}
+
 function normalizar(texto: string) {
   return texto
     .normalize("NFD")
@@ -1995,10 +2021,13 @@ export default function NocheLive({
                   key={activa.id}
                   className={`rounded-2xl border bg-tarjeta px-4 py-3 ${activa.objetivoId === userId ? "border-rosa" : "border-cian/40"}`}
                 >
-                  <p className="font-titulo text-sm text-cian">
-                    {carta.nombre}
-                    {activa.objetivoId === userId && <span className="ml-2 text-xs text-rosa">Te afecta</span>}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-titulo text-sm text-cian">
+                      {carta.nombre}
+                      {activa.objetivoId === userId && <span className="ml-2 text-xs text-rosa">Te afecta</span>}
+                    </p>
+                    {activa.expiraEn && <CuentaAtras hasta={activa.expiraEn} />}
+                  </div>
                   <p className="text-xs text-texto2">
                     {activa.usuarioNombre}
                     {activa.objetivoNombre
