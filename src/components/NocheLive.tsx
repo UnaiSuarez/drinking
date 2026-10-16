@@ -52,6 +52,7 @@ export type Registro = {
   bebida_tipo_id: number;
   ts: string;
   retroactivo?: boolean;
+  comentario?: string | null;
 };
 type FeedItem =
   | { kind: "registro"; ts: number; registro: Registro }
@@ -239,7 +240,18 @@ function tipoDistintoDelAnterior(registro: Registro, registros: Registro[]) {
   return !anterior || anterior.bebida_tipo_id !== registro.bebida_tipo_id;
 }
 
-export type DetalleBono = { cartaId: string; nombre: string; delta: number };
+export type DetalleBono = {
+  cartaId: string;
+  nombre: string;
+  delta: number;
+  /** Informativo: ya está incluido en el multiplicador, no se vuelve a
+   * sumar (ver más abajo). */
+  esMultiplicador?: boolean;
+};
+
+function tieneComentario(registro: Registro) {
+  return Boolean(registro.comentario && registro.comentario.trim() !== "");
+}
 
 function desglosePuntosRegistro(
   registro: Registro,
@@ -249,17 +261,72 @@ function desglosePuntosRegistro(
 ) {
   const bebida = bebidasMap.get(registro.bebida_tipo_id);
   const nombreBebida = normalizar(`${bebida?.nombre ?? ""} ${bebida?.icono ?? ""}`);
+  const esChupitoEstricto = nombreBebida.includes("chupit") || nombreBebida.includes("shot");
   const puntos = puntosBaseRegistro(registro, bebidasMap);
-  let multiplicador = 1;
   const detalles: DetalleBono[] = [];
   const nombreCarta = (id: string) => cartaPorId(id)?.nombre ?? id;
 
+  // Multiplicadores: igual que finalizar_noche, no se apilan (se queda el
+  // mayor aplicable), y Chupito Castigo puede anular la bebida entera (x0)
+  // si el objetivo bebió otra cosa. El multiplicador final se aplica UNA
+  // sola vez sobre la base; las entradas de abajo son solo para mostrar en
+  // el feed, no se vuelven a sumar (antes sí, y por eso Noche x10 enseñaba
+  // casi el doble de lo que de verdad sumaba al marcador).
+  let multiplicadorBase = 1;
   for (const activa of cartasActivas) {
     if (!enVentana(activa, registro)) continue;
-    if (activa.cartaId === "noche-x10" && multiplicador < 10) {
-      multiplicador = 10;
-      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: puntos * 9 });
+    if (activa.cartaId === "noche-x10" && multiplicadorBase < 10) {
+      multiplicadorBase = 10;
     }
+    if (
+      activa.cartaId === "doble-o-nada" &&
+      activa.usuarioId === registro.usuario_id &&
+      esPrimerRegistroEnVentana(activa, registro, registros) &&
+      multiplicadorBase < 2
+    ) {
+      multiplicadorBase = 2;
+    }
+  }
+  let anulador = 1;
+  for (const activa of cartasActivas) {
+    if (
+      activa.cartaId === "chupito-castigo" &&
+      esPrimerRegistroDelObjetivo(activa, registro, registros) &&
+      !esChupitoEstricto
+    ) {
+      anulador = 0;
+    }
+  }
+  const multiplicador = multiplicadorBase * anulador;
+  if (multiplicadorBase > 1) {
+    const idActivo = cartasActivas.find(
+      (a) => enVentana(a, registro) && a.cartaId === (multiplicadorBase === 10 ? "noche-x10" : "doble-o-nada")
+    );
+    if (idActivo) {
+      detalles.push({
+        cartaId: idActivo.cartaId,
+        nombre: `${nombreCarta(idActivo.cartaId)} (x${multiplicadorBase})`,
+        delta: puntos * (multiplicador - 1),
+        esMultiplicador: true,
+      });
+    }
+  }
+  if (anulador === 0) {
+    const idActivo = cartasActivas.find(
+      (a) => a.cartaId === "chupito-castigo" && esPrimerRegistroDelObjetivo(a, registro, registros)
+    );
+    if (idActivo) {
+      detalles.push({
+        cartaId: idActivo.cartaId,
+        nombre: `${nombreCarta(idActivo.cartaId)} (anulada)`,
+        delta: -puntos * multiplicadorBase,
+        esMultiplicador: true,
+      });
+    }
+  }
+
+  for (const activa of cartasActivas) {
+    if (!enVentana(activa, registro)) continue;
     if (activa.cartaId === "ultimo-aviso") {
       detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 1 });
     }
@@ -269,15 +336,6 @@ function desglosePuntosRegistro(
       esPrimerRegistroEnVentana(activa, registro, registros)
     ) {
       detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 2 });
-    }
-    if (
-      activa.cartaId === "doble-o-nada" &&
-      activa.usuarioId === registro.usuario_id &&
-      esPrimerRegistroEnVentana(activa, registro, registros) &&
-      multiplicador < 2
-    ) {
-      multiplicador = 2;
-      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: puntos });
     }
     if (
       activa.cartaId === "cubata-obligatorio" &&
@@ -337,9 +395,23 @@ function desglosePuntosRegistro(
     ) {
       detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: 6 });
     }
+    // maldicion-del-lider no tiene ventana de "primer registro": penaliza
+    // CADA bebida del objetivo mientras la maldición siga activa.
+    if (activa.cartaId === "maldicion-del-lider" && activa.objetivoId === registro.usuario_id) {
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: -1 });
+    }
+    if (
+      activa.cartaId === "selfie-obligatoria" &&
+      esPrimerRegistroDelObjetivo(activa, registro, registros) &&
+      !tieneComentario(registro)
+    ) {
+      detalles.push({ cartaId: activa.cartaId, nombre: nombreCarta(activa.cartaId), delta: -2 });
+    }
   }
 
-  const bonus = detalles.reduce((acc, d) => acc + d.delta, 0);
+  const bonus = detalles
+    .filter((d) => !d.esMultiplicador)
+    .reduce((acc, d) => acc + d.delta, 0);
   return { puntos: puntos * multiplicador + bonus, base: puntos, detalles };
 }
 

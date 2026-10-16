@@ -98,7 +98,7 @@ export default async function NochePage({
       .eq("noche_id", id),
     supabase
       .from("registros")
-      .select("id, usuario_id, bebida_tipo_id, ts, retroactivo")
+      .select("id, usuario_id, bebida_tipo_id, ts, retroactivo, comentario")
       .eq("noche_id", id)
       .eq("anulado", false)
       .order("ts"),
