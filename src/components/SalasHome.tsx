@@ -54,6 +54,7 @@ export default function SalasHome({
 
   const salasActivas = salas.filter((sala) => !sala.archivadaAt);
   const salasArchivadas = salas.filter((sala) => sala.archivadaAt && sala.rol === "fundador");
+  const salasConNocheActiva = salasActivas.filter((sala) => sala.nocheActivaId);
 
   async function restaurarSala(id: string) {
     setRestaurando(id);
@@ -154,6 +155,29 @@ export default function SalasHome({
           </button>
         </div>
       </header>
+
+      {salasConNocheActiva.length > 0 && (
+        <section className="mb-8 space-y-2">
+          {salasConNocheActiva.map((sala) => (
+            <Link
+              key={sala.id}
+              href={`/noche/${sala.nocheActivaId}`}
+              className="pulso-neon flex items-center justify-between gap-3 rounded-2xl border-2 border-ambar bg-gradient-to-br from-ambar/20 to-ambar/5 px-5 py-4 transition active:scale-[0.98]"
+            >
+              <span className="flex items-center gap-2">
+                <span className="flex items-center gap-1 rounded-full bg-ambar/30 px-2 py-0.5 text-[11px] font-bold text-ambar">
+                  <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-ambar" />
+                  EN VIVO
+                </span>
+                <span className="font-titulo text-base text-texto">
+                  Noche en marcha en {sala.nombre}
+                </span>
+              </span>
+              <span className="shrink-0 font-titulo text-sm text-ambar">🎉 Unirse →</span>
+            </Link>
+          ))}
+        </section>
+      )}
 
       <section className="mb-8">
         <div className="mb-3 flex items-center justify-between">
